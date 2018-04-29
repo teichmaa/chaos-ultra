@@ -8,29 +8,27 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
-import javafx.scene.image.Image;
-import javafx.scene.image.PixelFormat;
-import javafx.scene.image.PixelWriter;
 import javafx.scene.image.WritableImage;
 
+import java.lang.reflect.Array;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.net.URL;
+import java.nio.ByteBuffer;
 import java.util.ResourceBundle;
 
 public class Controller implements Initializable {
 
     private final int FULL_OPACITY_MASK = 0xff000000;
-    private final int HALF_OPACITY_MASK = 0x7f000000;
 
     @FXML
     WritableImage fractalImage;
-    private PixelWriter pw;
 
     @FXML
     Button renderButton;
 
     @FXML
     private TextField fractal_x;
-
     @FXML
     private TextField fractal_y;
     @FXML
@@ -40,16 +38,50 @@ public class Controller implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        pw = fractalImage.getPixelWriter();
-        for (int i = 0; i < fractalImage.getWidth(); i++) {
-            for (int j = 0; j < fractalImage.getHeight(); j++) {
-                pw.setArgb(i,j,FULL_OPACITY_MASK | 255 << 16);
-            }
+        initInjectBufferInImage();
+        CudaRenderer.init(1280,1024);
+    }
+
+
+    private com.sun.prism.Image prismImg;
+    private ByteBuffer theUltimateBuffer;
+
+    private void initInjectBufferInImage() {
+
+        try {
+            theUltimateBuffer = ByteBuffer.allocateDirect(1280 * 1024 * 4);
+
+            // Get the platform image
+            Method getWritablePlatformImage = javafx.scene.image.Image.class.getDeclaredMethod("getWritablePlatformImage");
+            getWritablePlatformImage.setAccessible(true);
+            prismImg = (com.sun.prism.Image) getWritablePlatformImage.invoke(fractalImage);
+
+            // Replace the buffer
+            Field pixelBuffer = com.sun.prism.Image.class.getDeclaredField("pixelBuffer");
+            pixelBuffer.setAccessible(true);
+            pixelBuffer.set(prismImg, theUltimateBuffer);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.exit(1);
         }
     }
 
-    private void hackLolWhat(){
-        Image i;
+    private void invalidateImage() {
+        try {
+            // Invalidate the platform image
+            Field serial = com.sun.prism.Image.class.getDeclaredField("serial");
+            serial.setAccessible(true);
+            Array.setInt(serial.get(prismImg), 0, Array.getInt(serial.get(prismImg), 0) + 1);
+
+            // Invalidate the WritableImage
+            Method pixelsDirty = javafx.scene.image.Image.class.getDeclaredMethod("pixelsDirty");
+            pixelsDirty.setAccessible(true);
+            pixelsDirty.invoke(fractalImage);
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
     }
 
     public void renderClicked(ActionEvent actionEvent) {
@@ -76,11 +108,12 @@ public class Controller implements Initializable {
 
         RenderingKernel k = new MandelbrotKernel(dwell, width, height, left_bottom_x, left_bottom_y, right_top_x, right_top_y);
 
-        int[] fractal = CudaRenderer.launch(k, false);
+        CudaRenderer.launch(k, false, theUltimateBuffer);
 
         long kernelFinishedTime = System.currentTimeMillis();
 
-        showBitmap(fractal, width, height);
+       // showBitmap(fractal, width, height);
+        invalidateImage();
 
         long endTime = System.currentTimeMillis();
 
@@ -88,10 +121,6 @@ public class Controller implements Initializable {
         System.out.println("Whole operation done in " + (endTime - startTime) + " ms");
 
 
-    }
-
-    private void showBitmap(int[] data, int width, int height){
-        pw.setPixels(0,0, width, height, PixelFormat.getIntArgbInstance(), data, 0, width);
     }
 
     public void sample0Clicked(ActionEvent actionEvent) {

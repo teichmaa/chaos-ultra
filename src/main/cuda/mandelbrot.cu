@@ -1,3 +1,5 @@
+const int ARGB_FULL_OPACITY_MASK = 0xff000000;
+
 extern "C"
 __global__ void mandelbrot(int** outputData, long pitch,/*int * palette,*/ int width, int height, float left_bottom_x, float left_bottom_y, float right_top_x, float right_top_y, int dwell)
 {
@@ -22,7 +24,7 @@ __global__ void mandelbrot(int** outputData, long pitch,/*int * palette,*/ int w
       ++i;
   }
    int* pResult = (int*)((char*)outputData + idx_y * pitch) + idx_x;
-  * pResult = i;
+  * pResult = i | ARGB_FULL_OPACITY_MASK;
 /*
   //debug part:
   if(idx_x==0 && idx_y ==0){

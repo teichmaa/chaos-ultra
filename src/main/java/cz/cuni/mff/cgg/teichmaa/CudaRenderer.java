@@ -1,5 +1,6 @@
 package cz.cuni.mff.cgg.teichmaa;
 
+import UI.Controller;
 import jcuda.CudaException;
 import jcuda.NativePointerObject;
 import jcuda.Pointer;
@@ -11,6 +12,7 @@ import java.awt.image.*;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.nio.Buffer;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.Date;
@@ -29,7 +31,6 @@ public class CudaRenderer {
         // Enable exceptions and omit all subsequent error checks
         JCudaDriver.setExceptionsEnabled(true);
 
-
         // Initialize the driver and create a context for the first device.
         cuInit(0);
         CUcontext pctx = new CUcontext();
@@ -40,8 +41,32 @@ public class CudaRenderer {
         return dev;
     }
 
-    public static int[] launch(RenderingKernel kernel, boolean saveImage) {
+    private static CUdeviceptr deviceOut;
 
+    private static long pitch;
+    private static long[] pitchptr = new long[1];
+
+    public static void init(int width, int height){
+        cudaInit();
+
+        // Allocate 2D array on device
+        // Note: Keep in mind that cuMemAllocPitch allocates pitch x height array, i.e. the rows may be longer than width
+        deviceOut = new CUdeviceptr();
+
+        /**
+         * Actual row length (in bytes) as aligned by CUDA. pitch >= width * sizeof element.
+         */
+
+        cuMemAllocPitch(deviceOut, pitchptr, (long) width * (long) Sizeof.INT, (long) height, Sizeof.INT);
+        //Note: we don't have to check malloc return value, jcuda checks it for us (and will eventually throw an exception)
+        pitch = pitchptr[0];
+        if (pitch <= 0) {
+            throw new CudaException("cuMemAllocPitch returned pitch with value 0 (or less)");
+        }
+    }
+
+
+    public static int[] launch(RenderingKernel kernel, boolean saveImage, Buffer outputBuffer) {
 
         int width = kernel.getWidth();
         int height = kernel.getHeight();
@@ -61,22 +86,6 @@ public class CudaRenderer {
             throw new CudaRendererException("Unsupported input parameter: height must be smaller than " + CUDA_MAX_GRID_DIM);
         }
 
-        cudaInit();
-
-        // Allocate 2D array on device
-        // Note: Keep in mind that cuMemAllocPitch allocates pitch x height array, i.e. the rows may be longer than width
-        CUdeviceptr deviceOut = new CUdeviceptr();
-        /**
-         * Actual row length (in bytes) as aligned by CUDA. pitch >= width * sizeof element.
-         */
-        long pitch;
-        long[] pitchptr = new long[1];
-        cuMemAllocPitch(deviceOut, pitchptr, (long) width * (long) Sizeof.INT, (long) height, Sizeof.INT);
-        //Note: we don't have to check malloc return value, jcuda checks it for us (and will eventually throw an exception)
-        pitch = pitchptr[0];
-        if (pitch <= 0) {
-            throw new CudaException("cuMemAllocPitch returned pitch with value 0 (or less)");
-        }
 
         //copy the color palette to device:
 //        int[] palette = createColorPalette();
@@ -90,31 +99,6 @@ public class CudaRenderer {
         kernelParamsArr[kernel.PARAM_IDX_DEVICE_OUT] = Pointer.to(deviceOut);
         kernelParamsArr[kernel.PARAM_IDX_PITCH] = Pointer.to(pitchptr);
         Pointer kernelParams = Pointer.to(kernelParamsArr);
-
-        //debug:
-//        for (int i = 0; i < kernelParamsArr.length; i++) {
-//            System.out.println("kernelParamsArr["+i+"] =\t" + kernelParamsArr[i]);
-//        }
-//
-//        System.out.println("kernel = " + kernel);
-
-//        kernelParamsArr[((MandelbrotKernel)kernel).PARAM_IDX_DWELL] = Pointer.to(new int[]{200000});
-//        kernelParamsArr[((MandelbrotKernel)kernel).PARAM_IDX_WIDTH] = Pointer.to(new int[]{2048});
-//        kernelParamsArr[((MandelbrotKernel)kernel).PARAM_IDX_HEIGHT] = Pointer.to(new int[]{2048});
-
-        //debug only. Debugging kernelParams configuration:
-//        Pointer kernelParams = Pointer.to(
-//                Pointer.to(deviceOut),
-//                Pointer.to(pitchptr),
-////                Pointer.to(palette),
-//                Pointer.to(new int[]{2048}),
-//                Pointer.to(new int[]{2048}),
-//                Pointer.to(new float[]{-1f}),
-//                Pointer.to(new float[]{-1f}),
-//                Pointer.to(new float[]{1f}),
-//                Pointer.to(new float[]{1f}),
-//                Pointer.to(new int[]{200})
-//        );
 
         CUfunction kernelFunction = kernel.getMainFunction();
         // The main thing - launching the kernel!:
@@ -138,15 +122,14 @@ public class CudaRenderer {
         if ((long) deviceActualWidth * (long) height > (long) Integer.MAX_VALUE) {
             throw new CudaException("pitch*height/Sizeof.INT is too big (bigger than Integer.MAX_VALUE) and cannot be handled by Java: " + pitch);
         }
-        int hostOut[] = new int[deviceActualWidth * height];
-
+        //int hostOut[] = new int[deviceActualWidth * height];
 
         //copy to host:
         CUDA_MEMCPY2D copyInfo = new CUDA_MEMCPY2D();
         copyInfo.srcMemoryType = CUmemorytype.CU_MEMORYTYPE_DEVICE;
         copyInfo.dstMemoryType = CUmemorytype.CU_MEMORYTYPE_HOST;
         copyInfo.srcDevice = deviceOut;
-        copyInfo.dstHost = Pointer.to(hostOut);
+        copyInfo.dstHost = Pointer.to(outputBuffer);
         copyInfo.srcPitch = pitch;
         copyInfo.Height = height;
         copyInfo.WidthInBytes = width * Sizeof.INT;
@@ -155,17 +138,8 @@ public class CudaRenderer {
         long copyEndTime = cudaKernelEndTime;
 
         System.out.println("device to host copy finished in " + (copyEndTime - createImageStartTime) + " ms");
-        cuMemFree(deviceOut);
+        //cuMemFree(deviceOut);
         //      cuMemFree(devicePalette);
-
-
-        //debug:
-//        printArray(arrayFlatTo2D(hostOut, width, height));
-//        System.out.println("hostOut[0] = " + hostOut[0]);
-//        System.out.println("hostOut[1] = " + hostOut[1]);
-//        System.out.println("hostOut[2] = " + hostOut[2]);
-//        System.out.println("hostOut[3] = " + hostOut[3]);
-//        System.out.println("hostOut[4] = " + hostOut[4]);
 
         int dwell = -1;
         if (kernel instanceof MandelbrotKernel)
@@ -176,15 +150,15 @@ public class CudaRenderer {
 
 
         //coloring:
-        int[] p = createColorPalette();
-        for (int i = 0; i < hostOut.length; i++) {
-            //int pIdx = p.length - (Math.round(hostOut[i] / (float) dwell * p.length));
-            int pIdx = p.length - hostOut[i] % p.length;
-            pIdx = Math.max(0, Math.min(p.length - 1, pIdx));
-            final int FULL_OPACITY_MASK = 0xff000000;
-            hostOut[i] = p[pIdx] | FULL_OPACITY_MASK;
-
-        }
+//        int[] p = createColorPalette();
+//        for (int i = 0; i < hostOut.length; i++) {
+//            //int pIdx = p.length - (Math.round(hostOut[i] / (float) dwell * p.length));
+//            int pIdx = p.length - hostOut[i] % p.length;
+//            pIdx = Math.max(0, Math.min(p.length - 1, pIdx));
+//            final int FULL_OPACITY_MASK = 0xff000000;
+//            hostOut[i] = p[pIdx] | FULL_OPACITY_MASK;
+//
+//        }
 
         //See the result:
         if (saveImage) {
@@ -202,12 +176,13 @@ public class CudaRenderer {
                     + "__time-" + (cudaKernelEndTime - cudaKernelStartTime) + "ms"
                     + juliaResult
                     + ".tiff";
-            createImage(hostOut, deviceActualWidth, height, fileName);
+            //createImage(hostOut, deviceActualWidth, height, fileName);
             long createImageEndTime = System.currentTimeMillis();
             System.out.println(kernel.getMainFunctionName() + " saved to disk in " + (createImageEndTime - createImageStartTime) + " ms. Location: " + fileName);
         }
 
-        return hostOut;
+        //return hostOut;
+        return null;
 
     }
 

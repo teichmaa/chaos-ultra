@@ -12,7 +12,7 @@ public class MandelbrotKernel extends RenderingKernel {
     public final short PARAM_IDX_DWELL;
 
     public MandelbrotKernel( int dwell, int width, int height, float left_bottom_x, float left_bottom_y, float right_top_x, float right_top_y) {
-        super("E:\\Tonda\\OneDrive\\baka\\jcuda\\j-fractal-renderer\\src\\main\\resources\\mandelbrot.ptx", "mandelbrot", width, height, left_bottom_x, left_bottom_y, right_top_x, right_top_y);
+        super("E:\\Tonda\\Desktop\\Mandelzoomer\\src\\main\\cuda\\mandelbrot.ptx", "mandelbrot", width, height, left_bottom_x, left_bottom_y, right_top_x, right_top_y);
         this.dwell = dwell;
 
 
