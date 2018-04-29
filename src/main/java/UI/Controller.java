@@ -8,6 +8,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
+import javafx.scene.image.Image;
 import javafx.scene.image.PixelFormat;
 import javafx.scene.image.PixelWriter;
 import javafx.scene.image.WritableImage;
@@ -45,6 +46,10 @@ public class Controller implements Initializable {
                 pw.setArgb(i,j,FULL_OPACITY_MASK | 255 << 16);
             }
         }
+    }
+
+    private void hackLolWhat(){
+        Image i;
     }
 
     public void renderClicked(ActionEvent actionEvent) {

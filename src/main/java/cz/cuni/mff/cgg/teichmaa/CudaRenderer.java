@@ -26,23 +26,6 @@ public class CudaRenderer {
 
     private static CUdevice cudaInit() {
 
-        System.setProperty("java.library.path", "lib");
-        //set sys_paths to null
-        Field sysPathsField = null;
-        try {
-            sysPathsField = ClassLoader.class.getDeclaredField("sys_paths");
-        } catch (NoSuchFieldException e) {
-            e.printStackTrace();
-            System.exit(1);
-        }
-        sysPathsField.setAccessible(true);
-        try {
-            sysPathsField.set(null, null);
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
-            System.exit(1);
-        }
-
         // Enable exceptions and omit all subsequent error checks
         JCudaDriver.setExceptionsEnabled(true);
 
