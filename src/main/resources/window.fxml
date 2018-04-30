@@ -17,11 +17,42 @@
         </ImageView>
         <VBox>
 
-            <TextField fx:id="fractal_x" text="-0.5" />
-            <TextField fx:id="fractal_y" text="0" />
-            <TextField fx:id="fractal_zoom" text="2" />
-            <TextField fx:id="fractal_dwell" text="2000" />
+            <HBox>
+                <Label>
+                    <padding><Insets top="5" right="5" bottom="5" left="5"/></padding>
+                    x:
+                </Label>
+                <TextField fx:id="fractal_x" text="-0.5" />
+            </HBox>
+            <HBox>
+                <Label>
+                    <padding><Insets top="5" right="5" bottom="5" left="5"/></padding>
+                    y:
+                </Label>
+                <TextField fx:id="fractal_y" text="0" />
+            </HBox>
+            <HBox>
+                <Label>
+                    <padding><Insets top="5" right="5" bottom="5" left="5"/></padding>
+                    zoom:
+                </Label>
+                <TextField fx:id="fractal_zoom" text="2" />
+            </HBox>
+            <HBox>
+                <Label>
+                    <padding><Insets top="5" right="5" bottom="5" left="5"/></padding>
+                    dwell:
+                </Label>
+                <TextField fx:id="fractal_dwell" text="2000" />
+            </HBox>
+
             <Button text="render" fx:id="renderButton" onAction="#renderClicked"/>
+
+            <Label>
+                <padding><Insets top="25" right="5" bottom="5" left="5"/></padding>
+                Premades:
+            </Label>
+
             <Button text="default view" onAction="#sample0Clicked"/>
             <Button text="sample1" onAction="#sample1Clicked"/>
             <Button text="sample2" onAction="#sample2Clicked"/>
