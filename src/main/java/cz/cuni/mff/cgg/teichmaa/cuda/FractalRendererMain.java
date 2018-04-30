@@ -1,4 +1,4 @@
-package cz.cuni.mff.cgg.teichmaa;
+package cz.cuni.mff.cgg.teichmaa.cuda;
 
 import jcuda.*;
 import jcuda.runtime.*;

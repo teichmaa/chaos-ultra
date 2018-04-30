@@ -1,9 +1,6 @@
-package cz.cuni.mff.cgg.teichmaa;
+package cz.cuni.mff.cgg.teichmaa.cuda;
 
-import jcuda.NativePointerObject;
 import jcuda.Pointer;
-
-import java.util.List;
 
 public class JuliaKernel extends AbstractFractalRenderKernel {
 

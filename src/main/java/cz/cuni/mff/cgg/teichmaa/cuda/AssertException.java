@@ -1,4 +1,4 @@
-package cz.cuni.mff.cgg.teichmaa;
+package cz.cuni.mff.cgg.teichmaa.cuda;
 
 public class AssertException extends RuntimeException {
     public AssertException() {

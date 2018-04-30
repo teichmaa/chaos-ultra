@@ -63,7 +63,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>cz.cuni.mff.cgg.teichmaa.FractalRendererMain</mainClass>
+                            <mainClass>cz.cuni.mff.cgg.teichmaa.cuda.FractalRendererMain</mainClass>
                         </manifest>
                     </archive>
                     <descriptorRefs>

@@ -1,4 +1,4 @@
-package UI;
+package cz.cuni.mff.cgg.teichmaa.view;
 
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;

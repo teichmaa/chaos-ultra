@@ -1,7 +1,7 @@
-package UI;
+package cz.cuni.mff.cgg.teichmaa.view;
 
-import cz.cuni.mff.cgg.teichmaa.CudaLauncher;
-import cz.cuni.mff.cgg.teichmaa.MandelbrotKernel;
+import cz.cuni.mff.cgg.teichmaa.cuda.CudaLauncher;
+import cz.cuni.mff.cgg.teichmaa.cuda.MandelbrotKernel;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;

@@ -1,8 +1,4 @@
-package cz.cuni.mff.cgg.teichmaa;
-
-import jcuda.NativePointerObject;
-
-import java.util.List;
+package cz.cuni.mff.cgg.teichmaa.cuda;
 
 public class MandelbrotKernel extends AbstractFractalRenderKernel {
 

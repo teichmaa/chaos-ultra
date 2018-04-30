@@ -9,7 +9,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.embed.swing.SwingNode?>
-<HBox fx:controller="UI.Controller"
+<HBox fx:controller="cz.cuni.mff.cgg.teichmaa.view.Controller"
       xmlns:fx="http://javafx.com/fxml">
         <ImageView>
             <WritableImage fx:id="fractalImage" width="1280" height="1024">
