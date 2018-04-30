@@ -14,9 +14,9 @@ import static jcuda.driver.JCudaDriver.cuModuleLoad;
 /**
  * Represents struct of JCuda classes, together representing a CUDA kernel used by CudaLauncher class.
  * The Main function must satisfy this condition:
- * first parameter is 2D array of integers, used as output ({@code int** outputData})
- * second parameter is array's pitch ({@code (long pitch})
- * those parameters must NOT be returned by {@code getKernelParams} method
+ * * First parameter is 2D array of integers, used as output ({@code int** outputData}).
+ * * Second parameter is array's pitch ({@code (long pitch}).
+ * Those parameters will be post-defined by the caller of {@code getKernelParams} method.
  */
 public abstract class AbstractFractalRenderKernel {
 
@@ -42,28 +42,27 @@ public abstract class AbstractFractalRenderKernel {
         this.right_top_x = right_top_x;
         this.right_top_y = right_top_y;
 
-        params = new NativePointerObject[PARAM_IDX_DWELL+1];
+        params = new NativePointerObject[PARAM_IDX_DWELL + 1];
 
-        params[ PARAM_IDX_WIDTH] = Pointer.to(new int[]{width});
-        params[ PARAM_IDX_HEIGHT] = Pointer.to(new int[]{height});
-        params[ PARAM_IDX_LEFT_BOTTOM_X] = Pointer.to(new float[]{left_bottom_x});
-        params[ PARAM_IDX_LEFT_BOTTOM_Y] = Pointer.to(new float[]{left_bottom_y});
-        params[ PARAM_IDX_RIGHT_TOP_X] = Pointer.to(new float[]{right_top_x});
-        params[ PARAM_IDX_RIGHT_TOP_Y] = Pointer.to(new float[]{right_top_y});
-        params[ PARAM_IDX_DWELL] = Pointer.to(new int[]{dwell});
+        params[PARAM_IDX_WIDTH] = Pointer.to(new int[]{width});
+        params[PARAM_IDX_HEIGHT] = Pointer.to(new int[]{height});
+        params[PARAM_IDX_LEFT_BOTTOM_X] = Pointer.to(new float[]{left_bottom_x});
+        params[PARAM_IDX_LEFT_BOTTOM_Y] = Pointer.to(new float[]{left_bottom_y});
+        params[PARAM_IDX_RIGHT_TOP_X] = Pointer.to(new float[]{right_top_x});
+        params[PARAM_IDX_RIGHT_TOP_Y] = Pointer.to(new float[]{right_top_y});
+        params[PARAM_IDX_DWELL] = Pointer.to(new int[]{dwell});
     }
 
     /**
-     *
      * @param p kernel parameter to add
      * @return index of the added param
      */
-    protected short addParam(NativePointerObject p){
+    protected short addParam(NativePointerObject p) {
         NativePointerObject[] newParams = new NativePointerObject[params.length + 1];
         for (int i = 0; i < params.length; i++) {
             newParams[i] = params[i];
         }
-        int idx = newParams.length-1;
+        int idx = newParams.length - 1;
         newParams[idx] = p;
         params = newParams;
         return (short) idx;
@@ -177,7 +176,9 @@ public abstract class AbstractFractalRenderKernel {
     /**
      * @return Array of Kernel's specific parameters. First two fields are reserved for deviceOut and pitch parameters.
      */
-    public NativePointerObject[] getKernelParams(){return params;}
+    public NativePointerObject[] getKernelParams() {
+        return params;
+    }
 
     @Override
     public String toString() {
