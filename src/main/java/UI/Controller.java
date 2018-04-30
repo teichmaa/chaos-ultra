@@ -1,8 +1,7 @@
 package UI;
 
-import cz.cuni.mff.cgg.teichmaa.CudaRenderer;
+import cz.cuni.mff.cgg.teichmaa.CudaLauncher;
 import cz.cuni.mff.cgg.teichmaa.MandelbrotKernel;
-import cz.cuni.mff.cgg.teichmaa.RenderingKernel;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -36,20 +35,28 @@ public class Controller implements Initializable {
     @FXML
     private TextField fractal_dwell;
 
-    @Override
-    public void initialize(URL location, ResourceBundle resources) {
-        initInjectBufferInImage();
-        CudaRenderer.init(1280,1024);
-    }
-
-
+    private CudaLauncher fractalRenderer;
     private com.sun.prism.Image prismImg;
     private ByteBuffer theUltimateBuffer;
+    private int width;
+    private int height;
+
+    @Override
+    public void initialize(URL location, ResourceBundle resources) {
+        width = (int) fractalImage.getWidth();
+        height =(int) fractalImage.getHeight();
+
+        initInjectBufferInImage();
+
+        fractalRenderer = new CudaLauncher(new MandelbrotKernel(0, width, height, 0, 0, 0, 0));
+    }
+
 
     private void initInjectBufferInImage() {
 
         try {
-            theUltimateBuffer = ByteBuffer.allocateDirect(1280 * 1024 * 4);
+            int SIZEOF_INT = 4;
+            theUltimateBuffer = ByteBuffer.allocateDirect(width * height * SIZEOF_INT);
 
             // Get the platform image
             Method getWritablePlatformImage = javafx.scene.image.Image.class.getDeclaredMethod("getWritablePlatformImage");
@@ -93,33 +100,27 @@ public class Controller implements Initializable {
         float x = Float.parseFloat(fractal_x.getText());
         float y = Float.parseFloat(fractal_y.getText());
         float zoom = Float.parseFloat(fractal_zoom.getText());
-        int dwell = Integer.parseInt(fractal_dwell.getText());
-
-        int width = 1280;
-        int height = 1024;
-
         float windowHeight = 1;
         float windowWidth = windowHeight / (float) height * width;
-
         float left_bottom_x = x - windowWidth * zoom / 2;
         float left_bottom_y = y - windowHeight * zoom / 2;
         float right_top_x = x + windowWidth * zoom / 2;
         float right_top_y = y + windowHeight * zoom / 2;
 
-        RenderingKernel k = new MandelbrotKernel(dwell, width, height, left_bottom_x, left_bottom_y, right_top_x, right_top_y);
+        int dwell = Integer.parseInt(fractal_dwell.getText());
 
-        CudaRenderer.launch(k, false, theUltimateBuffer);
+        fractalRenderer.getKernel().setDwell(dwell);
+        fractalRenderer.getKernel().setBounds(left_bottom_x, left_bottom_y, right_top_x, right_top_y);
 
-        long kernelFinishedTime = System.currentTimeMillis();
-
-       // showBitmap(fractal, width, height);
+        long renderStartTime = System.currentTimeMillis();
+        fractalRenderer.launchKernel(theUltimateBuffer, true);
         invalidateImage();
 
+//        fractalImage.getPixelWriter().setPixels(0,0,width, height, PixelFormat.getByteBgraPreInstance(), theUltimateBuffer, width * 4);
+
         long endTime = System.currentTimeMillis();
-
-        System.out.println("The computed fractal showed on screen in " + (endTime - kernelFinishedTime) + " ms");
         System.out.println("Whole operation done in " + (endTime - startTime) + " ms");
-
+        System.out.println("Rendering done in       " + (endTime - renderStartTime) + " ms");
 
     }
 

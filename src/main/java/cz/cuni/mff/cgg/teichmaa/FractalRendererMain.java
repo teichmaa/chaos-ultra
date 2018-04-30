@@ -4,6 +4,8 @@ import jcuda.*;
 import jcuda.runtime.*;
 
 public class FractalRendererMain {
+
+    @Deprecated
     public static void main(String args[]) {
 
         int dwell = Integer.parseInt(args[0]);
@@ -24,7 +26,7 @@ public class FractalRendererMain {
         float right_top_y = y + windowHeight * zoom / 2;
 
 
-        RenderingKernel kernel;
+        AbstractFractalRenderKernel kernel;
         if (f.equals("m") || f.equals("mandel") || f.equals("mandelbrot")) {
             kernel = new MandelbrotKernel(dwell, width, height, left_bottom_x, left_bottom_y, right_top_x, right_top_y);
         } else if (f.equals("j") || f.equals("julia")) {
@@ -34,7 +36,9 @@ public class FractalRendererMain {
             return;
         }
 
-        CudaRenderer.launch(kernel, saveImage);
+        CudaLauncher r = new CudaLauncher(kernel);
+//        r.launchKernel();
+
     }
 
     private static void basicTest() {
