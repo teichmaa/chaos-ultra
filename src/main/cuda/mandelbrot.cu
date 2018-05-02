@@ -1,47 +1,51 @@
 const int ARGB_FULL_OPACITY_MASK = 0xff000000;
+//const int RGBA_FULL_OPACITY_MASK = 0x000000ff;
 
 extern "C"
-__global__ void mandelbrot(int** outputData, long pitch,/*int * palette,*/int width, int height, float left_bottom_x, float left_bottom_y, float right_top_x, float right_top_y, int dwell)
+__global__ void mandelbrot(cudaSurfaceObject_t surface, long pitch,/*int * palette,*/int width, int height, float left_bottom_x, float left_bottom_y, float right_top_x, float right_top_y, int dwell, int** outputData)
 {
 
-  const unsigned  int idx_x = blockDim.x * blockIdx.x + threadIdx.x;
-  const unsigned  int idx_y = blockDim.y * blockIdx.y + threadIdx.y;
-  if(idx_x >= width || idx_y >= height) return;
+    const unsigned  int idx_x = blockDim.x * blockIdx.x + threadIdx.x;
+    const unsigned  int idx_y = blockDim.y * blockIdx.y + threadIdx.y;
+    if(idx_x >= width || idx_y >= height) return;
 
-  float zx = 0;
-  float zy = 0;
-  float zx_new;
+    float zx = 0;
+    float zy = 0;
+    float zx_new;
 
-  //We are in a complex plane from (left_bottom) to (right_top), so we scale the pixels to it
-  float cx = left_bottom_x + idx_x / (float) width * (right_top_x - left_bottom_x);
-  float cy = right_top_y - idx_y / (float) height * (right_top_y - left_bottom_y);
+    //We are in a complex plane from (left_bottom) to (right_top), so we scale the pixels to it
+    float cx = left_bottom_x + idx_x / (float) width * (right_top_x - left_bottom_x);
+    float cy = right_top_y - idx_y / (float) height * (right_top_y - left_bottom_y);
 
 
-  int i = 0;
-  while(i < dwell && zx*zx+zy*zy < 4){
-      zx_new = zx*zx-zy*zy + cx;
-      zy = 2*zx*zy + cy; 
-      zx = zx_new;
-      ++i;
-  }
-   int* pResult = (int*)((char*)outputData + idx_y * pitch) + idx_x;
-  * pResult = i | ARGB_FULL_OPACITY_MASK;
+    int i = 0;
+    while(i < dwell && zx*zx+zy*zy < 4){
+        zx_new = zx*zx-zy*zy + cx;
+        zy = 2*zx*zy + cy; 
+        zx = zx_new;
+        ++i;
+    }
+    int* pResult = (int*)((char*)outputData + idx_y * pitch) + idx_x;
+    //* pResult = i | ARGB_FULL_OPACITY_MASK;
+    //*pResult = result;
+    unsigned int result = i << 16 | ARGB_FULL_OPACITY_MASK;
+    surf2Dwrite(result, surface, idx_x * sizeof(unsigned int), idx_y);
 
-/*
-  //debug part:
-  if(idx_x==0 && idx_y ==0){
-    //* pResult = dwell;
-  }
-  if(idx_x==1 && idx_y ==0){
-    * pResult = width;
-  }
-  if(idx_x==2 && idx_y ==0){
-    * pResult = height;
-  }
-  if(idx_x==3 && idx_y ==0){
-    * pResult = 42;
-  }
-  */
+    /*
+    //debug part:
+    if(idx_x==0 && idx_y ==0){
+      //* pResult = dwell;
+    }
+    if(idx_x==1 && idx_y ==0){
+      * pResult = width;
+    }
+    if(idx_x==2 && idx_y ==0){
+      * pResult = height;
+    }
+    if(idx_x==3 && idx_y ==0){
+      * pResult = 42;
+    }
+    */
 }
 
 /*

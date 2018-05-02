@@ -20,7 +20,7 @@ import static jcuda.driver.JCudaDriver.cuModuleLoad;
  */
 public abstract class AbstractFractalRenderKernel {
 
-    public final short PARAM_IDX_DEVICE_OUT = 0;
+    public final short PARAM_IDX_SURFACE = 0;
     public final short PARAM_IDX_PITCH = 1;
     public final short PARAM_IDX_WIDTH = 2;
     public final short PARAM_IDX_HEIGHT = 3;
@@ -29,6 +29,7 @@ public abstract class AbstractFractalRenderKernel {
     public final short PARAM_IDX_RIGHT_TOP_X = 6;
     public final short PARAM_IDX_RIGHT_TOP_Y = 7;
     public final short PARAM_IDX_DWELL = 8;
+    public final short PARAM_IDX_DEVICE_OUT = 9;
 
 
     public AbstractFractalRenderKernel(String ptxFileFullPath, String mainFunctionName, int dwell, int width, int height, float left_bottom_x, float left_bottom_y, float right_top_x, float right_top_y) {
@@ -42,7 +43,7 @@ public abstract class AbstractFractalRenderKernel {
         this.right_top_x = right_top_x;
         this.right_top_y = right_top_y;
 
-        params = new NativePointerObject[PARAM_IDX_DWELL + 1];
+        params = new NativePointerObject[PARAM_IDX_DEVICE_OUT + 1];
 
         params[PARAM_IDX_WIDTH] = Pointer.to(new int[]{width});
         params[PARAM_IDX_HEIGHT] = Pointer.to(new int[]{height});
@@ -71,8 +72,8 @@ public abstract class AbstractFractalRenderKernel {
     private final String ptxFileFullPath;
     private final String mainFunctionName;
     private int dwell;
-    private final int width;
-    private final int height;
+    private int width;
+    private int height;
     private float left_bottom_x;
     private float left_bottom_y;
     private float right_top_x;
@@ -100,6 +101,16 @@ public abstract class AbstractFractalRenderKernel {
 
     public int getHeight() {
         return height;
+    }
+
+    public void setWidth(int width) {
+        this.width = width;
+        params[PARAM_IDX_WIDTH] = Pointer.to(new int[]{width});
+    }
+
+    public void setHeight(int height) {
+        this.height = height;
+        params[PARAM_IDX_WIDTH] = Pointer.to(new int[]{height});
     }
 
     public float getLeft_bottom_x() {

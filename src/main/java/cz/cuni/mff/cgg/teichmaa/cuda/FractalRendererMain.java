@@ -36,7 +36,7 @@ public class FractalRendererMain {
             return;
         }
 
-        CudaLauncher r = new CudaLauncher(kernel);
+        //CudaLauncher r = new CudaLauncher(kernel);
 //        r.launchKernel();
 
     }
