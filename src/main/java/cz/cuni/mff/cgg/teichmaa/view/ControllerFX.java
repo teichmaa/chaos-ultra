@@ -6,9 +6,10 @@ import javafx.embed.swing.SwingNode;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
-import javafx.scene.image.WritableImage;
+import javafx.stage.Screen;
 
 import javax.swing.*;
 import java.awt.*;
@@ -16,11 +17,6 @@ import java.net.URL;
 import java.util.ResourceBundle;
 
 public class ControllerFX implements Initializable {
-
-    private final int FULL_OPACITY_MASK = 0xff000000;
-
-    @FXML
-    WritableImage fractalImage;
 
     @FXML
     SwingNode swingNode;
@@ -43,8 +39,10 @@ public class ControllerFX implements Initializable {
     @Override
     public void initialize(URL location, ResourceBundle resources) {
 
-        width = 1024;
-        height = 1024;
+        Rectangle2D bounds = Screen.getPrimary().getVisualBounds();
+
+        width = 1000;
+        height = 1000;
         GLInit();
 
     }
@@ -64,7 +62,7 @@ public class ControllerFX implements Initializable {
         gljpanel.setPreferredSize(new Dimension(width, height));
         final JPanel panel = new JPanel();
         {
-            panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+            panel.setLayout(new BorderLayout(0,0));
             panel.add(gljpanel);
            // panel.add(new JTextField("rest space"));
         }
@@ -76,21 +74,7 @@ public class ControllerFX implements Initializable {
         float x = Float.parseFloat(fractal_x.getText());
         float y = Float.parseFloat(fractal_y.getText());
         float zoom = Float.parseFloat(fractal_zoom.getText());
-        float windowHeight = 1;
-        float windowWidth = windowHeight / (float) height * width;
-        float left_bottom_x = x - windowWidth * zoom / 2;
-        float left_bottom_y = y - windowHeight * zoom / 2;
-        float right_top_x = x + windowWidth * zoom / 2;
-        float right_top_y = y + windowHeight * zoom / 2;
-
         int dwell = Integer.parseInt(fractal_dwell.getText());
-
-        //todo, tell the info to the kernel:
-
-        //fractalRenderer.getKernel().setDwell(dwell);
-        //fractalRenderer.getKernel().setBounds(left_bottom_x, left_bottom_y, right_top_x, right_top_y);
-
-        //fractalRenderer.launchKernel(theUltimateBuffer, true);
     }
 
     public void sample0Clicked(ActionEvent actionEvent) {

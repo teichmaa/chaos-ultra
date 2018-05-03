@@ -1,13 +1,29 @@
 const int ARGB_FULL_OPACITY_MASK = 0xff000000;
+
 //const int RGBA_FULL_OPACITY_MASK = 0x000000ff;
 
 extern "C"
 __global__ void mandelbrot(cudaSurfaceObject_t surface, long pitch,/*int * palette,*/int width, int height, float left_bottom_x, float left_bottom_y, float right_top_x, float right_top_y, int dwell, int** outputData)
 {
-
-    const unsigned  int idx_x = blockDim.x * blockIdx.x + threadIdx.x;
-    const unsigned  int idx_y = blockDim.y * blockIdx.y + threadIdx.y;
+    const int idx_x = blockDim.x * blockIdx.x + threadIdx.x;
+    const int idx_y = blockDim.y * blockIdx.y + threadIdx.y;
     if(idx_x >= width || idx_y >= height) return;
+    
+    bool tooNear = false;
+    const float FLOAT_MIN = 1E-5;
+    const float FLOAT_MIN_NEG = -FLOAT_MIN;
+    if( (FLOAT_MIN_NEG < left_bottom_x && left_bottom_x < FLOAT_MIN) ||
+        (FLOAT_MIN_NEG < left_bottom_y && left_bottom_y < FLOAT_MIN) ||
+        (FLOAT_MIN_NEG < right_top_x && right_top_x < FLOAT_MIN) ||
+        (FLOAT_MIN_NEG < right_top_y && right_top_y < FLOAT_MIN)
+    ){
+      tooNear = true;
+    }
+
+    //napad: neco jako if too near, pocitej v double
+    //  ale mel by to byt rovnou launcher - ze spusti alternativni kernel
+    //  neco jako if(Kernel.hasSuportHQ) Kernel.getMainFunctionHQ
+    // a taky bych si tyhle poznamky mel psat na jedno centralni misto
 
     float zx = 0;
     float zy = 0;
@@ -17,7 +33,6 @@ __global__ void mandelbrot(cudaSurfaceObject_t surface, long pitch,/*int * palet
     float cx = left_bottom_x + idx_x / (float) width * (right_top_x - left_bottom_x);
     float cy = right_top_y - idx_y / (float) height * (right_top_y - left_bottom_y);
 
-
     int i = 0;
     while(i < dwell && zx*zx+zy*zy < 4){
         zx_new = zx*zx-zy*zy + cx;
@@ -25,10 +40,14 @@ __global__ void mandelbrot(cudaSurfaceObject_t surface, long pitch,/*int * palet
         zx = zx_new;
         ++i;
     }
-    int* pResult = (int*)((char*)outputData + idx_y * pitch) + idx_x;
+  //  int* pResult = (int*)((char*)outputData + idx_y * pitch) + idx_x;
     //* pResult = i | ARGB_FULL_OPACITY_MASK;
     //*pResult = result;
     unsigned int result = i << 16 | ARGB_FULL_OPACITY_MASK;
+
+    if(tooNear)
+      result = 0xff0000ff;
+
     surf2Dwrite(result, surface, idx_x * sizeof(unsigned int), idx_y);
 
     /*

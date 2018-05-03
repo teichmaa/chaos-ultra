@@ -27,7 +27,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     private float x = -0.5f;
     private float y = 0f;
     private float zoom = 2f;
-    private int dwell = 5000;
+    private int dwell = 2500;
 
     public RenderingController(int width, int height, JComponent owner) {
         this.width = width;
@@ -117,7 +117,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
 
         long startTime = System.currentTimeMillis();
 
-        fractalRenderer.launchKernel_RuntimeAPI(true, null);
+        fractalRenderer.launchKernel(false, true);
 
         final GL2 gl = drawable.getGL().getGL2();
         gl.glMatrixMode(GL_MODELVIEW);
