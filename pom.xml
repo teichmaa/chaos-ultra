@@ -17,42 +17,42 @@
         <dependency>
             <groupId>org.jcuda</groupId>
             <artifactId>jcuda</artifactId>
-            <version>0.9.0b</version>
+            <version>0.8.0</version>
         </dependency>
         <dependency>
             <groupId>org.jcuda</groupId>
             <artifactId>jcublas</artifactId>
-            <version>0.9.0b</version>
+            <version>0.8.0</version>
         </dependency>
         <dependency>
             <groupId>org.jcuda</groupId>
             <artifactId>jcufft</artifactId>
-            <version>0.9.0b</version>
+            <version>0.8.0</version>
         </dependency>
         <dependency>
             <groupId>org.jcuda</groupId>
             <artifactId>jcusparse</artifactId>
-            <version>0.9.0b</version>
+            <version>0.8.0</version>
         </dependency>
         <dependency>
             <groupId>org.jcuda</groupId>
             <artifactId>jcusolver</artifactId>
-            <version>0.9.0b</version>
+            <version>0.8.0</version>
         </dependency>
         <dependency>
             <groupId>org.jcuda</groupId>
             <artifactId>jcurand</artifactId>
-            <version>0.9.0b</version>
+            <version>0.8.0</version>
         </dependency>
         <dependency>
             <groupId>org.jcuda</groupId>
             <artifactId>jnvgraph</artifactId>
-            <version>0.9.0b</version>
+            <version>0.8.0</version>
         </dependency>
         <dependency>
             <groupId>org.jcuda</groupId>
             <artifactId>jcudnn</artifactId>
-            <version>0.9.0b</version>
+            <version>0.8.0</version>
         </dependency>
 
         <dependency>
@@ -75,7 +75,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>cz.cuni.mff.cgg.teichmaa.cuda.FractalRendererMain</mainClass>
+                            <mainClass>cz.cuni.mff.cgg.teichmaa.view.Main</mainClass>
                         </manifest>
                     </archive>
                     <descriptorRefs>

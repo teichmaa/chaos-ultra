@@ -5,9 +5,6 @@ import jcuda.Pointer;
 import jcuda.driver.CUfunction;
 import jcuda.driver.CUmodule;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import static jcuda.driver.JCudaDriver.cuModuleGetFunction;
 import static jcuda.driver.JCudaDriver.cuModuleLoad;
 
@@ -30,7 +27,8 @@ public abstract class AbstractFractalRenderKernel {
     public final short PARAM_IDX_RIGHT_TOP_Y = 7;
     public final short PARAM_IDX_DWELL = 8;
     public final short PARAM_IDX_DEVICE_OUT = 9;
-    public final short PARAM_IDX_TEX_PALETTE = 10;
+    public final short PARAM_IDX_SURFACE_PALETTE = 10;
+    public final short PARAM_IDX_PALETTE_LENGTH = 11;
 
 
     public AbstractFractalRenderKernel(String ptxFileFullPath, String mainFunctionName, int dwell, int width, int height, float left_bottom_x, float left_bottom_y, float right_top_x, float right_top_y) {
@@ -44,7 +42,7 @@ public abstract class AbstractFractalRenderKernel {
         this.right_top_x = right_top_x;
         this.right_top_y = right_top_y;
 
-        params = new NativePointerObject[PARAM_IDX_TEX_PALETTE + 1];
+        params = new NativePointerObject[PARAM_IDX_PALETTE_LENGTH + 1];
 
         params[PARAM_IDX_WIDTH] = Pointer.to(new int[]{width});
         params[PARAM_IDX_HEIGHT] = Pointer.to(new int[]{height});

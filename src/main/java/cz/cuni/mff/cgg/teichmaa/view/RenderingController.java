@@ -39,8 +39,8 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     }
 
     public void mouseWheelMoved(MouseWheelEvent e) {
-        float coeff = 0.9f;
-        if(e.getWheelRotation() > 0) coeff = 1.1f;
+        float coeff = 0.95f;
+        if (e.getWheelRotation() > 0) coeff = 2f - coeff;
         zoom *= Math.pow(coeff, Math.abs(e.getPreciseWheelRotation()));
         recomputeKernelParams();
         owner.repaint();
@@ -48,19 +48,20 @@ public class RenderingController extends MouseAdapter implements GLEventListener
 
     private MouseEvent lastMousePosition;
 
-    public void mouseDragged(MouseEvent e){
-        if(lastMousePosition == null){
+    public void mouseDragged(MouseEvent e) {
+        if (lastMousePosition == null) {
             return;
         }
-        float dx = (lastMousePosition.getX() - e.getX()) * zoom / width ;
+        float dx = (lastMousePosition.getX() - e.getX()) * zoom / width;
         float dy = (lastMousePosition.getY() - e.getY()) * zoom / height;
-        x+=dx;
-        y+=dy;
+        x += dx;
+        y += dy;
         recomputeKernelParams();
         lastMousePosition = e;
         owner.repaint();
     }
-    public void mousePressed(MouseEvent e){
+
+    public void mousePressed(MouseEvent e) {
         lastMousePosition = e;
     }
 
@@ -90,16 +91,17 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         outputTextureGLhandle = GLhandles[0];
         paletteTextureGLhandle = GLhandles[1];
         registerOutputTexture(gl);
+        Buffer colorPalette = IntBuffer.wrap(ImageHelpers.createColorPalette());
         gl.glBindTexture(GL_TEXTURE_2D, paletteTextureGLhandle);
         {
-            Buffer colorPalette = IntBuffer.wrap(ImageHelpers.createColorPalette());
             gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             gl.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, colorPalette.limit(), 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, colorPalette);
         }
+        gl.glBindTexture(GL_TEXTURE_2D, 0);
 
         fractalRenderer = new CudaLauncher(new MandelbrotKernel(0, width, height, 0, 0, 0, 0),
-                outputTextureGLhandle, paletteTextureGLhandle);
+                outputTextureGLhandle, paletteTextureGLhandle, colorPalette.limit());
         recomputeKernelParams();
 
     }
@@ -128,7 +130,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
 
         long startTime = System.currentTimeMillis();
 
-        fractalRenderer.launchKernel(false, true);
+        fractalRenderer.launchKernel(false, false);
 
         final GL2 gl = drawable.getGL().getGL2();
         gl.glMatrixMode(GL_MODELVIEW);

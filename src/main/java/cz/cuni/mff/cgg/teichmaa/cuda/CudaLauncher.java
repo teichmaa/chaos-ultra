@@ -10,6 +10,7 @@ import jcuda.runtime.*;
 
 import java.io.Closeable;
 import java.nio.Buffer;
+import java.nio.IntBuffer;
 import java.security.InvalidParameterException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -28,21 +29,22 @@ public class CudaLauncher implements Closeable {
 
     private int blockDimX = 32;
     private int blockDimY = 32;
+    private int paletteLength;
+
+    private CUdeviceptr devout_debug = new CUdeviceptr();
+    private long devout_pitch_debug;
+
 
     private cudaGraphicsResource outputTextureResource = new cudaGraphicsResource();
     private cudaGraphicsResource paletteTextureResource = new cudaGraphicsResource();
     private cudaStream_t defaultStream = new cudaStream_t();
 
-    public CudaLauncher(AbstractFractalRenderKernel kernel, int outputTextureGLhandle, int paletteTextureGLhandle) {
+    public CudaLauncher(AbstractFractalRenderKernel kernel, int outputTextureGLhandle, int paletteTextureGLhandle, int paletteLength) {
         this.kernel = kernel;
+        this.paletteLength = paletteLength;
 
         cudaInit();
-
-        //copy the color palette to device:
-//        int[] palette = createColorPalette();
-//        CUdeviceptr devicePalette = new CUdeviceptr();
-//        cuMemAlloc(devicePalette, palette.length * Sizeof.INT);
-//        cuMemcpyHtoD(devicePalette, Pointer.to(palette),palette.length * Sizeof.INT);
+       // devout_pitch_debug = allocateDeviceOutputBuffer(kernel.getWidth(), kernel.getHeight(), devout_debug);
 
         registerOutputTexture(outputTextureGLhandle);
         jcuda.runtime.JCuda.cudaGraphicsGLRegisterImage(paletteTextureResource, paletteTextureGLhandle, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsReadOnly);
@@ -74,7 +76,6 @@ public class CudaLauncher implements Closeable {
         long pitch;
         long[] pitchptr = new long[1];
 
-        deviceOut = new CUdeviceptr();
         cuMemAllocPitch(deviceOut, pitchptr, (long) width * (long) Sizeof.INT, (long) height, Sizeof.INT);
 
         pitch = pitchptr[0];
@@ -158,7 +159,7 @@ public class CudaLauncher implements Closeable {
         JCuda.cudaGraphicsMapResources(1, new cudaGraphicsResource[]{outputTextureResource}, defaultStream);
         JCuda.cudaGraphicsMapResources(1, new cudaGraphicsResource[]{paletteTextureResource}, defaultStream);
         try {
-            cudaSurfaceObject surfaceOut = new cudaSurfaceObject();
+            cudaSurfaceObject surfaceOutput = new cudaSurfaceObject();
             {
                 cudaResourceDesc surfaceDesc = new cudaResourceDesc();
                 {
@@ -167,32 +168,29 @@ public class CudaLauncher implements Closeable {
                     surfaceDesc.resType = cudaResourceTypeArray;
                     surfaceDesc.array_array = arr;
                 }
-                JCuda.cudaCreateSurfaceObject(surfaceOut, surfaceDesc);
+                JCuda.cudaCreateSurfaceObject(surfaceOutput, surfaceDesc);
             }
-            cudaTextureObject texturePalette = new cudaTextureObject();
+            cudaSurfaceObject surfacePalette = new cudaSurfaceObject();
             {
-                cudaResourceDesc resourceDesc = new cudaResourceDesc();
+                cudaResourceDesc surfaceDesc = new cudaResourceDesc();
                 {
                     cudaArray arr = new cudaArray();
                     JCuda.cudaGraphicsSubResourceGetMappedArray(arr, paletteTextureResource, 0, 0);
-                    resourceDesc.resType = cudaResourceTypeArray;
-                    resourceDesc.array_array = arr;
+                    surfaceDesc.resType = cudaResourceTypeArray;
+                    surfaceDesc.array_array = arr;
                 }
-                cudaTextureDesc textureDesc = new cudaTextureDesc();
-                {
-                    //nothing, use default (0) values
-                }
-                JCuda.cudaCreateTextureObject(texturePalette, resourceDesc, textureDesc, null);
+                JCuda.cudaCreateSurfaceObject(surfacePalette, surfaceDesc);
             }
             try {
                 // Set up the kernel parameters: A pointer to an array
                 // of pointers which point to the actual values.
                 NativePointerObject[] kernelParamsArr = kernel.getKernelParams();
                 {
-                    kernelParamsArr[kernel.PARAM_IDX_SURFACE_OUT] = Pointer.to(surfaceOut);
-                    kernelParamsArr[kernel.PARAM_IDX_TEX_PALETTE] = Pointer.to(texturePalette);
-                    kernelParamsArr[kernel.PARAM_IDX_PITCH] = Pointer.to(new int[]{0}); //pitch is obsollete, no longer used by my kernels
-                    kernelParamsArr[kernel.PARAM_IDX_DEVICE_OUT] = Pointer.to(new int[]{0}); //device out is obsollete, no longer used by my kernels
+                    kernelParamsArr[kernel.PARAM_IDX_SURFACE_OUT] = Pointer.to(surfaceOutput);
+                    kernelParamsArr[kernel.PARAM_IDX_SURFACE_PALETTE] = Pointer.to(surfacePalette);
+                    kernelParamsArr[kernel.PARAM_IDX_PALETTE_LENGTH] = Pointer.to(new int[]{paletteLength}); //device out is obsolete, only used for debugging
+                    kernelParamsArr[kernel.PARAM_IDX_PITCH] = Pointer.to(new long[]{devout_pitch_debug}); //pitch is obsolete, only used for debugging
+                    kernelParamsArr[kernel.PARAM_IDX_DEVICE_OUT] = Pointer.to(devout_debug); //device out is obsolete, only used for debugging
                 }
                 Pointer kernelParams = Pointer.to(kernelParamsArr);
                 CUfunction kernelFunction = kernel.getMainFunction();
@@ -216,9 +214,8 @@ public class CudaLauncher implements Closeable {
                 if (!async)
                     cuCtxSynchronize();
             } finally {
-                JCuda.cudaDestroySurfaceObject(surfaceOut);
-               // JCuda.cudaDestroySurfaceObject(surfacePalette);
-                //JCuda.cudaDestroyTextureObject(texturePalette);
+                JCuda.cudaDestroySurfaceObject(surfaceOutput);
+                JCuda.cudaDestroySurfaceObject(surfacePalette);
             }
         } finally {
             JCuda.cudaGraphicsUnmapResources(1, new cudaGraphicsResource[]{outputTextureResource}, defaultStream);
@@ -229,18 +226,6 @@ public class CudaLauncher implements Closeable {
         if (verbose) {
             System.out.println("Kernel " + kernel.getMainFunctionName() + " launched and finished in " + (end - start) + "ms");
         }
-
-        //coloring:
-//        int[] p = createColorPalette();
-//        for (int i = 0; i < hostOut.length; i++) {
-//            //int pIdx = p.length - (Math.round(hostOut[i] / (float) dwell * p.length));
-//            int pIdx = p.length - hostOut[i] % p.length;
-//            pIdx = Math.max(0, Math.min(p.length - 1, pIdx));
-//            final int FULL_OPACITY_MASK = 0xff000000;
-//            hostOut[i] = p[pIdx] | FULL_OPACITY_MASK;
-//
-//        }
-
     }
 
 

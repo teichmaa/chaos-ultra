@@ -45,16 +45,24 @@ public class ImageHelpers {
     }
 
     public static int fromRGB(int r, int g, int b) {
-        r <<= 16;
-        g <<= 8;
-        int rMask = 0x00ff0000;
-        int gMask = 0x0000ff00;
-        int bMask = 0x000000ff;
-        int aMask = 0xff000000;
-        int a = aMask;
+        int a = 255;
+        //to RGBA
+        int r_shift = 0;
+        int g_shift = 8;
+        int b_shift = 16;
+        int a_shift = 24;
+        r <<= r_shift;
+        g <<= g_shift;
+        b <<= b_shift;
+        a <<= a_shift;
+        int rMask = 0x000000ff << r_shift;
+        int gMask = 0x000000ff << g_shift;
+        int bMask = 0x000000ff << b_shift;
+        int aMask = 0x000000ff << a_shift;
         r &= rMask;
         g &= gMask;
         b &= bMask;
+        a &= aMask;
         return r | g | b | a;
     }
 

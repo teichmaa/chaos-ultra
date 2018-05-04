@@ -23,13 +23,13 @@
 	.param .f32 mandelbrot_param_7,
 	.param .u32 mandelbrot_param_8,
 	.param .u64 mandelbrot_param_9,
-	.param .u64 mandelbrot_param_10
+	.param .u64 mandelbrot_param_10,
+	.param .u32 mandelbrot_param_11
 )
 {
-	.reg .pred 	%p<20>;
-	.reg .b16 	%rs<7>;
-	.reg .f32 	%f<31>;
-	.reg .b32 	%r<36>;
+	.reg .pred 	%p<7>;
+	.reg .f32 	%f<29>;
+	.reg .b32 	%r<29>;
 	.reg .b64 	%rd<3>;
 
 
@@ -42,44 +42,23 @@
 	ld.param.f32 	%f12, [mandelbrot_param_7];
 	ld.param.u32 	%r8, [mandelbrot_param_8];
 	ld.param.u64 	%rd2, [mandelbrot_param_10];
-	mov.u32 	%r9, %ntid.x;
-	mov.u32 	%r10, %ctaid.x;
-	mov.u32 	%r11, %tid.x;
-	mad.lo.s32 	%r1, %r10, %r9, %r11;
-	mov.u32 	%r12, %ctaid.y;
-	mov.u32 	%r13, %ntid.y;
-	mov.u32 	%r14, %tid.y;
-	mad.lo.s32 	%r2, %r12, %r13, %r14;
+	ld.param.u32 	%r9, [mandelbrot_param_11];
+	mov.u32 	%r10, %ntid.x;
+	mov.u32 	%r11, %ctaid.x;
+	mov.u32 	%r12, %tid.x;
+	mad.lo.s32 	%r1, %r11, %r10, %r12;
+	mov.u32 	%r13, %ctaid.y;
+	mov.u32 	%r14, %ntid.y;
+	mov.u32 	%r15, %tid.y;
+	mad.lo.s32 	%r2, %r13, %r14, %r15;
 	setp.ge.s32	%p1, %r2, %r7;
 	setp.ge.s32	%p2, %r1, %r6;
 	or.pred  	%p3, %p1, %p2;
-	@%p3 bra 	BB0_9;
+	@%p3 bra 	BB0_5;
 
-	setp.gt.f32	%p4, %f9, 0fB727C5AC;
-	setp.lt.f32	%p5, %f9, 0f3727C5AC;
-	and.pred  	%p6, %p4, %p5;
-	mov.u16 	%rs6, 1;
-	@%p6 bra 	BB0_5;
-
-	setp.gt.f32	%p7, %f10, 0fB727C5AC;
-	setp.lt.f32	%p8, %f10, 0f3727C5AC;
-	and.pred  	%p9, %p7, %p8;
-	@%p9 bra 	BB0_5;
-
-	setp.gt.f32	%p10, %f11, 0fB727C5AC;
-	setp.lt.f32	%p11, %f11, 0f3727C5AC;
-	and.pred  	%p12, %p10, %p11;
-	@%p12 bra 	BB0_5;
-
-	setp.gt.f32	%p13, %f12, 0fB727C5AC;
-	setp.lt.f32	%p14, %f12, 0f3727C5AC;
-	and.pred  	%p15, %p13, %p14;
-	selp.u16	%rs6, 1, 0, %p15;
-
-BB0_5:
-	cvt.rn.f32.s32	%f15, %r6;
-	cvt.rn.f32.s32	%f16, %r1;
-	div.rn.f32 	%f17, %f16, %f15;
+	cvt.rn.f32.s32	%f15, %r1;
+	cvt.rn.f32.s32	%f16, %r6;
+	div.rn.f32 	%f17, %f15, %f16;
 	sub.f32 	%f18, %f11, %f9;
 	fma.rn.f32 	%f1, %f18, %f17, %f9;
 	cvt.rn.f32.s32	%f19, %r7;
@@ -88,51 +67,46 @@ BB0_5:
 	sub.f32 	%f22, %f12, %f10;
 	mul.f32 	%f23, %f22, %f21;
 	sub.f32 	%f2, %f12, %f23;
-	mov.u32 	%r34, 0;
-	mov.f32 	%f30, 0f00000000;
-	mov.f32 	%f29, %f30;
-	mov.u32 	%r35, %r34;
-	setp.lt.s32	%p16, %r8, 1;
-	@%p16 bra 	BB0_8;
+	mov.u32 	%r17, 0;
+	mov.f32 	%f28, 0f00000000;
+	mov.f32 	%f27, %f28;
+	mov.u32 	%r28, %r17;
+	setp.lt.s32	%p4, %r8, 1;
+	mov.u32 	%r27, %r17;
+	@%p4 bra 	BB0_4;
 
-BB0_6:
-	mov.u32 	%r33, %r35;
-	mov.u32 	%r34, %r33;
-	mov.f32 	%f4, %f30;
-	mul.f32 	%f5, %f29, %f29;
+BB0_2:
+	mov.u32 	%r26, %r28;
+	mov.u32 	%r3, %r26;
+	mov.f32 	%f4, %f28;
+	mul.f32 	%f5, %f27, %f27;
 	mul.f32 	%f6, %f4, %f4;
-	add.f32 	%f24, %f6, %f5;
-	setp.geu.f32	%p17, %f24, 0f40800000;
-	@%p17 bra 	BB0_8;
+	add.f32 	%f24, %f5, %f6;
+	setp.geu.f32	%p5, %f24, 0f40800000;
+	mov.u32 	%r27, %r3;
+	@%p5 bra 	BB0_4;
 
 	sub.f32 	%f25, %f6, %f5;
-	add.f32 	%f30, %f1, %f25;
+	add.f32 	%f28, %f1, %f25;
 	add.f32 	%f26, %f4, %f4;
-	fma.rn.f32 	%f29, %f26, %f29, %f2;
-	add.s32 	%r35, %r34, 1;
-	setp.lt.s32	%p18, %r35, %r8;
-	mov.u32 	%r34, %r35;
-	@%p18 bra 	BB0_6;
+	fma.rn.f32 	%f27, %f27, %f26, %f2;
+	add.s32 	%r28, %r3, 1;
+	setp.lt.s32	%p6, %r28, %r8;
+	mov.u32 	%r25, %r28;
+	mov.u32 	%r27, %r25;
+	@%p6 bra 	BB0_2;
 
-BB0_8:
-	add.s32 	%r17, %r34, 3050;
-	mul.hi.s32 	%r18, %r17, 715827883;
-	shr.u32 	%r19, %r18, 31;
-	shr.s32 	%r20, %r18, 8;
-	add.s32 	%r21, %r20, %r19;
-	mul.lo.s32 	%r22, %r21, 1536;
-	sub.s32 	%r23, %r17, %r22;
-	mov.u32 	%r24, 1536;
-	sub.s32 	%r25, %r24, %r23;
-	cvt.rn.f32.s32	%f27, %r25;
-	mov.f32 	%f28, 0f00000000;
-	tex.2d.v4.s32.f32	{%r26, %r27, %r28, %r29}, [%rd2, {%f27, %f28}];
-	setp.eq.s16	%p19, %rs6, 0;
-	selp.b32	%r30, %r26, -16776961, %p19;
-	shl.b32 	%r31, %r1, 2;
-	sust.b.2d.b32.trap 	[%rd1, {%r31, %r2}], {%r30};
+BB0_4:
+	mov.u32 	%r5, %r27;
+	add.s32 	%r18, %r9, -1;
+	rem.s32 	%r19, %r5, %r9;
+	sub.s32 	%r20, %r18, %r19;
+	shl.b32 	%r21, %r20, 2;
+	suld.b.2d.b32.trap {%r23}, [%rd2, {%r21, %r17}];
+	shl.b32 	%r24, %r1, 2;
+	sust.b.2d.b32.trap 	[%rd1, {%r24, %r2}], {%r23};
 
-BB0_9:
+BB0_5:
 	ret;
 }
 
