@@ -1,12 +1,12 @@
 package cz.cuni.mff.cgg.teichmaa.cuda;
 
+import cz.cuni.mff.cgg.teichmaa.view.ImageHelpers;
 import jcuda.CudaException;
 import jcuda.NativePointerObject;
 import jcuda.Pointer;
 import jcuda.Sizeof;
 import jcuda.driver.*;
 import jcuda.runtime.*;
-
 
 import java.io.Closeable;
 import java.nio.Buffer;
@@ -16,7 +16,7 @@ import java.util.Date;
 
 import static com.jogamp.opengl.GL.GL_TEXTURE_2D;
 import static jcuda.driver.JCudaDriver.*;
-import static jcuda.driver.JCudaDriver.cuMemFree;
+import static jcuda.runtime.cudaGraphicsRegisterFlags.cudaGraphicsRegisterFlagsReadOnly;
 import static jcuda.runtime.cudaGraphicsRegisterFlags.cudaGraphicsRegisterFlagsWriteDiscard;
 import static jcuda.runtime.cudaResourceType.cudaResourceTypeArray;
 
@@ -29,13 +29,11 @@ public class CudaLauncher implements Closeable {
     private int blockDimX = 32;
     private int blockDimY = 32;
 
-    private CUgraphicsResource viewCudaResource = new CUgraphicsResource();
-    private CUstream defaultStream = new CUstream();
+    private cudaGraphicsResource outputTextureResource = new cudaGraphicsResource();
+    private cudaGraphicsResource paletteTextureResource = new cudaGraphicsResource();
+    private cudaStream_t defaultStream = new cudaStream_t();
 
-    private cudaGraphicsResource r_resource = new cudaGraphicsResource();
-    private cudaStream_t r_defaultStream = new cudaStream_t();
-
-    public CudaLauncher(AbstractFractalRenderKernel kernel, int outputTextureGLhandle) {
+    public CudaLauncher(AbstractFractalRenderKernel kernel, int outputTextureGLhandle, int paletteTextureGLhandle) {
         this.kernel = kernel;
 
         cudaInit();
@@ -47,15 +45,16 @@ public class CudaLauncher implements Closeable {
 //        cuMemcpyHtoD(devicePalette, Pointer.to(palette),palette.length * Sizeof.INT);
 
         registerOutputTexture(outputTextureGLhandle);
+        jcuda.runtime.JCuda.cudaGraphicsGLRegisterImage(paletteTextureResource, paletteTextureGLhandle, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsReadOnly);
     }
 
-    public void registerOutputTexture(int textureGLhandle) {
+    public void registerOutputTexture(int outputTextureGLhandle) {
         //documentation: http://www.jcuda.org/jcuda/doc/jcuda/runtime/JCuda.html#cudaGraphicsGLRegisterImage(jcuda.runtime.cudaGraphicsResource,%20int,%20int,%20int)
-        jcuda.runtime.JCuda.cudaGraphicsGLRegisterImage(r_resource, textureGLhandle, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsWriteDiscard);
+        jcuda.runtime.JCuda.cudaGraphicsGLRegisterImage(outputTextureResource, outputTextureGLhandle, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsWriteDiscard);
     }
 
     public void unregisterOutputTexture() {
-        jcuda.runtime.JCuda.cudaGraphicsUnregisterResource(r_resource);
+        jcuda.runtime.JCuda.cudaGraphicsUnregisterResource(outputTextureResource);
     }
 
     /**
@@ -141,33 +140,57 @@ public class CudaLauncher implements Closeable {
         return kernel;
     }
 
+    private boolean already = false;
+
     /**
-     * @param verbose      whether to print out how long the rendering has taken
-     * @param async when true, the function will return just after launching the kernel and will not wait for it to end. The bitmaps will still be synchronized.
+     * @param verbose whether to print out how long the rendering has taken
+     * @param async   when true, the function will return just after launching the kernel and will not wait for it to end. The bitmaps will still be synchronized.
      */
     public void launchKernel(boolean verbose, boolean async) {
         long start = System.currentTimeMillis();
 
+        //if(already) return;
+        //already = true;
+
         int width = kernel.getWidth();
         int height = kernel.getHeight();
 
-        jcuda.runtime.JCuda.cudaGraphicsMapResources(1, new cudaGraphicsResource[]{r_resource}, r_defaultStream);
+        JCuda.cudaGraphicsMapResources(1, new cudaGraphicsResource[]{outputTextureResource}, defaultStream);
+        JCuda.cudaGraphicsMapResources(1, new cudaGraphicsResource[]{paletteTextureResource}, defaultStream);
         try {
-            jcuda.runtime.cudaArray arr = new cudaArray();
-            jcuda.runtime.JCuda.cudaGraphicsSubResourceGetMappedArray(arr, r_resource, 0, 0);
-            jcuda.runtime.cudaResourceDesc desc = new cudaResourceDesc();
+            cudaSurfaceObject surfaceOut = new cudaSurfaceObject();
             {
-                desc.resType = cudaResourceTypeArray;
-                desc.array_array = arr;
+                cudaResourceDesc surfaceDesc = new cudaResourceDesc();
+                {
+                    cudaArray arr = new cudaArray();
+                    JCuda.cudaGraphicsSubResourceGetMappedArray(arr, outputTextureResource, 0, 0);
+                    surfaceDesc.resType = cudaResourceTypeArray;
+                    surfaceDesc.array_array = arr;
+                }
+                JCuda.cudaCreateSurfaceObject(surfaceOut, surfaceDesc);
             }
-            jcuda.runtime.cudaSurfaceObject surface = new cudaSurfaceObject();
-            jcuda.runtime.JCuda.cudaCreateSurfaceObject(surface, desc);
+            cudaTextureObject texturePalette = new cudaTextureObject();
+            {
+                cudaResourceDesc resourceDesc = new cudaResourceDesc();
+                {
+                    cudaArray arr = new cudaArray();
+                    JCuda.cudaGraphicsSubResourceGetMappedArray(arr, paletteTextureResource, 0, 0);
+                    resourceDesc.resType = cudaResourceTypeArray;
+                    resourceDesc.array_array = arr;
+                }
+                cudaTextureDesc textureDesc = new cudaTextureDesc();
+                {
+                    //nothing, use default (0) values
+                }
+                JCuda.cudaCreateTextureObject(texturePalette, resourceDesc, textureDesc, null);
+            }
             try {
                 // Set up the kernel parameters: A pointer to an array
                 // of pointers which point to the actual values.
                 NativePointerObject[] kernelParamsArr = kernel.getKernelParams();
                 {
-                    kernelParamsArr[kernel.PARAM_IDX_SURFACE] = Pointer.to(surface);
+                    kernelParamsArr[kernel.PARAM_IDX_SURFACE_OUT] = Pointer.to(surfaceOut);
+                    kernelParamsArr[kernel.PARAM_IDX_TEX_PALETTE] = Pointer.to(texturePalette);
                     kernelParamsArr[kernel.PARAM_IDX_PITCH] = Pointer.to(new int[]{0}); //pitch is obsollete, no longer used by my kernels
                     kernelParamsArr[kernel.PARAM_IDX_DEVICE_OUT] = Pointer.to(new int[]{0}); //device out is obsollete, no longer used by my kernels
                 }
@@ -176,7 +199,7 @@ public class CudaLauncher implements Closeable {
                 int gridDimX = width / blockDimX;
                 int gridDimY = height / blockDimY;
 
-                if(gridDimX <= 0 || gridDimY <= 0) return;
+                if (gridDimX <= 0 || gridDimY <= 0) return;
                 if (gridDimX > CUDA_MAX_GRID_DIM) {
                     throw new CudaRendererException("Unsupported input parameter: width must be smaller than " + CUDA_MAX_GRID_DIM * blockDimX);
                 }
@@ -190,13 +213,16 @@ public class CudaLauncher implements Closeable {
                         0, null,           // Shared memory size and defaultStream
                         kernelParams, null // Kernel- and extra parameters
                 );
-                if(!async)
+                if (!async)
                     cuCtxSynchronize();
-            } finally{
-                jcuda.runtime.JCuda.cudaDestroySurfaceObject(surface);
+            } finally {
+                JCuda.cudaDestroySurfaceObject(surfaceOut);
+               // JCuda.cudaDestroySurfaceObject(surfacePalette);
+                //JCuda.cudaDestroyTextureObject(texturePalette);
             }
         } finally {
-            jcuda.runtime.JCuda.cudaGraphicsUnmapResources(1, new cudaGraphicsResource[]{r_resource}, r_defaultStream);
+            JCuda.cudaGraphicsUnmapResources(1, new cudaGraphicsResource[]{outputTextureResource}, defaultStream);
+            JCuda.cudaGraphicsUnmapResources(1, new cudaGraphicsResource[]{paletteTextureResource}, defaultStream);
         }
 
         long end = System.currentTimeMillis();
@@ -204,7 +230,7 @@ public class CudaLauncher implements Closeable {
             System.out.println("Kernel " + kernel.getMainFunctionName() + " launched and finished in " + (end - start) + "ms");
         }
 
-            //coloring:
+        //coloring:
 //        int[] p = createColorPalette();
 //        for (int i = 0; i < hostOut.length; i++) {
 //            //int pIdx = p.length - (Math.round(hostOut[i] / (float) dwell * p.length));

@@ -8,16 +8,19 @@ import javax.swing.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
+import java.nio.Buffer;
+import java.nio.IntBuffer;
 
 import static com.jogamp.opengl.GL.*;
 import static com.jogamp.opengl.GL.GL_TEXTURE_2D;
-import static com.jogamp.opengl.GL2ES3.GL_QUADS;
+import static com.jogamp.opengl.GL2.GL_QUADS;
 import static com.jogamp.opengl.fixedfunc.GLMatrixFunc.GL_MODELVIEW;
 
 public class RenderingController extends MouseAdapter implements GLEventListener {
     //TODO bacha, tenhle listener běží v jiném vlákně než JavaFX - bacha na sdílené proměnné (a to samé tranzitivně pro CudaLauncher)
 
     private int outputTextureGLhandle;
+    private int paletteTextureGLhandle;
     private CudaLauncher fractalRenderer;
     private JComponent owner;
 
@@ -27,7 +30,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     private float x = -0.5f;
     private float y = 0f;
     private float zoom = 2f;
-    private int dwell = 2500;
+    private int dwell = 5000;
 
     public RenderingController(int width, int height, JComponent owner) {
         this.width = width;
@@ -82,18 +85,26 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         gl.glLoadIdentity();
         gl.glEnable(GL_TEXTURE_2D);
 
-        int[] textureGLhandlePtr = new int[1];
-        gl.glGenTextures(1, textureGLhandlePtr, 0);
-        outputTextureGLhandle = textureGLhandlePtr[0];
-        registerTexture(gl);
+        int[] GLhandles = new int[2];
+        gl.glGenTextures(GLhandles.length, GLhandles, 0);
+        outputTextureGLhandle = GLhandles[0];
+        paletteTextureGLhandle = GLhandles[1];
+        registerOutputTexture(gl);
+        gl.glBindTexture(GL_TEXTURE_2D, paletteTextureGLhandle);
+        {
+            Buffer colorPalette = IntBuffer.wrap(ImageHelpers.createColorPalette());
+            gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            gl.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, colorPalette.limit(), 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, colorPalette);
+        }
 
         fractalRenderer = new CudaLauncher(new MandelbrotKernel(0, width, height, 0, 0, 0, 0),
-                outputTextureGLhandle);
+                outputTextureGLhandle, paletteTextureGLhandle);
         recomputeKernelParams();
 
     }
 
-    private void registerTexture(GL gl) {
+    private void registerOutputTexture(GL gl) {
         //the following code is inspired by https://stackoverflow.com/questions/19244191/cuda-opengl-interop-draw-to-opengl-texture-with-cuda
 
         gl.glBindTexture(GL_TEXTURE_2D, outputTextureGLhandle);
@@ -101,7 +112,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
             gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             gl.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, null);
-            //glTexImage2D params: target, level, internalFormat, width, height, border, format, type, data (may be null)
+            //glTexImage2D params: target, level, internalFormat, width, height, border (must 0), format, type, data (may be null)
             //documentation: https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glTexImage2D.xhtml
         }
         gl.glBindTexture(GL_TEXTURE_2D, 0);
@@ -156,7 +167,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         fractalRenderer.getKernel().setHeight(height);
 
         fractalRenderer.unregisterOutputTexture();
-        registerTexture(gl); //using the new dimensions
+        registerOutputTexture(gl); //using the new dimensions
         fractalRenderer.registerOutputTexture(outputTextureGLhandle);
 
     }

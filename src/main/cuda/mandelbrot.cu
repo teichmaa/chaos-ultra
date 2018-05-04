@@ -1,9 +1,9 @@
-const int ARGB_FULL_OPACITY_MASK = 0xff000000;
-
+//const int ARGB_FULL_OPACITY_MASK = 0xff000000;
 //const int RGBA_FULL_OPACITY_MASK = 0x000000ff;
 
 extern "C"
-__global__ void mandelbrot(cudaSurfaceObject_t surface, long pitch,/*int * palette,*/int width, int height, float left_bottom_x, float left_bottom_y, float right_top_x, float right_top_y, int dwell, int** outputData)
+__global__ void mandelbrot(cudaSurfaceObject_t surface, long pitch,/*int * palette,*/int width, int height, float left_bottom_x, float left_bottom_y, float right_top_x, float right_top_y, int dwell, int** outputData, cudaTextureObject_t colorPalette)
+// todo: usporadat poradi paramateru, cudaXXObjects predavat pointrem, ne kopirovanim (tohle rozmyslet, mozna je to takhle dobre)
 {
     const int idx_x = blockDim.x * blockIdx.x + threadIdx.x;
     const int idx_y = blockDim.y * blockIdx.y + threadIdx.y;
@@ -43,7 +43,10 @@ __global__ void mandelbrot(cudaSurfaceObject_t surface, long pitch,/*int * palet
   //  int* pResult = (int*)((char*)outputData + idx_y * pitch) + idx_x;
     //* pResult = i | ARGB_FULL_OPACITY_MASK;
     //*pResult = result;
-    unsigned int result = i << 16 | ARGB_FULL_OPACITY_MASK;
+    int paletteLength = 1536; //1536 is colorPalette length, TODO transform to parameter
+    int paletteIdx = paletteLength - (i+3050) % paletteLength;
+    //paletteIdx = Math.max(0, Math.min(paletteLength - paletteIdx));
+    unsigned int result = tex2D<int>(colorPalette, paletteIdx ,0); 
 
     if(tooNear)
       result = 0xff0000ff;

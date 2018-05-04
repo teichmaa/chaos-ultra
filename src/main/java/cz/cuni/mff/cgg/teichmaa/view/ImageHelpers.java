@@ -1,4 +1,4 @@
-package cz.cuni.mff.cgg.teichmaa.cuda;
+package cz.cuni.mff.cgg.teichmaa.view;
 
 import javax.imageio.ImageIO;
 import java.awt.image.*;
@@ -47,14 +47,17 @@ public class ImageHelpers {
     public static int fromRGB(int r, int g, int b) {
         r <<= 16;
         g <<= 8;
-        int rMask = 0xff0000;
-        int gMask = 0x00ff00;
-        int bMask = 0x0000ff;
+        int rMask = 0x00ff0000;
+        int gMask = 0x0000ff00;
+        int bMask = 0x000000ff;
+        int aMask = 0xff000000;
+        int a = aMask;
         r &= rMask;
         g &= gMask;
         b &= bMask;
-        return r | g | b;
+        return r | g | b | a;
     }
+
 
     public static int[][] arrayFlatTo2D(int[] a, int width, int height) {
         int result2D[][] = new int[width][height];
