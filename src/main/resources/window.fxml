@@ -64,6 +64,9 @@
         <Button text="sample1" onAction="#sample1Clicked"/>
         <Button text="sample2" onAction="#sample2Clicked"/>
         <Button text="sample3" onAction="#sample3Clicked"/>
+        <Button text="getKernel" onAction="#getKernelClicked"/>
+        <Button text="SS high" onAction="#SShighClicked"/>
+        <Button text="SS normal" onAction="#SSnormal3Clicked"/>
 
     </VBox>
 

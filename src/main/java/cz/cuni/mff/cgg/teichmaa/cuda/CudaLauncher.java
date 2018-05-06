@@ -6,17 +6,19 @@ import jcuda.NativePointerObject;
 import jcuda.Pointer;
 import jcuda.Sizeof;
 import jcuda.driver.*;
+import jcuda.jcurand.JCurand;
+import jcuda.jcurand.curandGenerator;
 import jcuda.runtime.*;
 
 import java.io.Closeable;
 import java.nio.Buffer;
-import java.nio.IntBuffer;
 import java.security.InvalidParameterException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
 import static com.jogamp.opengl.GL.GL_TEXTURE_2D;
 import static jcuda.driver.JCudaDriver.*;
+import static jcuda.jcurand.curandRngType.CURAND_RNG_PSEUDO_DEFAULT;
 import static jcuda.runtime.cudaGraphicsRegisterFlags.cudaGraphicsRegisterFlagsReadOnly;
 import static jcuda.runtime.cudaGraphicsRegisterFlags.cudaGraphicsRegisterFlagsWriteDiscard;
 import static jcuda.runtime.cudaResourceType.cudaResourceTypeArray;
@@ -24,6 +26,7 @@ import static jcuda.runtime.cudaResourceType.cudaResourceTypeArray;
 public class CudaLauncher implements Closeable {
 
     public static final int CUDA_MAX_GRID_DIM = 65536 - 1;
+    private static final Pointer NULLPTR = Pointer.to(new byte[0]);
 
     private AbstractFractalRenderKernel kernel;
 
@@ -33,7 +36,7 @@ public class CudaLauncher implements Closeable {
 
     private CUdeviceptr devout_debug = new CUdeviceptr();
     private long devout_pitch_debug;
-
+    private CUdeviceptr randomValues;
 
     private cudaGraphicsResource outputTextureResource = new cudaGraphicsResource();
     private cudaGraphicsResource paletteTextureResource = new cudaGraphicsResource();
@@ -44,10 +47,73 @@ public class CudaLauncher implements Closeable {
         this.paletteLength = paletteLength;
 
         cudaInit();
-       // devout_pitch_debug = allocateDeviceOutputBuffer(kernel.getWidth(), kernel.getHeight(), devout_debug);
+        // devout_pitch_debug = allocateDevice2DBuffer(kernel.getWidth(), kernel.getHeight(), devout_debug);
 
         registerOutputTexture(outputTextureGLhandle);
         jcuda.runtime.JCuda.cudaGraphicsGLRegisterImage(paletteTextureResource, paletteTextureGLhandle, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsReadOnly);
+
+        //kernelInit();
+
+        kernel.setSuperSamplingLevel(128);
+        randomSamplesInit();
+        kernel.setSuperSamplingLevel(16);
+        kernel.setDwell(500);
+
+    }
+
+    private void randomSamplesInit(){
+        //todo tohle nefunguje pri resize
+        //  > proste CudaLauncheru pridej bud metodu resize nebo observer na kernel width-has-changed (setwh spoj do setDimensions > jediny callback)
+        int w = kernel.getWidth();
+        int h = kernel.getHeight();
+        int ssl = kernel.getSuperSamplingLevel();
+
+        int sampleCount = w* h *ssl;
+
+        curandGenerator gen = new curandGenerator();
+        //JCurand.curandCreateGenerator(gen, CURAND_RNG_QUASI_SOBOL32);
+        JCurand.curandCreateGenerator(gen, CURAND_RNG_PSEUDO_DEFAULT);
+        //JCurand.curandSetQuasiRandomGeneratorDimensions(gen, 2);
+        randomValues = new CUdeviceptr();
+        JCuda.cudaMalloc(randomValues, sampleCount * Sizeof.FLOAT);
+        /*
+        //crazy slow and hacky solution, which yet might give desired results
+        for (int i = 0; i < w; i++) {
+            for (int j = 0; j < h; j++) {
+                PointerHelpers.nativePointerArtihmeticHack(randomValues, ssl * Sizeof.FLOAT);
+                JCurand.curandGenerateUniform(gen, randomValues, ssl);
+            }
+        }
+        PointerHelpers.nativePointerArtihmeticHack(randomValues, - w * h * ssl * Sizeof.FLOAT);*/
+        JCurand.curandGenerateUniform(gen, randomValues, sampleCount);
+
+
+        /*ByteBuffer testOut = ByteBuffer.allocateDirect(sampleCount * Sizeof.FLOAT);
+        JCuda.cudaMemcpy(Pointer.to(testOut), randomValues, sampleCount * Sizeof.FLOAT, cudaMemcpyKind.cudaMemcpyDeviceToHost);
+        float[] floats = new float[sampleCount];
+        for (int i = 0; i < floats.length; i++) {
+            floats[i] = (float) testOut.getInt();
+        }
+        for (int i = 0; i < 100; i++) {
+            System.out.println(floats[i]);
+        }*/
+        int a = 0;
+    }
+
+
+    private void kernelInit() {
+        if (!kernel.isInitiable())
+            return;
+
+        Pointer kernelParams = Pointer.to(NULLPTR);
+        cuLaunchKernel(kernel.getInitFunction(),
+                1, 1, 1,
+                1, 1, 1,
+                0, null,
+                kernelParams, null
+        );
+        cuCtxSynchronize();
+
     }
 
     public void registerOutputTexture(int outputTextureGLhandle) {
@@ -65,10 +131,10 @@ public class CudaLauncher implements Closeable {
      *
      * @param width
      * @param height
-     * @param deviceOut output parameter, will contain pointer to allocated memory
+     * @param target output parameter, will contain pointer to allocated memory
      * @return pitch
      */
-    private long allocateDeviceOutputBuffer(int width, int height, CUdeviceptr deviceOut) {
+    private long allocateDevice2DBuffer(int width, int height, CUdeviceptr target) {
 
         /**
          * Pitch = actual row length (in bytes) as aligned by CUDA. pitch >= width * sizeof element.
@@ -76,7 +142,7 @@ public class CudaLauncher implements Closeable {
         long pitch;
         long[] pitchptr = new long[1];
 
-        cuMemAllocPitch(deviceOut, pitchptr, (long) width * (long) Sizeof.INT, (long) height, Sizeof.INT);
+        cuMemAllocPitch(target, pitchptr, (long) width * (long) Sizeof.INT, (long) height, Sizeof.INT);
 
         pitch = pitchptr[0];
         if (pitch <= 0) {
@@ -90,7 +156,7 @@ public class CudaLauncher implements Closeable {
         return pitch;
     }
 
-    private void copyFromDevToHost(Buffer hostOut, int width, int height, long pitch, CUdeviceptr deviceOut) {
+    private void copy2DFromDevToHost(Buffer hostOut, int width, int height, long pitch, CUdeviceptr deviceOut) {
         if (hostOut.capacity() < width * height * 4)
             throw new InvalidParameterException("Output buffer must be at least width * height * 4 bytes long. Buffer capacity: " + hostOut.capacity());
         //copy kernel result to host memory:
@@ -188,6 +254,7 @@ public class CudaLauncher implements Closeable {
                 {
                     kernelParamsArr[kernel.PARAM_IDX_SURFACE_OUT] = Pointer.to(surfaceOutput);
                     kernelParamsArr[kernel.PARAM_IDX_SURFACE_PALETTE] = Pointer.to(surfacePalette);
+                    kernelParamsArr[kernel.PARAM_IDX_RANDOM_SAMPLES] = Pointer.to(randomValues);
                     kernelParamsArr[kernel.PARAM_IDX_PALETTE_LENGTH] = Pointer.to(new int[]{paletteLength}); //device out is obsolete, only used for debugging
                     kernelParamsArr[kernel.PARAM_IDX_PITCH] = Pointer.to(new long[]{devout_pitch_debug}); //pitch is obsolete, only used for debugging
                     kernelParamsArr[kernel.PARAM_IDX_DEVICE_OUT] = Pointer.to(devout_debug); //device out is obsolete, only used for debugging
@@ -257,5 +324,6 @@ public class CudaLauncher implements Closeable {
     public void close() {
         //cuMemFree(deviceOut);
         //      cuMemFree(devicePalette);
+        JCuda.cudaFree(randomValues);
     }
 }

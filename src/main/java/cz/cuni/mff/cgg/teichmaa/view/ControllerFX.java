@@ -2,6 +2,7 @@ package cz.cuni.mff.cgg.teichmaa.view;
 
 import com.jogamp.opengl.*;
 import com.jogamp.opengl.awt.GLJPanel;
+import cz.cuni.mff.cgg.teichmaa.cuda.AbstractFractalRenderKernel;
 import javafx.embed.swing.SwingNode;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -23,6 +24,9 @@ public class ControllerFX implements Initializable {
 
     @FXML
     Button renderButton;
+
+    private AbstractFractalRenderKernel kernel_unsafe;
+    private RenderingController renderingController;
 
     @FXML
     private TextField fractal_x;
@@ -53,6 +57,7 @@ public class ControllerFX implements Initializable {
 
         final GLJPanel gljpanel = new GLJPanel(capabilities);
         RenderingController controller = new RenderingController(width, height, gljpanel);
+        this.renderingController = controller;
 
         gljpanel.addGLEventListener(controller);
         gljpanel.addMouseWheelListener(controller);
@@ -103,5 +108,19 @@ public class ControllerFX implements Initializable {
         fractal_y.setText("0.266");
         fractal_zoom.setText("0.032");
         renderClicked(actionEvent);
+    }
+
+    private int ssOldNormalLevel = 2;
+
+    public void SSnormal3Clicked(ActionEvent actionEvent) {
+        kernel_unsafe.setSuperSamplingLevel(ssOldNormalLevel);
+    }
+    public void getKernelClicked(ActionEvent actionEvent) {
+        kernel_unsafe = renderingController.getKernel_unsafe(); //this is unsafe because Kernel is managed from Swing thread and this is FX thread
+    }
+
+    public void SShighClicked(ActionEvent actionEvent) {
+        ssOldNormalLevel = kernel_unsafe.getSuperSamplingLevel();
+        kernel_unsafe.setSuperSamplingLevel(64);
     }
 }

@@ -29,11 +29,29 @@ public abstract class AbstractFractalRenderKernel {
     public final short PARAM_IDX_DEVICE_OUT = 9;
     public final short PARAM_IDX_SURFACE_PALETTE = 10;
     public final short PARAM_IDX_PALETTE_LENGTH = 11;
+    public final short PARAM_IDX_RANDOM_SAMPLES = 12;
+    public final short PARAM_IDX_SUPER_SAMPLING_LEVEL = 13;
 
 
-    public AbstractFractalRenderKernel(String ptxFileFullPath, String mainFunctionName, int dwell, int width, int height, float left_bottom_x, float left_bottom_y, float right_top_x, float right_top_y) {
+    /**
+     *
+     * @param ptxFileFullPath
+     * @param mainFunctionName
+     * @param initFunctionName name of the kernel function to be called before start. If null or empty, no function will be called to init.
+     * @param dwell
+     * @param width
+     * @param height
+     * @param left_bottom_x
+     * @param left_bottom_y
+     * @param right_top_x
+     * @param right_top_y
+     */
+    public AbstractFractalRenderKernel(String ptxFileFullPath, String mainFunctionName, String initFunctionName, int dwell, int width, int height, float left_bottom_x, float left_bottom_y, float right_top_x, float right_top_y) {
         this.ptxFileFullPath = ptxFileFullPath;
         this.mainFunctionName = mainFunctionName;
+        this.initFunctionName = initFunctionName;
+        hasInitFunction = !(initFunctionName == null || initFunctionName.isEmpty());
+        if(!hasInitFunction) initFunctionName = "";
         this.dwell = dwell;
         this.width = width;
         this.height = height;
@@ -41,8 +59,9 @@ public abstract class AbstractFractalRenderKernel {
         this.left_bottom_y = left_bottom_y;
         this.right_top_x = right_top_x;
         this.right_top_y = right_top_y;
+        superSamplingLevel = 1;
 
-        params = new NativePointerObject[PARAM_IDX_PALETTE_LENGTH + 1];
+        params = new NativePointerObject[PARAM_IDX_SUPER_SAMPLING_LEVEL + 1];
 
         params[PARAM_IDX_WIDTH] = Pointer.to(new int[]{width});
         params[PARAM_IDX_HEIGHT] = Pointer.to(new int[]{height});
@@ -51,6 +70,7 @@ public abstract class AbstractFractalRenderKernel {
         params[PARAM_IDX_RIGHT_TOP_X] = Pointer.to(new float[]{right_top_x});
         params[PARAM_IDX_RIGHT_TOP_Y] = Pointer.to(new float[]{right_top_y});
         params[PARAM_IDX_DWELL] = Pointer.to(new int[]{dwell});
+        params[PARAM_IDX_SUPER_SAMPLING_LEVEL] = Pointer.to(new int[]{superSamplingLevel});
     }
 
     /**
@@ -70,6 +90,8 @@ public abstract class AbstractFractalRenderKernel {
 
     private final String ptxFileFullPath;
     private final String mainFunctionName;
+    private final String initFunctionName;
+    private final boolean hasInitFunction;
     private int dwell;
     private int width;
     private int height;
@@ -77,16 +99,34 @@ public abstract class AbstractFractalRenderKernel {
     private float left_bottom_y;
     private float right_top_x;
     private float right_top_y;
+    private int superSamplingLevel;
     private CUmodule module;
     private CUfunction mainFunction;
+    private CUfunction initFunction;
     private NativePointerObject[] params;
 
     public String getPtxFileFullPath() {
         return ptxFileFullPath;
     }
 
+    public String getInitFunctionName() {
+        return initFunctionName;
+    }
+
+    public boolean isInitiable() {
+        return hasInitFunction;
+    }
+
     public int getDwell() {
         return dwell;
+    }
+
+    public void setSuperSamplingLevel(int superSamplingLevel) {
+        this.superSamplingLevel = superSamplingLevel;
+        params[PARAM_IDX_SUPER_SAMPLING_LEVEL] = Pointer.to(new int[]{superSamplingLevel});
+    }
+    public int getSuperSamplingLevel() {
+        return superSamplingLevel;
     }
 
     public void setDwell(int dwell) {
@@ -176,6 +216,15 @@ public abstract class AbstractFractalRenderKernel {
             cuModuleGetFunction(mainFunction, getModule(), mainFunctionName);
         }
         return mainFunction;
+    }
+    public CUfunction getInitFunction() {
+        if(!hasInitFunction)
+            throw new UnsupportedOperationException("cannot call getInitFunction on a kernel without init function");
+        if (initFunction == null) {
+            initFunction = new CUfunction();
+            cuModuleGetFunction(initFunction, getModule(), initFunctionName);
+        }
+        return initFunction;
     }
 
 

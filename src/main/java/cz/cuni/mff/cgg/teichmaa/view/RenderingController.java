@@ -1,6 +1,7 @@
 package cz.cuni.mff.cgg.teichmaa.view;
 
 import com.jogamp.opengl.*;
+import cz.cuni.mff.cgg.teichmaa.cuda.AbstractFractalRenderKernel;
 import cz.cuni.mff.cgg.teichmaa.cuda.CudaLauncher;
 import cz.cuni.mff.cgg.teichmaa.cuda.MandelbrotKernel;
 
@@ -30,7 +31,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     private float x = -0.5f;
     private float y = 0f;
     private float zoom = 2f;
-    private int dwell = 5000;
+    private int dwell = 500;
 
     public RenderingController(int width, int height, JComponent owner) {
         this.width = width;
@@ -76,6 +77,10 @@ public class RenderingController extends MouseAdapter implements GLEventListener
 
         fractalRenderer.getKernel().setDwell(dwell);
         fractalRenderer.getKernel().setBounds(left_bottom_x, left_bottom_y, right_top_x, right_top_y);
+    }
+
+    public AbstractFractalRenderKernel getKernel_unsafe(){
+        return this.fractalRenderer.getKernel();
     }
 
     @Override
@@ -159,6 +164,8 @@ public class RenderingController extends MouseAdapter implements GLEventListener
 
     @Override
     public void reshape(GLAutoDrawable drawable, int i, int i1, int i2, int i3) {
+        /*
+        //TODO je potreba reshapovat i supersamplovaci random vzorek
         width = i2;
         height = i3;
 
@@ -171,6 +178,6 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         fractalRenderer.unregisterOutputTexture();
         registerOutputTexture(gl); //using the new dimensions
         fractalRenderer.registerOutputTexture(outputTextureGLhandle);
-
+*/
     }
 }
