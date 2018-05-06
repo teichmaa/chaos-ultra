@@ -1,5 +1,6 @@
 //const int ARGB_FULL_OPACITY_MASK = 0xff000000;
 //const int RGBA_FULL_OPACITY_MASK = 0x000000ff;
+const int BLACK = 0xff000000;
 
 //Mandelbrot kernel, using standard mathematical terminology for Mandelbrot set definition, i.e.
 //  f_n = f_{n-1}^2 + c
@@ -36,15 +37,13 @@ __global__ void mandelbrot(cudaSurfaceObject_t surfaceOutput, long outputDataPit
   float cx = left_bottom_x + idx_x / (float) width * (right_top_x - left_bottom_x);
   float cy = right_top_y - idx_y / (float) height * (right_top_y - left_bottom_y);
 
-  int i = escape(dwell, cx, cy);
+  int escapeTime = escape(dwell, cx, cy);
 
-//  int paletteLength = 1536; //1536 is colorPalette length, TODO transform to parameter
-  int paletteIdx = paletteLength - (i % paletteLength) - 1;
+  int paletteIdx = paletteLength - (escapeTime % paletteLength) - 1;
   int result;
   surf2Dread(&result, colorPalette, paletteIdx * 4, 0);
-
-  // if(tooNear)
-  //   result = 0xff0000ff;
+  if(escapeTime == dwell)
+    result = BLACK;
 
   surf2Dwrite(result, surfaceOutput, idx_x * sizeof(unsigned int), idx_y);
   //int* pOutputDebug = (int*)((char*)outputData_debug + idx_y * outputDataPitch_debug) + idx_x;

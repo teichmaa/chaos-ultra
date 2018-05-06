@@ -27,9 +27,9 @@
 	.param .u32 mandelbrot_param_11
 )
 {
-	.reg .pred 	%p<7>;
+	.reg .pred 	%p<8>;
 	.reg .f32 	%f<29>;
-	.reg .b32 	%r<29>;
+	.reg .b32 	%r<30>;
 	.reg .b64 	%rd<3>;
 
 
@@ -70,41 +70,43 @@
 	mov.u32 	%r17, 0;
 	mov.f32 	%f28, 0f00000000;
 	mov.f32 	%f27, %f28;
-	mov.u32 	%r28, %r17;
+	mov.u32 	%r29, %r17;
 	setp.lt.s32	%p4, %r8, 1;
-	mov.u32 	%r27, %r17;
+	mov.u32 	%r28, %r17;
 	@%p4 bra 	BB0_4;
 
 BB0_2:
-	mov.u32 	%r26, %r28;
-	mov.u32 	%r3, %r26;
+	mov.u32 	%r27, %r29;
+	mov.u32 	%r3, %r27;
 	mov.f32 	%f4, %f28;
 	mul.f32 	%f5, %f27, %f27;
 	mul.f32 	%f6, %f4, %f4;
 	add.f32 	%f24, %f5, %f6;
 	setp.geu.f32	%p5, %f24, 0f40800000;
-	mov.u32 	%r27, %r3;
+	mov.u32 	%r28, %r3;
 	@%p5 bra 	BB0_4;
 
 	sub.f32 	%f25, %f6, %f5;
 	add.f32 	%f28, %f1, %f25;
 	add.f32 	%f26, %f4, %f4;
 	fma.rn.f32 	%f27, %f27, %f26, %f2;
-	add.s32 	%r28, %r3, 1;
-	setp.lt.s32	%p6, %r28, %r8;
-	mov.u32 	%r25, %r28;
-	mov.u32 	%r27, %r25;
+	add.s32 	%r29, %r3, 1;
+	setp.lt.s32	%p6, %r29, %r8;
+	mov.u32 	%r26, %r29;
+	mov.u32 	%r28, %r26;
 	@%p6 bra 	BB0_2;
 
 BB0_4:
-	mov.u32 	%r5, %r27;
+	mov.u32 	%r5, %r28;
 	add.s32 	%r18, %r9, -1;
 	rem.s32 	%r19, %r5, %r9;
 	sub.s32 	%r20, %r18, %r19;
 	shl.b32 	%r21, %r20, 2;
 	suld.b.2d.b32.trap {%r23}, [%rd2, {%r21, %r17}];
-	shl.b32 	%r24, %r1, 2;
-	sust.b.2d.b32.trap 	[%rd1, {%r24, %r2}], {%r23};
+	setp.eq.s32	%p7, %r5, %r8;
+	selp.b32	%r24, -16777216, %r23, %p7;
+	shl.b32 	%r25, %r1, 2;
+	sust.b.2d.b32.trap 	[%rd1, {%r25, %r2}], {%r24};
 
 BB0_5:
 	ret;
