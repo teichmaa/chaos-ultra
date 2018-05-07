@@ -83,9 +83,12 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         float right_top_x = x + windowWidth * zoom / 2;
         float right_top_y = y + windowHeight * zoom / 2;
 
-        fractalRenderer.getKernel().setDwell(dwell);
-        fractalRenderer.getKernel().setSuperSamplingLevel(superSamplingLevel);
-        fractalRenderer.getKernel().setBounds(left_bottom_x, left_bottom_y, right_top_x, right_top_y);
+        AbstractFractalRenderKernel k = fractalRenderer.getKernel();
+        k.setDwell(dwell);
+        k.setSuperSamplingLevel(superSamplingLevel);
+        k.setBounds(left_bottom_x, left_bottom_y, right_top_x, right_top_y);
+        k.setAdaptiveSS(params.isAdaptiveSS());
+        k.setVisualiseAdaptiveSS(params.isVisualiseAdaptiveSS());
 
         params.setZoom(zoom);
         params.setDwell(dwell);
@@ -182,7 +185,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         gl.glFinish();
 
         long endTime = System.currentTimeMillis();
-        System.out.println("display() function finished in " + (endTime - startTime) + " ms");
+        System.out.println("" + (endTime - startTime) + " ms (frame total render time)");
 
     }
 

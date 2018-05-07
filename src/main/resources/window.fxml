@@ -7,6 +7,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.embed.swing.SwingNode?>
+<?import javafx.scene.control.CheckBox?>
 <HBox fx:controller="cz.cuni.mff.cgg.teichmaa.view.ControllerFX"
       xmlns:fx="http://javafx.com/fxml">
     <SwingNode fx:id="swingNode">
@@ -58,6 +59,24 @@
                 sup samp lvl:
             </Label>
             <TextField fx:id="fractal_superSamplingLevel" text="32"/>
+        </HBox>
+        <HBox>
+            <Label>
+                <padding>
+                    <Insets top="5" right="5" bottom="5" left="5"/>
+                </padding>
+                adaptive SS:
+            </Label>
+            <CheckBox fx:id="fractal_adaptiveSS" selected="true" onAction="#adaptiveSSselected"/>
+        </HBox>
+        <HBox>
+            <Label>
+                <padding>
+                    <Insets top="5" right="5" bottom="5" left="25"/>
+                </padding>
+                visualise adaptive SS:
+            </Label>
+            <CheckBox fx:id="visualiseAdaptiveSS" selected="true" onAction="#visualiseAdaptiveSSselected"/>
         </HBox>
         <HBox>
             <Label>

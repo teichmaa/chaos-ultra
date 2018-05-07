@@ -21,6 +21,24 @@ public class ConcurrentParamHolder {
     private int dwell = 1200;
     private int superSamplingLevel = 32;
     private boolean requestingRender = false;
+    private boolean adaptiveSS = true;
+    private boolean visualiseAdaptiveSS = true;
+
+    public boolean isVisualiseAdaptiveSS() {
+        return visualiseAdaptiveSS;
+    }
+
+    public void setVisualiseAdaptiveSS(boolean visualiseAdaptiveSS) {
+        this.visualiseAdaptiveSS = visualiseAdaptiveSS;
+    }
+
+    public boolean isAdaptiveSS() {
+        return adaptiveSS;
+    }
+
+    public void setAdaptiveSS(boolean adaptiveSS) {
+        this.adaptiveSS = adaptiveSS;
+    }
 
     public boolean isRequestingRender() {
         return requestingRender;

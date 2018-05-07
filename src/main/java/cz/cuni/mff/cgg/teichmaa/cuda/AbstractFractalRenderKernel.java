@@ -31,6 +31,8 @@ public abstract class AbstractFractalRenderKernel {
     public final short PARAM_IDX_PALETTE_LENGTH = 11;
     public final short PARAM_IDX_RANDOM_SAMPLES = 12;
     public final short PARAM_IDX_SUPER_SAMPLING_LEVEL = 13;
+    public final short PARAM_IDX_ADAPTIVE_SS = 14;
+    public final short PARAM_IDX_VISUALISE_ADAPTIVE_SS = 15;
 
 
     /**
@@ -61,7 +63,7 @@ public abstract class AbstractFractalRenderKernel {
         this.right_top_y = right_top_y;
         superSamplingLevel = 1;
 
-        params = new NativePointerObject[PARAM_IDX_SUPER_SAMPLING_LEVEL + 1];
+        params = new NativePointerObject[PARAM_IDX_VISUALISE_ADAPTIVE_SS + 1];
 
         params[PARAM_IDX_WIDTH] = Pointer.to(new int[]{width});
         params[PARAM_IDX_HEIGHT] = Pointer.to(new int[]{height});
@@ -71,6 +73,8 @@ public abstract class AbstractFractalRenderKernel {
         params[PARAM_IDX_RIGHT_TOP_Y] = Pointer.to(new float[]{right_top_y});
         params[PARAM_IDX_DWELL] = Pointer.to(new int[]{dwell});
         params[PARAM_IDX_SUPER_SAMPLING_LEVEL] = Pointer.to(new int[]{superSamplingLevel});
+        setAdaptiveSS(true);
+        setVisualiseAdaptiveSS(true);
     }
 
     /**
@@ -100,6 +104,8 @@ public abstract class AbstractFractalRenderKernel {
     private float right_top_x;
     private float right_top_y;
     private int superSamplingLevel;
+    private boolean adaptiveSS;
+    private boolean visualiseAdaptiveSS;
     private CUmodule module;
     private CUfunction mainFunction;
     private CUfunction initFunction;
@@ -115,6 +121,24 @@ public abstract class AbstractFractalRenderKernel {
 
     public boolean isInitiable() {
         return hasInitFunction;
+    }
+
+    public boolean isVisualiseAdaptiveSS() {
+        return visualiseAdaptiveSS;
+    }
+
+    public void setVisualiseAdaptiveSS(boolean visualiseAdaptiveSS) {
+        this.visualiseAdaptiveSS = visualiseAdaptiveSS;
+        params[PARAM_IDX_VISUALISE_ADAPTIVE_SS] = Pointer.to(new int[]{visualiseAdaptiveSS ? 1 : 0});
+    }
+
+    public boolean isAdaptiveSS() {
+        return adaptiveSS;
+    }
+
+    public void setAdaptiveSS(boolean adaptiveSS) {
+        this.adaptiveSS = adaptiveSS;
+        params[PARAM_IDX_ADAPTIVE_SS] = Pointer.to(new int[]{adaptiveSS ? 1 : 0});
     }
 
     public int getDwell() {

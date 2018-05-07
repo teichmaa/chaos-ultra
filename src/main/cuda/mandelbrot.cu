@@ -3,8 +3,9 @@
 #include "math.h"
 const int BLACK = 0xff000000;
 const int WHITE = 0xffffffff;
-const int PINK = 0xffff69b4;
+const int PINK = 0xffb469ff;
 const int YELLOW = 0xff00ffff;
+const int GOLD = 0xff00d7ff;
 
 #define CUDA_CALL(x) do { if((x) != cudaSuccess) { \
   printf("Mandelbrot content: Error at %s:%d\n",__FILE__,__LINE__); \
@@ -56,7 +57,7 @@ __device__  __forceinline__ float computeDispersion(int* data, int dataLength, f
 
 
 extern "C"
-__global__ void mandelbrot(cudaSurfaceObject_t surfaceOutput, long outputDataPitch_debug,/*int * palette,*/int width, int height, float left_bottom_x, float left_bottom_y, float right_top_x, float right_top_y, int dwell, int** outputData_debug, cudaSurfaceObject_t colorPalette, int paletteLength, float* randomSamples, int superSamplingLevel)
+__global__ void mandelbrot(cudaSurfaceObject_t surfaceOutput, long outputDataPitch_debug,/*int * palette,*/int width, int height, float left_bottom_x, float left_bottom_y, float right_top_x, float right_top_y, int dwell, int** outputData_debug, cudaSurfaceObject_t colorPalette, int paletteLength, float* randomSamples, int superSamplingLevel, bool adaptiveSS, bool visualiseSS)
 // todo: usporadat poradi paramateru, cudaXXObjects predavat pointrem, ne kopirovanim (tohle rozmyslet, mozna je to takhle dobre)
 //  todo na paletu by byla rychlejsi textura nez surface, ale to mi nefungovalo (vracelo jen dolnich 8 bytes)
 //  todo ma to fakt hodne pointeru, mnoho z nich je pritom pro vsechny launche stejny - nezdrzuje tohle? omezene registry a tak
@@ -72,7 +73,7 @@ __global__ void mandelbrot(cudaSurfaceObject_t surfaceOutput, long outputDataPit
   float pixelWidth = (right_top_x - left_bottom_x) / (float) width;
   float pixelHeight = (right_top_y - left_bottom_y) / (float) height;
 
-  const int adaptiveTreshold = 3;
+  const int adaptiveTreshold = 10;
   int r[adaptiveTreshold];
   int adaptivnessUsed = 0;
 
@@ -89,22 +90,24 @@ __global__ void mandelbrot(cudaSurfaceObject_t surfaceOutput, long outputDataPit
     if(i < adaptiveTreshold){
       r[i] = escapeTime;
     }
-    if(i == adaptiveTreshold){ //decide whether to continue with supersampling or not
+    if(i == adaptiveTreshold && adaptiveSS){ //decide whether to continue with supersampling or not
       float mean = escapeTimeSum / (i+1);
       float dispersion = computeDispersion(r, i, mean);
-      if(dispersion <= 0.1){
+      if(dispersion <= 0.01){
         superSamplingLevel = i+1; //effectively disabling high SS and storing info about actual number of samples taken
-        //adaptivnessUsed = WHITE;
+        adaptivnessUsed = WHITE;
       }
       else if(dispersion <= 10){
-        superSamplingLevel = min(i*3,superSamplingLevel); //massively reducing SS, if possible
-        //adaptivnessUsed = PINK;
+        superSamplingLevel = min(i+1,superSamplingLevel / 2); //slightly reducing SS
+        adaptivnessUsed = PINK;
       }
       else if(dispersion <= 100){
-        superSamplingLevel = min(i+1,superSamplingLevel / 2); //slightly reducing SS
-        //adaptivnessUsed = BLACK;
+        superSamplingLevel = min(i+1,(int) (superSamplingLevel * 0.8f)); //slightly reducing SS
+        adaptivnessUsed = GOLD;
+      }else{ //else we are on an chaotic edge, thus as many samples as possible are needed
+        adaptivnessUsed = BLACK;
       }
-      //else we are on an chaotic edge, thus as many samples as possible are needed
+      
     }
   }
   int mean = escapeTimeSum / superSamplingLevel;  
@@ -114,9 +117,9 @@ __global__ void mandelbrot(cudaSurfaceObject_t surfaceOutput, long outputDataPit
   surf2Dread(&resultColor, colorPalette, paletteIdx * 4, 0);
   if(mean == dwell)
     resultColor = BLACK;
-  /*if(adaptivnessUsed){
+  if(adaptivnessUsed && visualiseSS){
     resultColor = adaptivnessUsed;
-  }*/
+  }
   /*if(idx_x < 10 && idx_y < 10){
     printf("%f\t", randomSample);
     __syncthreads();

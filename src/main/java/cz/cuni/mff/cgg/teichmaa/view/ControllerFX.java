@@ -8,6 +8,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Label;
 import javafx.stage.Screen;
@@ -44,6 +45,10 @@ public class ControllerFX implements Initializable {
     private TextField fractal_superSamplingLevel;
     @FXML
     private Label dimensions;
+    @FXML
+    private CheckBox fractal_adaptiveSS;
+    @FXML
+    private CheckBox visualiseAdaptiveSS;
 
     private int width;
     private int height;
@@ -111,6 +116,7 @@ public class ControllerFX implements Initializable {
         fractal_dwell.setText("" + params.getDwell());
         fractal_zoom.setText("" + params.getZoom());
         fractal_superSamplingLevel.setText("" + params.getSuperSamplingLevel());
+        fractal_adaptiveSS.setSelected(params.isAdaptiveSS());
         dimensions.setText("" + params.getWidth() + " x " + params.getHeight());
     }
 
@@ -146,4 +152,25 @@ public class ControllerFX implements Initializable {
         renderClicked(actionEvent);
     }
 
+    public void adaptiveSSselected(ActionEvent actionEvent) {
+        boolean val = fractal_adaptiveSS.isSelected();
+        params.setAdaptiveSS(val);
+        if(!val){
+            params.setVisualiseAdaptiveSS(false);
+            visualiseAdaptiveSS.setSelected(false);
+        }
+        params.setRequestingRender(true);
+        SwingUtilities.invokeLater(fractalCanvas::repaint);
+    }
+
+    public void visualiseAdaptiveSSselected(ActionEvent actionEvent) {
+        boolean val = visualiseAdaptiveSS.isSelected();
+        params.setVisualiseAdaptiveSS(val);
+        if(val){
+            params.setAdaptiveSS(true);
+            fractal_adaptiveSS.setSelected(true);
+        }
+        params.setRequestingRender(true);
+        SwingUtilities.invokeLater(fractalCanvas::repaint);
+    }
 }
