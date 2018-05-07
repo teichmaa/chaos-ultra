@@ -2,7 +2,6 @@ package cz.cuni.mff.cgg.teichmaa.view;
 
 import com.jogamp.opengl.*;
 import com.jogamp.opengl.awt.GLJPanel;
-import cz.cuni.mff.cgg.teichmaa.cuda.AbstractFractalRenderKernel;
 import javafx.embed.swing.SwingNode;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -10,10 +9,15 @@ import javafx.fxml.Initializable;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
+import javafx.scene.control.Label;
 import javafx.stage.Screen;
 
+
+import java.awt.Dimension;
+import java.awt.BorderLayout;
+
+import javax.sound.midi.Soundbank;
 import javax.swing.*;
-import java.awt.*;
 import java.net.URL;
 import java.util.ResourceBundle;
 
@@ -25,9 +29,9 @@ public class ControllerFX implements Initializable {
     @FXML
     Button renderButton;
 
-    private AbstractFractalRenderKernel kernel_unsafe;
-    private RenderingController renderingController;
+    private ConcurrentParamHolder params;
 
+    private GLJPanel fractalCanvas;
     @FXML
     private TextField fractal_x;
     @FXML
@@ -36,6 +40,10 @@ public class ControllerFX implements Initializable {
     private TextField fractal_zoom;
     @FXML
     private TextField fractal_dwell;
+    @FXML
+    private TextField fractal_superSamplingLevel;
+    @FXML
+    private Label dimensions;
 
     private int width;
     private int height;
@@ -55,20 +63,22 @@ public class ControllerFX implements Initializable {
         final GLProfile profile = GLProfile.get(GLProfile.GL2);
         GLCapabilities capabilities = new GLCapabilities(profile);
 
-        final GLJPanel gljpanel = new GLJPanel(capabilities);
-        RenderingController controller = new RenderingController(width, height, gljpanel);
-        this.renderingController = controller;
+        fractalCanvas = new GLJPanel(capabilities);
+        final ConcurrentParamHolder params = new ConcurrentParamHolder();
+        this.params = params;
+        RenderingController c = new RenderingController(width, height, fractalCanvas, params, this);
+        {
+            fractalCanvas.addGLEventListener(c);
+            fractalCanvas.addMouseWheelListener(c);
+            fractalCanvas.addMouseMotionListener(c);
+            fractalCanvas.addMouseListener(c);
+        }
 
-        gljpanel.addGLEventListener(controller);
-        gljpanel.addMouseWheelListener(controller);
-        gljpanel.addMouseMotionListener(controller);
-        gljpanel.addMouseListener(controller);
-
-        gljpanel.setPreferredSize(new Dimension(width, height));
+        fractalCanvas.setPreferredSize(new Dimension(width, height));
         final JPanel panel = new JPanel();
         {
             panel.setLayout(new BorderLayout(0,0));
-            panel.add(gljpanel);
+            panel.add(fractalCanvas);
            // panel.add(new JTextField("rest space"));
         }
         swingNode.setContent(panel);
@@ -80,6 +90,32 @@ public class ControllerFX implements Initializable {
         float y = Float.parseFloat(fractal_y.getText());
         float zoom = Float.parseFloat(fractal_zoom.getText());
         int dwell = Integer.parseInt(fractal_dwell.getText());
+        int supsamp = Integer.parseInt(fractal_superSamplingLevel.getText());
+        if(supsamp > 256){
+            supsamp = 256;
+            System.out.println("Warning: super sampling level clamped to " +supsamp+", higher is not supported");
+            fractal_superSamplingLevel.setText("" + supsamp);
+        }
+
+        params.setXY(x, y);
+        params.setDwell(dwell);
+        params.setZoom(zoom);
+        params.setSuperSamplingLevel(supsamp);
+        params.setRequestingRender(true);
+        SwingUtilities.invokeLater(fractalCanvas::repaint);
+    }
+
+    void updateParams(){
+        fractal_x.setText("" + params.getX());
+        fractal_y.setText("" + params.getY());
+        fractal_dwell.setText("" + params.getDwell());
+        fractal_zoom.setText("" + params.getZoom());
+        fractal_superSamplingLevel.setText("" + params.getSuperSamplingLevel());
+        dimensions.setText("" + params.getWidth() + " x " + params.getHeight());
+    }
+
+    public void loadClicked(ActionEvent actionEvent) {
+        updateParams();
     }
 
     public void sample0Clicked(ActionEvent actionEvent) {
@@ -110,17 +146,4 @@ public class ControllerFX implements Initializable {
         renderClicked(actionEvent);
     }
 
-    private int ssOldNormalLevel = 2;
-
-    public void SSnormal3Clicked(ActionEvent actionEvent) {
-        kernel_unsafe.setSuperSamplingLevel(ssOldNormalLevel);
-    }
-    public void getKernelClicked(ActionEvent actionEvent) {
-        kernel_unsafe = renderingController.getKernel_unsafe(); //this is unsafe because Kernel is managed from Swing thread and this is FX thread
-    }
-
-    public void SShighClicked(ActionEvent actionEvent) {
-        ssOldNormalLevel = kernel_unsafe.getSuperSamplingLevel();
-        kernel_unsafe.setSuperSamplingLevel(64);
-    }
 }

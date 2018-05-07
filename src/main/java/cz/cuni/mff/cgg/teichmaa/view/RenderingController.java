@@ -4,6 +4,7 @@ import com.jogamp.opengl.*;
 import cz.cuni.mff.cgg.teichmaa.cuda.AbstractFractalRenderKernel;
 import cz.cuni.mff.cgg.teichmaa.cuda.CudaLauncher;
 import cz.cuni.mff.cgg.teichmaa.cuda.MandelbrotKernel;
+import javafx.application.Platform;
 
 import javax.swing.*;
 import java.awt.event.MouseAdapter;
@@ -24,6 +25,8 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     private int paletteTextureGLhandle;
     private CudaLauncher fractalRenderer;
     private JComponent owner;
+    private ConcurrentParamHolder params;
+    private ControllerFX controllerFX;
 
     private int width;
     private int height;
@@ -34,12 +37,15 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     private int dwell = 1200;
     private int superSamplingLevel = 32;
 
-    public RenderingController(int width, int height, JComponent owner) {
+    public RenderingController(int width, int height, JComponent owner, ConcurrentParamHolder params, ControllerFX controllerFX) {
         this.width = width;
         this.height = height;
         this.owner = owner;
+        this.params = params;
+        this.controllerFX = controllerFX;
     }
 
+    @Override
     public void mouseWheelMoved(MouseWheelEvent e) {
         float coeff = 0.95f;
         if (e.getWheelRotation() > 0) coeff = 2f - coeff;
@@ -50,6 +56,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
 
     private MouseEvent lastMousePosition;
 
+    @Override
     public void mouseDragged(MouseEvent e) {
         if (lastMousePosition == null) {
             return;
@@ -63,12 +70,12 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         owner.repaint();
     }
 
+    @Override
     public void mousePressed(MouseEvent e) {
         lastMousePosition = e;
     }
 
     private void recomputeKernelParams() {
-
         float windowHeight = 1;
         float windowWidth = windowHeight / (float) height * width;
         float left_bottom_x = x - windowWidth * zoom / 2;
@@ -79,6 +86,12 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         fractalRenderer.getKernel().setDwell(dwell);
         fractalRenderer.getKernel().setSuperSamplingLevel(superSamplingLevel);
         fractalRenderer.getKernel().setBounds(left_bottom_x, left_bottom_y, right_top_x, right_top_y);
+
+        params.setZoom(zoom);
+        params.setDwell(dwell);
+        params.setXY(x,y);
+        params.setDimensions(width, height);
+        Platform.runLater(controllerFX::updateParams);
     }
 
     public AbstractFractalRenderKernel getKernel_unsafe(){
@@ -136,6 +149,15 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     public void display(GLAutoDrawable drawable) {
 
         long startTime = System.currentTimeMillis();
+        if(params.isRequestingRender()){
+            params.setRequestingRender(false);
+            x = params.getX();
+            y = params.getY();
+            zoom = params.getZoom();
+            dwell = params.getDwell();
+            superSamplingLevel = params.getSuperSamplingLevel();
+            recomputeKernelParams();
+        }
 
         fractalRenderer.launchKernel(false, false);
 

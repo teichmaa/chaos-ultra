@@ -19,6 +19,7 @@ import java.util.Date;
 import static com.jogamp.opengl.GL.GL_TEXTURE_2D;
 import static jcuda.driver.JCudaDriver.*;
 import static jcuda.jcurand.curandRngType.CURAND_RNG_PSEUDO_DEFAULT;
+import static jcuda.jcurand.curandRngType.CURAND_RNG_QUASI_SOBOL32;
 import static jcuda.runtime.cudaGraphicsRegisterFlags.cudaGraphicsRegisterFlagsReadOnly;
 import static jcuda.runtime.cudaGraphicsRegisterFlags.cudaGraphicsRegisterFlagsWriteDiscard;
 import static jcuda.runtime.cudaResourceType.cudaResourceTypeArray;
@@ -54,7 +55,7 @@ public class CudaLauncher implements Closeable {
 
         //kernelInit();
 
-        kernel.setSuperSamplingLevel(128); //tmp, this is here as temporary cure for SS non-resizing and non-adapting
+        kernel.setSuperSamplingLevel(256); //tmp, this is here as temporary cure for SS non-resizing and non-adapting
         randomSamplesInit();
 
     }
@@ -74,7 +75,7 @@ public class CudaLauncher implements Closeable {
         //JCurand.curandSetQuasiRandomGeneratorDimensions(gen, 2);
         randomValues = new CUdeviceptr();
         JCuda.cudaMalloc(randomValues, sampleCount * Sizeof.FLOAT);
-        /*
+/*
         //crazy slow and hacky solution, which yet might give desired results
         for (int i = 0; i < w; i++) {
             for (int j = 0; j < h; j++) {

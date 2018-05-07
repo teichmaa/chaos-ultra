@@ -39,8 +39,8 @@ cmal : cudaMalloc((void**)&${1:variable}, ${2:bytes});
 cmalmng : cudaMallocManaged((void**)&${1:variable}, ${2:bytes});
 cmem : cudaMemcpy(${1:dest}, ${2:src}, ${3:bytes}, cudaMemcpy${4:Host}To${5:Device});
 cfree : cudaFree(${1:variable});
-kerneldef : __global__ void ${1:kernel}(${2}) {\n}
-kernelcall : ${1:kernel}<<<${2},${3}>>>(${4});
+kerneldef : __global__ void ${1:content}(${2}) {\n}
+kernelcall : ${1:content}<<<${2},${3}>>>(${4});
 thrusthv : thrust::host_vector<${1:char}> v$0;
 thrustdv : thrust::device_vector<${1:char}> v$0;
 

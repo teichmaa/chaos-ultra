@@ -7,14 +7,14 @@ const int PINK = 0xffff69b4;
 const int YELLOW = 0xff00ffff;
 
 #define CUDA_CALL(x) do { if((x) != cudaSuccess) { \
-  printf("Mandelbrot kernel: Error at %s:%d\n",__FILE__,__LINE__); \
+  printf("Mandelbrot content: Error at %s:%d\n",__FILE__,__LINE__); \
   return EXIT_FAILURE;}} while(0)
   
 #define CURAND_CALL(x) do { if((x) != CURAND_STATUS_SUCCESS) { \
-  printf("Mandelbrot kernel: Error at %s:%d\n",__FILE__,__LINE__); \
+  printf("Mandelbrot content: Error at %s:%d\n",__FILE__,__LINE__); \
   return EXIT_FAILURE;}} while(0)
 
-//Mandelbrot kernel, using standard mathematical terminology for Mandelbrot set definition, i.e.
+//Mandelbrot content, using standard mathematical terminology for Mandelbrot set definition, i.e.
 //  f_n = f_{n-1}^2 + c
 //  f_0 = 0
 //  thus iteratively applying: f(z) = z*z * c
