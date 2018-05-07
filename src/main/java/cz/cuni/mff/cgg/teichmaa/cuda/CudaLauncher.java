@@ -57,7 +57,7 @@ public class CudaLauncher implements Closeable {
         kernel.setSuperSamplingLevel(128);
         randomSamplesInit();
         kernel.setSuperSamplingLevel(16);
-        kernel.setDwell(500);
+        kernel.setDwell(1000);
 
     }
 

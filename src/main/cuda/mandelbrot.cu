@@ -32,6 +32,21 @@ __device__ __forceinline__ int escape(int dwell, float cx, float cy){
   return i;
 }
 
+__device__  __forceinline__ float computeDispersion(int* data, int dataLength){
+  int n = dataLength;
+  int sum = 0;
+  for(int i = 0; i < dataLength; i++){
+    sum += n;
+  }
+  float mean = sum / n;
+  float variance = 0;
+  for(int i = 0; i < dataLength; i++){
+    variance += (data[i]-mean)*(data[i]-mean);
+  }
+  variance /= (n-1);
+  return variance / mean;
+}
+
 
 extern "C"
 __global__ void mandelbrot(cudaSurfaceObject_t surfaceOutput, long outputDataPitch_debug,/*int * palette,*/int width, int height, float left_bottom_x, float left_bottom_y, float right_top_x, float right_top_y, int dwell, int** outputData_debug, cudaSurfaceObject_t colorPalette, int paletteLength, float* randomSamples, int superSamplingLevel)
@@ -47,6 +62,9 @@ __global__ void mandelbrot(cudaSurfaceObject_t surfaceOutput, long outputDataPit
   float pixelWidth = (right_top_x - left_bottom_x) / (float) width;
   float pixelHeight = (right_top_y - left_bottom_y) / (float) height;
 
+  const int adaptiveTreshold = 4;
+  int r[adaptiveTreshold];
+
   int averageEscapeTime = 0;
   int randomSamplePixelsIdx = (idx_y * width + idx_x)*superSamplingLevel;
   for(int i = 0; i < superSamplingLevel; i++){
@@ -57,6 +75,14 @@ __global__ void mandelbrot(cudaSurfaceObject_t surfaceOutput, long outputDataPit
 
     int escapeTime = escape(dwell, cx, cy);
     averageEscapeTime += escapeTime;
+    /*if(i < adaptiveTreshold){
+      r[i] = escapeTime;
+    }
+    if(i == adaptiveTreshold){ //decide whether to continue with supersampling or not
+      float dispersion = computeDispersion(r, adaptiveTreshold);
+      if(dispersion <= 1)
+        superSamplingLevel = i; //effectively disabling high SS and storing info about real SS performed
+    }*/
   }
   averageEscapeTime /= superSamplingLevel;  
 
