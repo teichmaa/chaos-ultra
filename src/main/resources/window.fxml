@@ -76,7 +76,7 @@
                 </padding>
                 visualise adaptive SS:
             </Label>
-            <CheckBox fx:id="visualiseAdaptiveSS" selected="true" onAction="#visualiseAdaptiveSSselected"/>
+            <CheckBox fx:id="visualiseAdaptiveSS" selected="false" onAction="#visualiseAdaptiveSSselected"/>
         </HBox>
         <HBox>
             <Label>
@@ -92,7 +92,6 @@
             </Label>
         </HBox>
 
-        <Button text="load current params" onAction="#loadClicked"/>
         <Button text="render" fx:id="renderButton" onAction="#renderClicked"/>
 
         <Label>

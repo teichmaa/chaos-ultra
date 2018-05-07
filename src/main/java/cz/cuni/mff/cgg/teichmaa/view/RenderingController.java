@@ -25,7 +25,6 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     private int paletteTextureGLhandle;
     private CudaLauncher fractalRenderer;
     private JComponent owner;
-    private ConcurrentParamHolder params;
     private ControllerFX controllerFX;
 
     private int width;
@@ -34,14 +33,11 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     private float x = -0.5f;
     private float y = 0f;
     private float zoom = 2f;
-    private int dwell = 1200;
-    private int superSamplingLevel = 32;
 
-    public RenderingController(int width, int height, JComponent owner, ConcurrentParamHolder params, ControllerFX controllerFX) {
+    public RenderingController(int width, int height, JComponent owner, ControllerFX controllerFX) {
         this.width = width;
         this.height = height;
         this.owner = owner;
-        this.params = params;
         this.controllerFX = controllerFX;
     }
 
@@ -50,7 +46,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         float coeff = 0.95f;
         if (e.getWheelRotation() > 0) coeff = 2f - coeff;
         zoom *= Math.pow(coeff, Math.abs(e.getPreciseWheelRotation()));
-        recomputeKernelParams();
+        //recomputeKernelParams();
         owner.repaint();
     }
 
@@ -65,7 +61,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         float dy = (lastMousePosition.getY() - e.getY()) * zoom / height;
         x += dx;
         y += dy;
-        recomputeKernelParams();
+        //recomputeKernelParams();
         lastMousePosition = e;
         owner.repaint();
     }
@@ -84,17 +80,15 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         float right_top_y = y + windowHeight * zoom / 2;
 
         AbstractFractalRenderKernel k = fractalRenderer.getKernel();
-        k.setDwell(dwell);
-        k.setSuperSamplingLevel(superSamplingLevel);
         k.setBounds(left_bottom_x, left_bottom_y, right_top_x, right_top_y);
-        k.setAdaptiveSS(params.isAdaptiveSS());
-        k.setVisualiseAdaptiveSS(params.isVisualiseAdaptiveSS());
 
-        params.setZoom(zoom);
-        params.setDwell(dwell);
-        params.setXY(x,y);
-        params.setDimensions(width, height);
-        Platform.runLater(controllerFX::updateParams);
+        Platform.runLater(() -> {
+            controllerFX.setZoom(zoom);
+            controllerFX.setX(x);
+            controllerFX.setY(y);
+            //controllerFX.setDimensions(width, height); //does controllerFX care about those?
+        });
+
     }
 
     public AbstractFractalRenderKernel getKernel_unsafe(){
@@ -126,6 +120,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         fractalRenderer = new CudaLauncher(new MandelbrotKernel(0, width, height, 0, 0, 0, 0),
                 outputTextureGLhandle, paletteTextureGLhandle, colorPalette.limit());
         recomputeKernelParams();
+        Platform.runLater(controllerFX::showDefaultView);
 
     }
 
@@ -152,16 +147,8 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     public void display(GLAutoDrawable drawable) {
 
         long startTime = System.currentTimeMillis();
-        if(params.isRequestingRender()){
-            params.setRequestingRender(false);
-            x = params.getX();
-            y = params.getY();
-            zoom = params.getZoom();
-            dwell = params.getDwell();
-            superSamplingLevel = params.getSuperSamplingLevel();
-            recomputeKernelParams();
-        }
 
+        recomputeKernelParams();
         fractalRenderer.launchKernel(false, false);
 
         final GL2 gl = drawable.getGL().getGL2();
@@ -206,5 +193,37 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         registerOutputTexture(gl); //using the new dimensions
         fractalRenderer.registerOutputTexture(outputTextureGLhandle);
 */
+    }
+
+    void setX(float x) {
+        this.x = x;
+    }
+
+    void setY(float y) {
+        this.y = y;
+    }
+
+    void setDwell(int dwell) {
+        fractalRenderer.getKernel().setDwell(dwell);
+    }
+
+    void setZoom(float zoom) {
+        this.zoom = zoom;
+    }
+
+    void setSuperSamplingLevel(int supsamp) {
+        fractalRenderer.getKernel().setSuperSamplingLevel(supsamp);
+    }
+
+    void repaint() {
+        owner.repaint();
+    }
+
+    void setAdaptiveSS(boolean val) {
+        fractalRenderer.getKernel().setAdaptiveSS(val);
+    }
+
+    void setVisualiseAdaptiveSS(boolean b) {
+        fractalRenderer.getKernel().setVisualiseAdaptiveSS(b);
     }
 }

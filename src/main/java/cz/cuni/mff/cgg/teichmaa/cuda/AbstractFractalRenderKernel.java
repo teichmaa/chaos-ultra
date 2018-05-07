@@ -74,7 +74,7 @@ public abstract class AbstractFractalRenderKernel {
         params[PARAM_IDX_DWELL] = Pointer.to(new int[]{dwell});
         params[PARAM_IDX_SUPER_SAMPLING_LEVEL] = Pointer.to(new int[]{superSamplingLevel});
         setAdaptiveSS(true);
-        setVisualiseAdaptiveSS(true);
+        setVisualiseAdaptiveSS(false);
     }
 
     /**

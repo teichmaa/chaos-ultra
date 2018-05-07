@@ -17,7 +17,6 @@ import javafx.stage.Screen;
 import java.awt.Dimension;
 import java.awt.BorderLayout;
 
-import javax.sound.midi.Soundbank;
 import javax.swing.*;
 import java.net.URL;
 import java.util.ResourceBundle;
@@ -30,7 +29,7 @@ public class ControllerFX implements Initializable {
     @FXML
     Button renderButton;
 
-    private ConcurrentParamHolder params;
+    //private ConcurrentParamHolder params;
 
     private GLJPanel fractalCanvas;
     @FXML
@@ -50,6 +49,8 @@ public class ControllerFX implements Initializable {
     @FXML
     private CheckBox visualiseAdaptiveSS;
 
+    private RenderingController renderingController;
+
     private int width;
     private int height;
 
@@ -61,7 +62,6 @@ public class ControllerFX implements Initializable {
         width = 1000;
         height = 1000;
         GLInit();
-
     }
 
     private void GLInit() {
@@ -69,22 +69,20 @@ public class ControllerFX implements Initializable {
         GLCapabilities capabilities = new GLCapabilities(profile);
 
         fractalCanvas = new GLJPanel(capabilities);
-        final ConcurrentParamHolder params = new ConcurrentParamHolder();
-        this.params = params;
-        RenderingController c = new RenderingController(width, height, fractalCanvas, params, this);
+        renderingController = new RenderingController(width, height, fractalCanvas, this);
         {
-            fractalCanvas.addGLEventListener(c);
-            fractalCanvas.addMouseWheelListener(c);
-            fractalCanvas.addMouseMotionListener(c);
-            fractalCanvas.addMouseListener(c);
+            fractalCanvas.addGLEventListener(renderingController);
+            fractalCanvas.addMouseWheelListener(renderingController);
+            fractalCanvas.addMouseMotionListener(renderingController);
+            fractalCanvas.addMouseListener(renderingController);
         }
 
         fractalCanvas.setPreferredSize(new Dimension(width, height));
         final JPanel panel = new JPanel();
         {
-            panel.setLayout(new BorderLayout(0,0));
+            panel.setLayout(new BorderLayout(0, 0));
             panel.add(fractalCanvas);
-           // panel.add(new JTextField("rest space"));
+            // panel.add(new JTextField("rest space"));
         }
         swingNode.setContent(panel);
     }
@@ -95,40 +93,43 @@ public class ControllerFX implements Initializable {
         float y = Float.parseFloat(fractal_y.getText());
         float zoom = Float.parseFloat(fractal_zoom.getText());
         int dwell = Integer.parseInt(fractal_dwell.getText());
-        int supsamp = Integer.parseInt(fractal_superSamplingLevel.getText());
-        if(supsamp > 256){
-            supsamp = 256;
-            System.out.println("Warning: super sampling level clamped to " +supsamp+", higher is not supported");
+        int supsamp = Math.min(256, Integer.parseInt(fractal_superSamplingLevel.getText()));
+        if (supsamp >= 256) {
+            System.out.println("Warning: super sampling level clamped to " + supsamp + ", higher is not supported");
             fractal_superSamplingLevel.setText("" + supsamp);
         }
 
-        params.setXY(x, y);
-        params.setDwell(dwell);
-        params.setZoom(zoom);
-        params.setSuperSamplingLevel(supsamp);
-        params.setRequestingRender(true);
-        SwingUtilities.invokeLater(fractalCanvas::repaint);
+        SwingUtilities.invokeLater(() -> {
+            renderingController.setX(x);
+            renderingController.setY(y);
+            renderingController.setDwell(dwell);
+            renderingController.setZoom(zoom);
+            renderingController.setSuperSamplingLevel(supsamp);
+            renderingController.repaint();
+        });
     }
 
-    void updateParams(){
-        fractal_x.setText("" + params.getX());
-        fractal_y.setText("" + params.getY());
-        fractal_dwell.setText("" + params.getDwell());
-        fractal_zoom.setText("" + params.getZoom());
-        fractal_superSamplingLevel.setText("" + params.getSuperSamplingLevel());
-        fractal_adaptiveSS.setSelected(params.isAdaptiveSS());
-        dimensions.setText("" + params.getWidth() + " x " + params.getHeight());
+    void setX(float x) {
+        fractal_x.setText("" + x);
     }
 
-    public void loadClicked(ActionEvent actionEvent) {
-        updateParams();
+    void setY(float y) {
+        fractal_y.setText("" + y);
     }
 
-    public void sample0Clicked(ActionEvent actionEvent) {
+    void setZoom(float zoom) {
+        fractal_zoom.setText("" + zoom);
+    }
+
+    public void showDefaultView(){
         fractal_x.setText("-0.5");
         fractal_y.setText("0");
         fractal_zoom.setText("2");
-        renderClicked(actionEvent);
+        renderClicked(null);
+    }
+
+    public void sample0Clicked(ActionEvent actionEvent) {
+        showDefaultView();
     }
 
     public void sample1Clicked(ActionEvent actionEvent) {
@@ -154,23 +155,27 @@ public class ControllerFX implements Initializable {
 
     public void adaptiveSSselected(ActionEvent actionEvent) {
         boolean val = fractal_adaptiveSS.isSelected();
-        params.setAdaptiveSS(val);
-        if(!val){
-            params.setVisualiseAdaptiveSS(false);
+        SwingUtilities.invokeLater(() -> {
+            renderingController.setAdaptiveSS(val);
+            renderingController.repaint();
+            if (!val)
+                renderingController.setVisualiseAdaptiveSS(false);
+        });
+        if (!val) {
             visualiseAdaptiveSS.setSelected(false);
         }
-        params.setRequestingRender(true);
-        SwingUtilities.invokeLater(fractalCanvas::repaint);
     }
 
     public void visualiseAdaptiveSSselected(ActionEvent actionEvent) {
         boolean val = visualiseAdaptiveSS.isSelected();
-        params.setVisualiseAdaptiveSS(val);
-        if(val){
-            params.setAdaptiveSS(true);
+        SwingUtilities.invokeLater(() -> {
+            renderingController.setVisualiseAdaptiveSS(val);
+            renderingController.repaint();
+            if(val)
+                renderingController.setAdaptiveSS(true);
+        });
+        if (val) {
             fractal_adaptiveSS.setSelected(true);
         }
-        params.setRequestingRender(true);
-        SwingUtilities.invokeLater(fractalCanvas::repaint);
     }
 }
