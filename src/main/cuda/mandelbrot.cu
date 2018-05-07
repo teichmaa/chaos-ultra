@@ -1,6 +1,10 @@
 #include <curand_kernel.h>
 //#include "sobol_direction_vectors.h"
+#include "math.h"
 const int BLACK = 0xff000000;
+const int WHITE = 0xffffffff;
+const int PINK = 0xffff69b4;
+const int YELLOW = 0xff00ffff;
 
 #define CUDA_CALL(x) do { if((x) != cudaSuccess) { \
   printf("Mandelbrot kernel: Error at %s:%d\n",__FILE__,__LINE__); \
@@ -32,18 +36,21 @@ __device__ __forceinline__ int escape(int dwell, float cx, float cy){
   return i;
 }
 
-__device__  __forceinline__ float computeDispersion(int* data, int dataLength){
-  int n = dataLength;
-  int sum = 0;
+__device__  __forceinline__ float computeMean(int* data, int dataLength){
+  int sum =0;
   for(int i = 0; i < dataLength; i++){
-    sum += n;
+    sum += (data[i]);
   }
-  float mean = sum / n;
+  return sum / dataLength;
+}
+
+__device__  __forceinline__ float computeDispersion(int* data, int dataLength, float mean){
+  int n = dataLength;
   float variance = 0;
   for(int i = 0; i < dataLength; i++){
     variance += (data[i]-mean)*(data[i]-mean);
   }
-  variance /= (n-1);
+  variance /= (n-1); 
   return variance / mean;
 }
 
@@ -58,14 +65,18 @@ __global__ void mandelbrot(cudaSurfaceObject_t surfaceOutput, long outputDataPit
   const int idx_y = blockDim.y * blockIdx.y + threadIdx.y;
   if(idx_x >= width || idx_y >= height) return;
 
+  // if(idx_x == 0 && idx_y == 0)
+  //     printf("dwell: %d\n", dwell);
+
   //We are in a complex plane from (left_bottom) to (right_top), so we scale the pixels to it
   float pixelWidth = (right_top_x - left_bottom_x) / (float) width;
   float pixelHeight = (right_top_y - left_bottom_y) / (float) height;
 
-  const int adaptiveTreshold = 4;
+  const int adaptiveTreshold = 3;
   int r[adaptiveTreshold];
+  int adaptivnessUsed = 0;
 
-  int averageEscapeTime = 0;
+  int escapeTimeSum = 0;
   int randomSamplePixelsIdx = (idx_y * width + idx_x)*superSamplingLevel;
   for(int i = 0; i < superSamplingLevel; i++){
     float random_xd = randomSamples[randomSamplePixelsIdx + i/2 ];
@@ -74,24 +85,38 @@ __global__ void mandelbrot(cudaSurfaceObject_t surfaceOutput, long outputDataPit
     float cy = right_top_y - (idx_y + random_yd) * pixelHeight;
 
     int escapeTime = escape(dwell, cx, cy);
-    averageEscapeTime += escapeTime;
-    /*if(i < adaptiveTreshold){
+    escapeTimeSum += escapeTime;
+    if(i < adaptiveTreshold){
       r[i] = escapeTime;
     }
     if(i == adaptiveTreshold){ //decide whether to continue with supersampling or not
-      float dispersion = computeDispersion(r, adaptiveTreshold);
-      if(dispersion <= 1)
-        superSamplingLevel = i; //effectively disabling high SS and storing info about real SS performed
-    }*/
+      float mean = escapeTimeSum / (i+1);
+      float dispersion = computeDispersion(r, i, mean);
+      if(dispersion <= 0.1){
+        superSamplingLevel = i+1; //effectively disabling high SS and storing info about actual number of samples taken
+        //adaptivnessUsed = WHITE;
+      }
+      else if(dispersion <= 10){
+        superSamplingLevel = min(i*3,superSamplingLevel); //massively reducing SS, if possible
+        //adaptivnessUsed = PINK;
+      }
+      else if(dispersion <= 100){
+        superSamplingLevel = min(i+1,superSamplingLevel / 2); //slightly reducing SS
+        //adaptivnessUsed = BLACK;
+      }
+      //else we are on an chaotic edge, thus as many samples as possible are needed
+    }
   }
-  averageEscapeTime /= superSamplingLevel;  
+  int mean = escapeTimeSum / superSamplingLevel;  
 
-  int paletteIdx = paletteLength - (averageEscapeTime % paletteLength) - 1;
+  int paletteIdx = paletteLength - (mean % paletteLength) - 1;
   int resultColor;
   surf2Dread(&resultColor, colorPalette, paletteIdx * 4, 0);
-  if(averageEscapeTime == dwell)
+  if(mean == dwell)
     resultColor = BLACK;
-
+  /*if(adaptivnessUsed){
+    resultColor = adaptivnessUsed;
+  }*/
   /*if(idx_x < 10 && idx_y < 10){
     printf("%f\t", randomSample);
     __syncthreads();

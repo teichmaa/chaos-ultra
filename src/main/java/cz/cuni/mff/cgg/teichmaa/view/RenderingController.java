@@ -31,7 +31,8 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     private float x = -0.5f;
     private float y = 0f;
     private float zoom = 2f;
-    private int dwell = 500;
+    private int dwell = 1200;
+    private int superSamplingLevel = 32;
 
     public RenderingController(int width, int height, JComponent owner) {
         this.width = width;
@@ -76,6 +77,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         float right_top_y = y + windowHeight * zoom / 2;
 
         fractalRenderer.getKernel().setDwell(dwell);
+        fractalRenderer.getKernel().setSuperSamplingLevel(superSamplingLevel);
         fractalRenderer.getKernel().setBounds(left_bottom_x, left_bottom_y, right_top_x, right_top_y);
     }
 
