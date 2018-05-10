@@ -60,6 +60,7 @@
             </Label>
             <TextField fx:id="fractal_superSamplingLevel" text="32"/>
         </HBox>
+        <Button text="render" fx:id="renderButton" onAction="#renderClicked"/>
         <HBox>
             <Label>
                 <padding>
@@ -92,19 +93,27 @@
             </Label>
         </HBox>
 
-        <Button text="render" fx:id="renderButton" onAction="#renderClicked"/>
+
 
         <Label>
             <padding>
                 <Insets top="25" right="5" bottom="5" left="5"/>
             </padding>
-            Premades:
+            Premade views:
         </Label>
 
         <Button text="default view" onAction="#sample0Clicked"/>
         <Button text="sample1" onAction="#sample1Clicked"/>
         <Button text="sample2" onAction="#sample2Clicked"/>
         <Button text="sample3" onAction="#sample3Clicked"/>
+        <Button text="sample4" onAction="#sample4Clicked"/>
+        <Label>
+            <padding>
+                <Insets top="25" right="5" bottom="5" left="5"/>
+            </padding>
+            Other functions:
+        </Label>
+        <Button text="save as image" onAction="#saveImageClicked"/>
 
     </VBox>
 

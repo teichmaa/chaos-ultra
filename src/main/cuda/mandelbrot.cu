@@ -80,8 +80,10 @@ __global__ void mandelbrot(cudaSurfaceObject_t surfaceOutput, long outputDataPit
   int escapeTimeSum = 0;
   int randomSamplePixelsIdx = (idx_y * width + idx_x)*superSamplingLevel;
   for(int i = 0; i < superSamplingLevel; i++){
-    float random_xd = randomSamples[randomSamplePixelsIdx + i/2 ];
-    float random_yd = randomSamples[randomSamplePixelsIdx + i/2 + superSamplingLevel/2];
+    //float random_xd = randomSamples[randomSamplePixelsIdx + i/2 ];
+    //float random_yd = randomSamples[randomSamplePixelsIdx + i/2 + superSamplingLevel/2];
+    float random_xd = i / (float) superSamplingLevel; //not really random, just uniform
+    float random_yd = random_xd;
     float cx = left_bottom_x + (idx_x + random_xd)  * pixelWidth;
     float cy = right_top_y - (idx_y + random_yd) * pixelHeight;
 

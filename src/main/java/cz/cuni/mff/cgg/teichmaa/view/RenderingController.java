@@ -11,6 +11,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 import java.nio.Buffer;
+import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 
 import static com.jogamp.opengl.GL.*;
@@ -79,8 +80,8 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         float right_top_x = x + windowWidth * zoom / 2;
         float right_top_y = y + windowHeight * zoom / 2;
 
-        AbstractFractalRenderKernel k = fractalRenderer.getKernel();
-        k.setBounds(left_bottom_x, left_bottom_y, right_top_x, right_top_y);
+
+        fractalRenderer.setBounds(left_bottom_x, left_bottom_y, right_top_x, right_top_y);
 
         Platform.runLater(() -> {
             controllerFX.setZoom(zoom);
@@ -89,10 +90,6 @@ public class RenderingController extends MouseAdapter implements GLEventListener
             //controllerFX.setDimensions(width, height); //does controllerFX care about those?
         });
 
-    }
-
-    public AbstractFractalRenderKernel getKernel_unsafe(){
-        return this.fractalRenderer.getKernel();
     }
 
     @Override
@@ -117,8 +114,10 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         }
         gl.glBindTexture(GL_TEXTURE_2D, 0);
 
+
+        //todo prepsat vybirani kernelu na Factory, neco jako Kernels.createMandelbrot
         fractalRenderer = new CudaLauncher(new MandelbrotKernel(0, width, height, 0, 0, 0, 0),
-                outputTextureGLhandle, paletteTextureGLhandle, colorPalette.limit());
+                outputTextureGLhandle, GL_TEXTURE_2D, paletteTextureGLhandle, GL_TEXTURE_2D, colorPalette.limit());
         recomputeKernelParams();
         Platform.runLater(controllerFX::showDefaultView);
 
@@ -146,12 +145,19 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     @Override
     public void display(GLAutoDrawable drawable) {
 
+        if(saveImageRequested){
+            saveImageInternal(drawable.getGL().getGL2());
+            saveImageRequested = false;
+            return;
+        }
+
         long startTime = System.currentTimeMillis();
 
         recomputeKernelParams();
         fractalRenderer.launchKernel(false, false);
 
         final GL2 gl = drawable.getGL().getGL2();
+
         gl.glMatrixMode(GL_MODELVIEW);
         gl.glPushMatrix();
         gl.glLoadIdentity();
@@ -178,21 +184,17 @@ public class RenderingController extends MouseAdapter implements GLEventListener
 
     @Override
     public void reshape(GLAutoDrawable drawable, int i, int i1, int i2, int i3) {
-        /*
-        //TODO je potreba reshapovat i supersamplovaci random vzorek
+/*
         width = i2;
         height = i3;
 
         final GL2 gl = drawable.getGL().getGL2();
         gl.glViewport(0, 0, width, height);
 
-        fractalRenderer.getKernel().setWidth(width);
-        fractalRenderer.getKernel().setHeight(height);
-
         fractalRenderer.unregisterOutputTexture();
+        fractalRenderer.resize(width, height);
         registerOutputTexture(gl); //using the new dimensions
-        fractalRenderer.registerOutputTexture(outputTextureGLhandle);
-*/
+        fractalRenderer.registerOutputTexture(outputTextureGLhandle, GL_TEXTURE_2D);*/
     }
 
     void setX(float x) {
@@ -204,26 +206,49 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     }
 
     void setDwell(int dwell) {
-        fractalRenderer.getKernel().setDwell(dwell);
+        fractalRenderer.setDwell(dwell);
     }
 
     void setZoom(float zoom) {
         this.zoom = zoom;
     }
 
-    void setSuperSamplingLevel(int supsamp) {
-        fractalRenderer.getKernel().setSuperSamplingLevel(supsamp);
+    void setSuperSamplingLevel(int supSampLvl) {
+        fractalRenderer.setSuperSamplingLevel(supSampLvl);
     }
 
     void repaint() {
         owner.repaint();
     }
 
-    void setAdaptiveSS(boolean val) {
-        fractalRenderer.getKernel().setAdaptiveSS(val);
+    void setAdaptiveSS(boolean adaptiveSS) {
+        fractalRenderer.setAdaptiveSS(adaptiveSS);
     }
 
-    void setVisualiseAdaptiveSS(boolean b) {
-        fractalRenderer.getKernel().setVisualiseAdaptiveSS(b);
+    void setVisualiseAdaptiveSS(boolean visualiseAdaptiveSS) {
+        fractalRenderer.setVisualiseAdaptiveSS(visualiseAdaptiveSS);
+    }
+
+    public void saveImage(String fileName, String format) {
+        this.saveImageFileName = fileName;
+        this.saveImageFormat = format;
+        saveImageRequested = true;
+        repaint();
+    }
+    private String saveImageFileName;
+    private String saveImageFormat;
+    private boolean saveImageRequested = false;
+
+    private void saveImageInternal(GL2 gl) {
+        int[] data = new int[width*height];
+        Buffer b = IntBuffer.wrap(data);
+        gl.glBindTexture(GL_TEXTURE_2D, outputTextureGLhandle);
+        {
+            //documentation: https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glGetTexImage.xhtml
+            gl.glGetTexImage(GL_TEXTURE_2D, 0, GL_BGRA, GL_UNSIGNED_BYTE, b);
+        }
+        gl.glBindTexture(GL_TEXTURE_2D, 0);
+        ImageHelpers.createImage(data,width,height,saveImageFileName,saveImageFormat);
+        System.out.println("Image saved to " + saveImageFileName);
     }
 }

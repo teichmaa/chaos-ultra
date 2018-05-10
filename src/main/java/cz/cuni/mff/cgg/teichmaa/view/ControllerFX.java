@@ -19,6 +19,8 @@ import java.awt.BorderLayout;
 
 import javax.swing.*;
 import java.net.URL;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.ResourceBundle;
 
 public class ControllerFX implements Initializable {
@@ -29,7 +31,7 @@ public class ControllerFX implements Initializable {
     @FXML
     Button renderButton;
 
-    //private ConcurrentParamHolder params;
+    public final int SUPERSAMPLING_MAX_LEVEL = 256;
 
     private GLJPanel fractalCanvas;
     @FXML
@@ -93,11 +95,13 @@ public class ControllerFX implements Initializable {
         float y = Float.parseFloat(fractal_y.getText());
         float zoom = Float.parseFloat(fractal_zoom.getText());
         int dwell = Integer.parseInt(fractal_dwell.getText());
-        int supsamp = Math.min(256, Integer.parseInt(fractal_superSamplingLevel.getText()));
-        if (supsamp >= 256) {
-            System.out.println("Warning: super sampling level clamped to " + supsamp + ", higher is not supported");
-            fractal_superSamplingLevel.setText("" + supsamp);
+        int supsamp_tmp = Integer.parseInt(fractal_superSamplingLevel.getText());
+        if (supsamp_tmp >= SUPERSAMPLING_MAX_LEVEL) {
+            supsamp_tmp = SUPERSAMPLING_MAX_LEVEL;
+            System.out.println("Warning: super sampling level clamped to " + supsamp_tmp + ", higher is not supported");
+            fractal_superSamplingLevel.setText("" + supsamp_tmp);
         }
+        int supsamp = supsamp_tmp; //for lambda, to pass effectively final value
 
         SwingUtilities.invokeLater(() -> {
             renderingController.setX(x);
@@ -125,6 +129,8 @@ public class ControllerFX implements Initializable {
         fractal_x.setText("-0.5");
         fractal_y.setText("0");
         fractal_zoom.setText("2");
+        fractal_dwell.setText("1400");
+        fractal_superSamplingLevel.setText("1");
         renderClicked(null);
     }
 
@@ -147,9 +153,15 @@ public class ControllerFX implements Initializable {
     }
 
     public void sample3Clicked(ActionEvent actionEvent) {
-        fractal_x.setText(" -0.925");
+        fractal_x.setText("-0.925");
         fractal_y.setText("0.266");
         fractal_zoom.setText("0.032");
+        renderClicked(actionEvent);
+    }
+    public void sample4Clicked(ActionEvent actionEvent) {
+        fractal_x.setText("-0.57675236");
+        fractal_y.setText("-0.4625193");
+        fractal_zoom.setText("0.029995363");
         renderClicked(actionEvent);
     }
 
@@ -178,4 +190,11 @@ public class ControllerFX implements Initializable {
             fractal_adaptiveSS.setSelected(true);
         }
     }
+
+    public void saveImageClicked(ActionEvent actionEvent) {
+        String time = new SimpleDateFormat("dd-MM-YY_mm-ss").format(new Date());
+        SwingUtilities.invokeLater(() -> renderingController.saveImage("E:\\Tonda\\Desktop\\fractal-out\\fractal_" + time + ".png", "png"));
+    }
+
+
 }

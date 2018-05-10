@@ -49,7 +49,7 @@ public class ImageHelpers {
         return p;
     }
 
-    public static int fromRGB(int r, int g, int b) {
+    private static int fromRGB(int r, int g, int b) {
         int a = 255;
         //to RGBA
         int r_shift = 0;
@@ -116,6 +116,7 @@ public class ImageHelpers {
         }
 
     }
+
 
     public static void printArray(int[][] a) {
         for (int i = 0; i < a.length; i++) {

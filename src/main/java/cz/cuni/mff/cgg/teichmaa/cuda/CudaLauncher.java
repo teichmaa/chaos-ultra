@@ -16,7 +16,6 @@ import java.security.InvalidParameterException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-import static com.jogamp.opengl.GL.GL_TEXTURE_2D;
 import static jcuda.driver.JCudaDriver.*;
 import static jcuda.jcurand.curandRngType.CURAND_RNG_PSEUDO_DEFAULT;
 import static jcuda.jcurand.curandRngType.CURAND_RNG_QUASI_SOBOL32;
@@ -43,60 +42,65 @@ public class CudaLauncher implements Closeable {
     private cudaGraphicsResource paletteTextureResource = new cudaGraphicsResource();
     private cudaStream_t defaultStream = new cudaStream_t();
 
-    public CudaLauncher(AbstractFractalRenderKernel kernel, int outputTextureGLhandle, int paletteTextureGLhandle, int paletteLength) {
+    public CudaLauncher(AbstractFractalRenderKernel kernel, int outputTextureGLhandle, int outputTextureGLtarget, int paletteTextureGLhandle, int paletteTextureGLtarget, int paletteLength) {
         this.kernel = kernel;
         this.paletteLength = paletteLength;
 
         cudaInit();
         // devout_pitch_debug = allocateDevice2DBuffer(kernel.getWidth(), kernel.getHeight(), devout_debug);
 
-        registerOutputTexture(outputTextureGLhandle);
-        jcuda.runtime.JCuda.cudaGraphicsGLRegisterImage(paletteTextureResource, paletteTextureGLhandle, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsReadOnly);
+        registerOutputTexture(outputTextureGLhandle, outputTextureGLtarget);
+        jcuda.runtime.JCuda.cudaGraphicsGLRegisterImage(paletteTextureResource, paletteTextureGLhandle, paletteTextureGLtarget, cudaGraphicsRegisterFlagsReadOnly);
 
         //kernelInit();
 
-        kernel.setSuperSamplingLevel(256); //tmp, this is here as temporary cure for SS non-resizing and non-adapting
+        //kernel.setSuperSamplingLevel(256); //tmp, this is here as temporary cure for SS non-resizing and non-adapting
         randomSamplesInit();
 
     }
 
-    private void randomSamplesInit(){
-        //todo tohle nefunguje pri resize
-        //  > proste CudaLauncheru pridej bud metodu resize nebo observer na kernel width-has-changed (setwh spoj do setDimensions > jediny callback)
-        int w = kernel.getWidth();
-        int h = kernel.getHeight();
-        int ssl = kernel.getSuperSamplingLevel();
-
-        int sampleCount = w* h *ssl;
-
-        curandGenerator gen = new curandGenerator();
-        //JCurand.curandCreateGenerator(gen, CURAND_RNG_QUASI_SOBOL32);
-        JCurand.curandCreateGenerator(gen, CURAND_RNG_PSEUDO_DEFAULT);
-        //JCurand.curandSetQuasiRandomGeneratorDimensions(gen, 2);
-        randomValues = new CUdeviceptr();
-        JCuda.cudaMalloc(randomValues, sampleCount * Sizeof.FLOAT);
-/*
-        //crazy slow and hacky solution, which yet might give desired results
-        for (int i = 0; i < w; i++) {
-            for (int j = 0; j < h; j++) {
-                PointerHelpers.nativePointerArtihmeticHack(randomValues, ssl * Sizeof.FLOAT);
-                JCurand.curandGenerateUniform(gen, randomValues, ssl);
-            }
-        }
-        PointerHelpers.nativePointerArtihmeticHack(randomValues, - w * h * ssl * Sizeof.FLOAT);*/
-        JCurand.curandGenerateUniform(gen, randomValues, sampleCount);
-
-
-        /*ByteBuffer testOut = ByteBuffer.allocateDirect(sampleCount * Sizeof.FLOAT);
-        JCuda.cudaMemcpy(Pointer.to(testOut), randomValues, sampleCount * Sizeof.FLOAT, cudaMemcpyKind.cudaMemcpyDeviceToHost);
-        float[] floats = new float[sampleCount];
-        for (int i = 0; i < floats.length; i++) {
-            floats[i] = (float) testOut.getInt();
-        }
-        for (int i = 0; i < 100; i++) {
-            System.out.println(floats[i]);
-        }*/
-        int a = 0;
+    private void randomSamplesInit() {
+//
+//
+//        if(randomValues != null){
+//            JCuda.cudaFree(randomValues);
+//        }else{
+//            randomValues = new CUdeviceptr();
+//        }
+//
+//        int w = kernel.getWidth();
+//        int h = kernel.getHeight();
+//        int ssl = kernel.getSuperSamplingLevel();
+//
+//        int sampleCount = w * h * ssl;
+//
+//        curandGenerator gen = new curandGenerator();
+//        //JCurand.curandCreateGenerator(gen, CURAND_RNG_QUASI_SOBOL32);
+//        JCurand.curandCreateGenerator(gen, CURAND_RNG_PSEUDO_DEFAULT);
+//        //JCurand.curandSetQuasiRandomGeneratorDimensions(gen, 2);
+//        JCuda.cudaMalloc(randomValues, sampleCount * Sizeof.FLOAT);
+///*
+//        //crazy slow and hacky solution, which yet might give desired results
+//        for (int i = 0; i < w; i++) {
+//            for (int j = 0; j < h; j++) {
+//                PointerHelpers.nativePointerArtihmeticHack(randomValues, ssl * Sizeof.FLOAT);
+//                JCurand.curandGenerateUniform(gen, randomValues, ssl);
+//            }
+//        }
+//        PointerHelpers.nativePointerArtihmeticHack(randomValues, - w * h * ssl * Sizeof.FLOAT);*/
+//        JCurand.curandGenerateUniform(gen, randomValues, sampleCount);
+//
+//
+//        /*ByteBuffer testOut = ByteBuffer.allocateDirect(sampleCount * Sizeof.FLOAT);
+//        JCuda.cudaMemcpy(Pointer.to(testOut), randomValues, sampleCount * Sizeof.FLOAT, cudaMemcpyKind.cudaMemcpyDeviceToHost);
+//        float[] floats = new float[sampleCount];
+//        for (int i = 0; i < floats.length; i++) {
+//            floats[i] = (float) testOut.getInt();
+//        }
+//        for (int i = 0; i < 100; i++) {
+//            System.out.println(floats[i]);
+//        }*/
+//        int a = 0; //breakpoint
     }
 
 
@@ -115,9 +119,9 @@ public class CudaLauncher implements Closeable {
 
     }
 
-    public void registerOutputTexture(int outputTextureGLhandle) {
+    public void registerOutputTexture(int outputTextureGLhandle, int GLtarget) {
         //documentation: http://www.jcuda.org/jcuda/doc/jcuda/runtime/JCuda.html#cudaGraphicsGLRegisterImage(jcuda.runtime.cudaGraphicsResource,%20int,%20int,%20int)
-        jcuda.runtime.JCuda.cudaGraphicsGLRegisterImage(outputTextureResource, outputTextureGLhandle, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsWriteDiscard);
+        jcuda.runtime.JCuda.cudaGraphicsGLRegisterImage(outputTextureResource, outputTextureGLhandle, GLtarget, cudaGraphicsRegisterFlagsWriteDiscard);
     }
 
     public void unregisterOutputTexture() {
@@ -186,24 +190,19 @@ public class CudaLauncher implements Closeable {
         return dev;
     }
 
-    public int getBlockDimX() {
-        return blockDimX;
+    public void resize(int width, int height){
+        kernel.setWidth(width);
+        kernel.setHeight(height);
+        randomSamplesInit();
+        //todo some other things?
     }
 
-    public void setBlockDimX(int blockDimX) {
-        this.blockDimX = blockDimX;
+    public int getWidth(){
+        return kernel.getWidth();
     }
 
-    public int getBlockDimY() {
-        return blockDimY;
-    }
-
-    public void setBlockDimY(int blockDimY) {
-        this.blockDimY = blockDimY;
-    }
-
-    public AbstractFractalRenderKernel getKernel() {
-        return kernel;
+    public int getHeight(){
+        return kernel.getHeight();
     }
 
     private boolean already = false;
@@ -221,71 +220,80 @@ public class CudaLauncher implements Closeable {
         int width = kernel.getWidth();
         int height = kernel.getHeight();
 
-        JCuda.cudaGraphicsMapResources(1, new cudaGraphicsResource[]{outputTextureResource}, defaultStream);
-        JCuda.cudaGraphicsMapResources(1, new cudaGraphicsResource[]{paletteTextureResource}, defaultStream);
         try {
-            cudaSurfaceObject surfaceOutput = new cudaSurfaceObject();
-            {
-                cudaResourceDesc surfaceDesc = new cudaResourceDesc();
-                {
-                    cudaArray arr = new cudaArray();
-                    JCuda.cudaGraphicsSubResourceGetMappedArray(arr, outputTextureResource, 0, 0);
-                    surfaceDesc.resType = cudaResourceTypeArray;
-                    surfaceDesc.array_array = arr;
-                }
-                JCuda.cudaCreateSurfaceObject(surfaceOutput, surfaceDesc);
-            }
-            cudaSurfaceObject surfacePalette = new cudaSurfaceObject();
-            {
-                cudaResourceDesc surfaceDesc = new cudaResourceDesc();
-                {
-                    cudaArray arr = new cudaArray();
-                    JCuda.cudaGraphicsSubResourceGetMappedArray(arr, paletteTextureResource, 0, 0);
-                    surfaceDesc.resType = cudaResourceTypeArray;
-                    surfaceDesc.array_array = arr;
-                }
-                JCuda.cudaCreateSurfaceObject(surfacePalette, surfaceDesc);
-            }
+            JCuda.cudaGraphicsMapResources(1, new cudaGraphicsResource[]{outputTextureResource}, defaultStream);
+            JCuda.cudaGraphicsMapResources(1, new cudaGraphicsResource[]{paletteTextureResource}, defaultStream);
             try {
-                // Set up the kernel parameters: A pointer to an array
-                // of pointers which point to the actual values.
-                NativePointerObject[] kernelParamsArr = kernel.getKernelParams();
+                cudaSurfaceObject surfaceOutput = new cudaSurfaceObject();
                 {
-                    kernelParamsArr[kernel.PARAM_IDX_SURFACE_OUT] = Pointer.to(surfaceOutput);
-                    kernelParamsArr[kernel.PARAM_IDX_SURFACE_PALETTE] = Pointer.to(surfacePalette);
-                    kernelParamsArr[kernel.PARAM_IDX_RANDOM_SAMPLES] = Pointer.to(randomValues);
-                    kernelParamsArr[kernel.PARAM_IDX_PALETTE_LENGTH] = Pointer.to(new int[]{paletteLength}); //device out is obsolete, only used for debugging
-                    kernelParamsArr[kernel.PARAM_IDX_PITCH] = Pointer.to(new long[]{devout_pitch_debug}); //pitch is obsolete, only used for debugging
-                    kernelParamsArr[kernel.PARAM_IDX_DEVICE_OUT] = Pointer.to(devout_debug); //device out is obsolete, only used for debugging
+                    cudaResourceDesc surfaceDesc = new cudaResourceDesc();
+                    {
+                        cudaArray arr = new cudaArray();
+                        JCuda.cudaGraphicsSubResourceGetMappedArray(arr, outputTextureResource, 0, 0);
+                        surfaceDesc.resType = cudaResourceTypeArray;
+                        surfaceDesc.array_array = arr;
+                    }
+                    JCuda.cudaCreateSurfaceObject(surfaceOutput, surfaceDesc);
                 }
-                Pointer kernelParams = Pointer.to(kernelParamsArr);
-                CUfunction kernelFunction = kernel.getMainFunction();
-                int gridDimX = width / blockDimX;
-                int gridDimY = height / blockDimY;
+                cudaSurfaceObject surfacePalette = new cudaSurfaceObject();
+                {
+                    cudaResourceDesc surfaceDesc = new cudaResourceDesc();
+                    {
+                        cudaArray arr = new cudaArray();
+                        JCuda.cudaGraphicsSubResourceGetMappedArray(arr, paletteTextureResource, 0, 0);
+                        surfaceDesc.resType = cudaResourceTypeArray;
+                        surfaceDesc.array_array = arr;
+                    }
+                    JCuda.cudaCreateSurfaceObject(surfacePalette, surfaceDesc);
+                }
+                try {
+                    // Set up the kernel parameters: A pointer to an array
+                    // of pointers which point to the actual values.
+                    NativePointerObject[] kernelParamsArr = kernel.getKernelParams();
+                    {
+                        kernelParamsArr[kernel.PARAM_IDX_SURFACE_OUT] = Pointer.to(surfaceOutput);
+                        kernelParamsArr[kernel.PARAM_IDX_SURFACE_PALETTE] = Pointer.to(surfacePalette);
+                        kernelParamsArr[kernel.PARAM_IDX_RANDOM_SAMPLES] = Pointer.to(randomValues);
+                        kernelParamsArr[kernel.PARAM_IDX_PALETTE_LENGTH] = Pointer.to(new int[]{paletteLength}); //device out is obsolete, only used for debugging
+                        kernelParamsArr[kernel.PARAM_IDX_PITCH] = Pointer.to(new long[]{devout_pitch_debug}); //pitch is obsolete, only used for debugging
+                        kernelParamsArr[kernel.PARAM_IDX_DEVICE_OUT] = Pointer.to(devout_debug); //device out is obsolete, only used for debugging
+                    }
+                    Pointer kernelParams = Pointer.to(kernelParamsArr);
+                    CUfunction kernelFunction = kernel.getMainFunction();
+                    int gridDimX = width / blockDimX;
+                    int gridDimY = height / blockDimY;
 
-                if (gridDimX <= 0 || gridDimY <= 0) return;
-                if (gridDimX > CUDA_MAX_GRID_DIM) {
-                    throw new CudaRendererException("Unsupported input parameter: width must be smaller than " + CUDA_MAX_GRID_DIM * blockDimX);
+                    if (gridDimX <= 0 || gridDimY <= 0) return;
+                    if (gridDimX > CUDA_MAX_GRID_DIM) {
+                        throw new CudaRendererException("Unsupported input parameter: width must be smaller than " + CUDA_MAX_GRID_DIM * blockDimX);
+                    }
+                    if (gridDimY > CUDA_MAX_GRID_DIM) {
+                        throw new CudaRendererException("Unsupported input parameter: height must be smaller than " + CUDA_MAX_GRID_DIM * blockDimY);
+                    }
+                    try {
+                        cuLaunchKernel(kernelFunction,
+                                gridDimX, gridDimY, 1,
+                                blockDimX, blockDimY, 1,
+                                0, null,           // Shared memory size and defaultStream
+                                kernelParams, null // Kernel- and extra parameters
+                        );
+                        if (!async)
+                            cuCtxSynchronize();
+                    }catch (CudaException e){
+                        System.err.println("Error just after launching a kernel:");
+                        System.err.println(e);
+                    }
+                } finally {
+                    JCuda.cudaDestroySurfaceObject(surfaceOutput);
+                    JCuda.cudaDestroySurfaceObject(surfacePalette);
                 }
-                if (gridDimY > CUDA_MAX_GRID_DIM) {
-                    throw new CudaRendererException("Unsupported input parameter: height must be smaller than " + CUDA_MAX_GRID_DIM * blockDimY);
-                }
-
-                cuLaunchKernel(kernelFunction,
-                        gridDimX, gridDimY, 1,
-                        blockDimX, blockDimY, 1,
-                        0, null,           // Shared memory size and defaultStream
-                        kernelParams, null // Kernel- and extra parameters
-                );
-                if (!async)
-                    cuCtxSynchronize();
             } finally {
-                JCuda.cudaDestroySurfaceObject(surfaceOutput);
-                JCuda.cudaDestroySurfaceObject(surfacePalette);
+                JCuda.cudaGraphicsUnmapResources(1, new cudaGraphicsResource[]{outputTextureResource}, defaultStream);
+                JCuda.cudaGraphicsUnmapResources(1, new cudaGraphicsResource[]{paletteTextureResource}, defaultStream);
             }
-        } finally {
-            JCuda.cudaGraphicsUnmapResources(1, new cudaGraphicsResource[]{outputTextureResource}, defaultStream);
-            JCuda.cudaGraphicsUnmapResources(1, new cudaGraphicsResource[]{paletteTextureResource}, defaultStream);
+        }catch (CudaException | CudaRendererException e){
+            System.err.println("Error during kernel launch preparation:");
+            System.err.println(e);
         }
 
         long end = System.currentTimeMillis();
@@ -293,7 +301,6 @@ public class CudaLauncher implements Closeable {
             System.out.println("Kernel " + kernel.getMainFunctionName() + " launched and finished in " + (end - start) + "ms");
         }
     }
-
 
     private void saveAsImage(long createImageStartTime, int renderTimeTotalMs, int[] data) {
         int dwell = kernel.getDwell();
@@ -325,4 +332,26 @@ public class CudaLauncher implements Closeable {
         //      cuMemFree(devicePalette);
         JCuda.cudaFree(randomValues);
     }
+
+    public void setAdaptiveSS(boolean adaptiveSS) {
+        kernel.setAdaptiveSS(adaptiveSS);
+    }
+
+    public void setVisualiseAdaptiveSS(boolean visualiseAdaptiveSS) {
+        kernel.setVisualiseAdaptiveSS(visualiseAdaptiveSS);
+    }
+
+    public void setSuperSamplingLevel(int supSampLvl) {
+        kernel.setSuperSamplingLevel(supSampLvl);
+        randomSamplesInit();
+    }
+
+    public void setDwell(int dwell) {
+        kernel.setDwell(dwell);
+    }
+
+    public void setBounds(float left_bottom_x, float left_bottom_y, float right_top_x, float right_top_y) {
+        kernel.setBounds(left_bottom_x,left_bottom_y,right_top_x,right_top_y);
+    }
+
 }
