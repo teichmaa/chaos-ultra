@@ -8,12 +8,14 @@
 <?import javafx.scene.control.TextField?>
 <?import javafx.embed.swing.SwingNode?>
 <?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.layout.Pane?>
 <HBox fx:controller="cz.cuni.mff.cgg.teichmaa.view.ControllerFX"
       xmlns:fx="http://javafx.com/fxml">
-    <SwingNode fx:id="swingNode">
+        <SwingNode fx:id="swingNode" HBox.hgrow="ALWAYS">
 
-    </SwingNode>
-    <VBox>
+        </SwingNode>
+
+    <VBox minWidth="250">
 
         <HBox>
             <Label>

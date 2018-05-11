@@ -25,14 +25,11 @@ import java.util.ResourceBundle;
 
 public class ControllerFX implements Initializable {
 
-    @FXML
-    SwingNode swingNode;
-
-    @FXML
-    Button renderButton;
-
     public final int SUPERSAMPLING_MAX_LEVEL = 256;
-
+    @FXML
+    private SwingNode swingNode;
+    @FXML
+    private Button renderButton;
     private GLJPanel fractalCanvas;
     @FXML
     private TextField fractal_x;
@@ -53,16 +50,10 @@ public class ControllerFX implements Initializable {
 
     private RenderingController renderingController;
 
-    private int width;
-    private int height;
-
     @Override
     public void initialize(URL location, ResourceBundle resources) {
 
         Rectangle2D bounds = Screen.getPrimary().getVisualBounds();
-
-        width = 1000;
-        height = 1000;
         GLInit();
     }
 
@@ -71,7 +62,7 @@ public class ControllerFX implements Initializable {
         GLCapabilities capabilities = new GLCapabilities(profile);
 
         fractalCanvas = new GLJPanel(capabilities);
-        renderingController = new RenderingController(width, height, fractalCanvas, this);
+        renderingController = new RenderingController(fractalCanvas, this);
         {
             fractalCanvas.addGLEventListener(renderingController);
             fractalCanvas.addMouseWheelListener(renderingController);
@@ -79,12 +70,11 @@ public class ControllerFX implements Initializable {
             fractalCanvas.addMouseListener(renderingController);
         }
 
-        fractalCanvas.setPreferredSize(new Dimension(width, height));
         final JPanel panel = new JPanel();
         {
             panel.setLayout(new BorderLayout(0, 0));
             panel.add(fractalCanvas);
-            // panel.add(new JTextField("rest space"));
+            //panel.add(new JTextField("rest space"));
         }
         swingNode.setContent(panel);
     }
@@ -130,7 +120,7 @@ public class ControllerFX implements Initializable {
         fractal_y.setText("0");
         fractal_zoom.setText("2");
         fractal_dwell.setText("1400");
-        fractal_superSamplingLevel.setText("1");
+        fractal_superSamplingLevel.setText("5");
         renderClicked(null);
     }
 
@@ -160,8 +150,10 @@ public class ControllerFX implements Initializable {
     }
     public void sample4Clicked(ActionEvent actionEvent) {
         fractal_x.setText("-0.57675236");
-        fractal_y.setText("-0.4625193");
+        fractal_y.setText("0.4625193");
         fractal_zoom.setText("0.029995363");
+        fractal_superSamplingLevel.setText("32");
+        fractal_adaptiveSS.setSelected(false);
         renderClicked(actionEvent);
     }
 
@@ -192,7 +184,7 @@ public class ControllerFX implements Initializable {
     }
 
     public void saveImageClicked(ActionEvent actionEvent) {
-        String time = new SimpleDateFormat("dd-MM-YY_mm-ss").format(new Date());
+        String time = new SimpleDateFormat("dd-MM-YY_HH-mm-ss").format(new Date());
         SwingUtilities.invokeLater(() -> renderingController.saveImage("E:\\Tonda\\Desktop\\fractal-out\\fractal_" + time + ".png", "png"));
     }
 

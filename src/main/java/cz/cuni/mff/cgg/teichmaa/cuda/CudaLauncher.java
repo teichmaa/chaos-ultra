@@ -190,11 +190,13 @@ public class CudaLauncher implements Closeable {
         return dev;
     }
 
-    public void resize(int width, int height){
+    public void resize(int width, int height, int outputTextureGLhandle, int GLtarget){
+
+        System.out.println("resize: " +width + " x " + height);
         kernel.setWidth(width);
         kernel.setHeight(height);
         randomSamplesInit();
-        //todo some other things?
+        registerOutputTexture(outputTextureGLhandle, GLtarget);
     }
 
     public int getWidth(){
@@ -205,17 +207,12 @@ public class CudaLauncher implements Closeable {
         return kernel.getHeight();
     }
 
-    private boolean already = false;
-
     /**
      * @param verbose whether to print out how long the rendering has taken
      * @param async   when true, the function will return just after launching the kernel and will not wait for it to end. The bitmaps will still be synchronized.
      */
     public void launchKernel(boolean verbose, boolean async) {
         long start = System.currentTimeMillis();
-
-        //if(already) return;
-        //already = true;
 
         int width = kernel.getWidth();
         int height = kernel.getHeight();
@@ -328,9 +325,11 @@ public class CudaLauncher implements Closeable {
 
     @Override
     public void close() {
+        unregisterOutputTexture();
         //cuMemFree(deviceOut);
         //      cuMemFree(devicePalette);
-        JCuda.cudaFree(randomValues);
+        if(randomValues != null)
+            JCuda.cudaFree(randomValues);
     }
 
     public void setAdaptiveSS(boolean adaptiveSS) {

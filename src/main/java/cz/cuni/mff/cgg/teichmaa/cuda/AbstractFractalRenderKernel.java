@@ -61,7 +61,6 @@ public abstract class AbstractFractalRenderKernel {
         this.left_bottom_y = left_bottom_y;
         this.right_top_x = right_top_x;
         this.right_top_y = right_top_y;
-        superSamplingLevel = 1;
 
         params = new NativePointerObject[PARAM_IDX_VISUALISE_ADAPTIVE_SS + 1];
 
@@ -75,6 +74,7 @@ public abstract class AbstractFractalRenderKernel {
         params[PARAM_IDX_SUPER_SAMPLING_LEVEL] = Pointer.to(new int[]{superSamplingLevel});
         setAdaptiveSS(true);
         setVisualiseAdaptiveSS(false);
+        setSuperSamplingLevel(1);
     }
 
     /**
@@ -173,7 +173,7 @@ public abstract class AbstractFractalRenderKernel {
 
     public void setHeight(int height) {
         this.height = height;
-        params[PARAM_IDX_WIDTH] = Pointer.to(new int[]{height});
+        params[PARAM_IDX_HEIGHT] = Pointer.to(new int[]{height});
     }
 
     public float getLeft_bottom_x() {

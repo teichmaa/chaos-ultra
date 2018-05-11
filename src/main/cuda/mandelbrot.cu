@@ -1,5 +1,4 @@
 #include <curand_kernel.h>
-//#include "sobol_direction_vectors.h"
 #include "math.h"
 const int BLACK = 0xff000000;
 const int WHITE = 0xffffffff;
@@ -8,11 +7,11 @@ const int YELLOW = 0xff00ffff;
 const int GOLD = 0xff00d7ff;
 
 #define CUDA_CALL(x) do { if((x) != cudaSuccess) { \
-  printf("Mandelbrot content: Error at %s:%d\n",__FILE__,__LINE__); \
+  printf("Mandelbrot: Error at %s:%d\n",__FILE__,__LINE__); \
   return EXIT_FAILURE;}} while(0)
   
 #define CURAND_CALL(x) do { if((x) != CURAND_STATUS_SUCCESS) { \
-  printf("Mandelbrot content: Error at %s:%d\n",__FILE__,__LINE__); \
+  printf("Mandelbrot: Error at %s:%d\n",__FILE__,__LINE__); \
   return EXIT_FAILURE;}} while(0)
 
 //Mandelbrot content, using standard mathematical terminology for Mandelbrot set definition, i.e.
@@ -78,7 +77,7 @@ __global__ void mandelbrot(cudaSurfaceObject_t surfaceOutput, long outputDataPit
   int adaptivnessUsed = 0;
 
   int escapeTimeSum = 0;
-  int randomSamplePixelsIdx = (idx_y * width + idx_x)*superSamplingLevel;
+  //int randomSamplePixelsIdx = (idx_y * width + idx_x)*superSamplingLevel;
   for(int i = 0; i < superSamplingLevel; i++){
     //float random_xd = randomSamples[randomSamplePixelsIdx + i/2 ];
     //float random_yd = randomSamples[randomSamplePixelsIdx + i/2 + superSamplingLevel/2];
@@ -147,32 +146,6 @@ __global__ void init(){
     if(sobolDirectionVectors == NULL || sobolStates == NULL){
       printf("init sobolDirectionVectors malloc failed");
       return;
-  }
-    
-
-  
-}
-
-  /*
-  unsigned int * direction_vectors = (unsigned int *) malloc(32 * sizeof(unsigned int));
-  direction_vectors[0] = 1;
-  if(direction_vectors == NULL){
-      printf("thread (%d, %d) malloc failed", idx_x, idx_y);
-      return;
-  }
-  
-  curandStateSobol32_t sobolState;
-  curand_init((unsigned int *) direction_vectors,(unsigned int) 0, & sobolState);
-  for (int i = 0; i < 10; i ++){
-    float rand = curand_uniform(&sobolState);
-    if(idx_x < 10 && idx_y < 10){
-      printf("thread (%d, %d) rand: %f\t", idx_x, idx_y, rand);
-      __syncthreads();
-      if(idx_x == 0 && idx_y == 0)
-        printf("\n");
     }
-  }
-  
-  free(direction_vectors);*/
-  
+  }  
 }
