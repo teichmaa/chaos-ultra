@@ -36,18 +36,12 @@ __device__ __forceinline__ int escape(int dwell, float cx, float cy){
   return i;
 }
 
-__device__  __forceinline__ float computeMean(int* data, int dataLength){
-  int sum =0;
-  for(int i = 0; i < dataLength; i++){
-    sum += (data[i]);
-  }
-  return sum / dataLength;
-}
-
+/// Dispersion in this context is "Index of dispersion", aka variance-to-mean ratio. See https://en.wikipedia.org/wiki/Index_of_dispersion for more details
 __device__  __forceinline__ float computeDispersion(int* data, int dataLength, float mean){
   int n = dataLength;
   float variance = 0;
   for(int i = 0; i < dataLength; i++){
+    //using numerically stable Two-Pass algorithm, https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Two-pass_algorithm
     variance += (data[i]-mean)*(data[i]-mean);
   }
   variance /= (n-1); 
@@ -56,17 +50,13 @@ __device__  __forceinline__ float computeDispersion(int* data, int dataLength, f
 
 
 extern "C"
-__global__ void mandelbrot(cudaSurfaceObject_t surfaceOutput, long outputDataPitch_debug,/*int * palette,*/int width, int height, float left_bottom_x, float left_bottom_y, float right_top_x, float right_top_y, int dwell, int** outputData_debug, cudaSurfaceObject_t colorPalette, int paletteLength, float* randomSamples, int superSamplingLevel, bool adaptiveSS, bool visualiseSS)
+__global__ void mandelbrot(cudaSurfaceObject_t surfaceOutput, long outputDataPitch_debug, int width, int height, float left_bottom_x, float left_bottom_y, float right_top_x, float right_top_y, int dwell, int** outputData_debug, cudaSurfaceObject_t colorPalette, int paletteLength, float* randomSamples, int superSamplingLevel, bool adaptiveSS, bool visualiseSS)
 // todo: usporadat poradi paramateru, cudaXXObjects predavat pointrem, ne kopirovanim (tohle rozmyslet, mozna je to takhle dobre)
-//  todo na paletu by byla rychlejsi textura nez surface, ale to mi nefungovalo (vracelo jen dolnich 8 bytes)
 //  todo ma to fakt hodne pointeru, mnoho z nich je pritom pro vsechny launche stejny - nezdrzuje tohle? omezene registry a tak
 {
   const int idx_x = blockDim.x * blockIdx.x + threadIdx.x;
   const int idx_y = blockDim.y * blockIdx.y + threadIdx.y;
   if(idx_x >= width || idx_y >= height) return;
-
-  // if(idx_x == 0 && idx_y == 0)
-  //     printf("dwell: %d\n", dwell);
 
   //We are in a complex plane from (left_bottom) to (right_top), so we scale the pixels to it
   float pixelWidth = (right_top_x - left_bottom_x) / (float) width;

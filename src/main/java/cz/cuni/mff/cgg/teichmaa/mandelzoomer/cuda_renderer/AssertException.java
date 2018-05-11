@@ -1,4 +1,4 @@
-package cz.cuni.mff.cgg.teichmaa.cuda;
+package cz.cuni.mff.cgg.teichmaa.mandelzoomer.cuda_renderer;
 
 public class AssertException extends RuntimeException {
     public AssertException() {

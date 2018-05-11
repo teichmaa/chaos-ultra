@@ -1,15 +1,14 @@
-package cz.cuni.mff.cgg.teichmaa.cuda;
+package cz.cuni.mff.cgg.teichmaa.mandelzoomer.cuda_renderer;
 
-import cz.cuni.mff.cgg.teichmaa.view.ImageHelpers;
+import cz.cuni.mff.cgg.teichmaa.mandelzoomer.view.ImageHelpers;
 import jcuda.CudaException;
 import jcuda.NativePointerObject;
 import jcuda.Pointer;
 import jcuda.Sizeof;
 import jcuda.driver.*;
-import jcuda.jcurand.JCurand;
-import jcuda.jcurand.curandGenerator;
 import jcuda.runtime.*;
 
+import javax.sound.midi.Soundbank;
 import java.io.Closeable;
 import java.nio.Buffer;
 import java.security.InvalidParameterException;
@@ -17,18 +16,16 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 import static jcuda.driver.JCudaDriver.*;
-import static jcuda.jcurand.curandRngType.CURAND_RNG_PSEUDO_DEFAULT;
-import static jcuda.jcurand.curandRngType.CURAND_RNG_QUASI_SOBOL32;
 import static jcuda.runtime.cudaGraphicsRegisterFlags.cudaGraphicsRegisterFlagsReadOnly;
 import static jcuda.runtime.cudaGraphicsRegisterFlags.cudaGraphicsRegisterFlagsWriteDiscard;
 import static jcuda.runtime.cudaResourceType.cudaResourceTypeArray;
 
-public class CudaLauncher implements Closeable {
+public class FractalRenderer implements Closeable {
 
     public static final int CUDA_MAX_GRID_DIM = 65536 - 1;
     private static final Pointer NULLPTR = Pointer.to(new byte[0]);
 
-    private AbstractFractalRenderKernel kernel;
+    private FractalRenderingKernel kernel;
 
     private int blockDimX = 32;
     private int blockDimY = 32;
@@ -42,7 +39,7 @@ public class CudaLauncher implements Closeable {
     private cudaGraphicsResource paletteTextureResource = new cudaGraphicsResource();
     private cudaStream_t defaultStream = new cudaStream_t();
 
-    public CudaLauncher(AbstractFractalRenderKernel kernel, int outputTextureGLhandle, int outputTextureGLtarget, int paletteTextureGLhandle, int paletteTextureGLtarget, int paletteLength) {
+    public FractalRenderer(FractalRenderingKernel kernel, int outputTextureGLhandle, int outputTextureGLtarget, int paletteTextureGLhandle, int paletteTextureGLtarget, int paletteLength) {
         this.kernel = kernel;
         this.paletteLength = paletteLength;
 
@@ -262,10 +259,10 @@ public class CudaLauncher implements Closeable {
 
                     if (gridDimX <= 0 || gridDimY <= 0) return;
                     if (gridDimX > CUDA_MAX_GRID_DIM) {
-                        throw new CudaRendererException("Unsupported input parameter: width must be smaller than " + CUDA_MAX_GRID_DIM * blockDimX);
+                        throw new FractalRendererException("Unsupported input parameter: width must be smaller than " + CUDA_MAX_GRID_DIM * blockDimX);
                     }
                     if (gridDimY > CUDA_MAX_GRID_DIM) {
-                        throw new CudaRendererException("Unsupported input parameter: height must be smaller than " + CUDA_MAX_GRID_DIM * blockDimY);
+                        throw new FractalRendererException("Unsupported input parameter: height must be smaller than " + CUDA_MAX_GRID_DIM * blockDimY);
                     }
                     try {
                         cuLaunchKernel(kernelFunction,
@@ -288,7 +285,7 @@ public class CudaLauncher implements Closeable {
                 JCuda.cudaGraphicsUnmapResources(1, new cudaGraphicsResource[]{outputTextureResource}, defaultStream);
                 JCuda.cudaGraphicsUnmapResources(1, new cudaGraphicsResource[]{paletteTextureResource}, defaultStream);
             }
-        }catch (CudaException | CudaRendererException e){
+        }catch (CudaException | FractalRendererException e){
             System.err.println("Error during kernel launch preparation:");
             System.err.println(e);
         }

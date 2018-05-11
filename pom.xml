@@ -75,7 +75,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>cz.cuni.mff.cgg.teichmaa.view.Main</mainClass>
+                            <mainClass>cz.cuni.mff.cgg.teichmaa.mandelzoomer.view.Main</mainClass>
                         </manifest>
                     </archive>
                     <descriptorRefs>

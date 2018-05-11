@@ -1,9 +1,8 @@
-package cz.cuni.mff.cgg.teichmaa.view;
+package cz.cuni.mff.cgg.teichmaa.mandelzoomer.view;
 
 import com.jogamp.opengl.*;
-import cz.cuni.mff.cgg.teichmaa.cuda.AbstractFractalRenderKernel;
-import cz.cuni.mff.cgg.teichmaa.cuda.CudaLauncher;
-import cz.cuni.mff.cgg.teichmaa.cuda.MandelbrotKernel;
+import cz.cuni.mff.cgg.teichmaa.mandelzoomer.cuda_renderer.FractalRenderer;
+import cz.cuni.mff.cgg.teichmaa.mandelzoomer.cuda_renderer.MandelbrotKernel;
 import javafx.application.Platform;
 
 import javax.swing.*;
@@ -11,8 +10,6 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 import java.nio.Buffer;
-import java.nio.ByteBuffer;
-import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 
 import static com.jogamp.opengl.GL.*;
@@ -21,11 +18,10 @@ import static com.jogamp.opengl.GL2.GL_QUADS;
 import static com.jogamp.opengl.fixedfunc.GLMatrixFunc.GL_MODELVIEW;
 
 public class RenderingController extends MouseAdapter implements GLEventListener {
-    //TODO bacha, tenhle listener běží v jiném vlákně než JavaFX - bacha na sdílené proměnné (a to samé tranzitivně pro CudaLauncher)
 
     private int outputTextureGLhandle;
     private int paletteTextureGLhandle;
-    private CudaLauncher fractalRenderer;
+    private FractalRenderer fractalRenderer;
     private JComponent owner;
     private ControllerFX controllerFX;
 
@@ -113,7 +109,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
 
 
         //todo prepsat vybirani kernelu na Factory, neco jako Kernels.createMandelbrot
-        fractalRenderer = new CudaLauncher(new MandelbrotKernel(0, width, height, 0, 0, 0, 0),
+        fractalRenderer = new FractalRenderer(new MandelbrotKernel(),
                 outputTextureGLhandle, GL_TEXTURE_2D, paletteTextureGLhandle, GL_TEXTURE_2D, colorPalette.limit());
         recomputeKernelParams();
         Platform.runLater(controllerFX::showDefaultView);

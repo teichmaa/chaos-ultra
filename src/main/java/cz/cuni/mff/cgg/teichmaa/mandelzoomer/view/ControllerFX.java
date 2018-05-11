@@ -1,4 +1,4 @@
-package cz.cuni.mff.cgg.teichmaa.view;
+package cz.cuni.mff.cgg.teichmaa.mandelzoomer.view;
 
 import com.jogamp.opengl.*;
 import com.jogamp.opengl.awt.GLJPanel;
@@ -14,7 +14,6 @@ import javafx.scene.control.Label;
 import javafx.stage.Screen;
 
 
-import java.awt.Dimension;
 import java.awt.BorderLayout;
 
 import javax.swing.*;

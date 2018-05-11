@@ -1,10 +1,10 @@
-package cz.cuni.mff.cgg.teichmaa.cuda;
+package cz.cuni.mff.cgg.teichmaa.mandelzoomer.cuda_renderer;
 
 import jcuda.NativePointerObject;
 
 import java.lang.reflect.Field;
 
-public class PointerHelpers {
+class PointerHelpers {
 
     private static Field address;
 

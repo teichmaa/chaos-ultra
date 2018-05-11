@@ -9,7 +9,7 @@
 <?import javafx.embed.swing.SwingNode?>
 <?import javafx.scene.control.CheckBox?>
 <?import javafx.scene.layout.Pane?>
-<HBox fx:controller="cz.cuni.mff.cgg.teichmaa.view.ControllerFX"
+<HBox fx:controller="cz.cuni.mff.cgg.teichmaa.mandelzoomer.view.ControllerFX"
       xmlns:fx="http://javafx.com/fxml">
         <SwingNode fx:id="swingNode" HBox.hgrow="ALWAYS">
 
