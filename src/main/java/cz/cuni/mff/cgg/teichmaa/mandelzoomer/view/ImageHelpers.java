@@ -10,7 +10,7 @@ public class ImageHelpers {
     public static int[] createColorPalette() {
         int max = 256;
         int fullColor = 255;
-        int[] p = new int[max * 7];
+        int[] p = new int[max * 6];
 
         //rgb-2-hsv transitions palette:
 
@@ -18,7 +18,7 @@ public class ImageHelpers {
         //  resp. allow user modulo-rotating of color palette
 
         for (int i = max * 0; i < max * 1; i++) {
-            p[i] = fromRGB(i,0,i); //black to magenta gradient
+            p[i] = fromRGB(i,0,Math.min(fullColor, fullColor/2+i)); //blue to magenta gradient
         }
 
         for (int i = max * 1; i < max * 2; i++) {
@@ -40,11 +40,6 @@ public class ImageHelpers {
         for (int i = max * 5; i < max * 6; i++) {
             p[i] = fromRGB(0,fullColor-i,fullColor); //cyan to blue gradient
         }
-
-        for (int i = max * 6; i < max * 7; i++) {
-            p[i] = fromRGB(0,0,fullColor-i); //blue to black gradient
-        }
-
 
         return p;
     }
