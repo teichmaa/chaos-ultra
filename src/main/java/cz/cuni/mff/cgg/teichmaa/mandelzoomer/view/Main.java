@@ -3,7 +3,12 @@ package cz.cuni.mff.cgg.teichmaa.mandelzoomer.view;
 
 import com.jogamp.opengl.*;
 
+import com.jogamp.opengl.awt.GLCanvas;
+import com.jogamp.opengl.awt.GLJPanel;
+import com.jogamp.opengl.util.FPSAnimator;
 import javafx.application.Application;
+import javafx.application.Platform;
+import javafx.embed.swing.JFXPanel;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -12,21 +17,75 @@ import jcuda.driver.CUcontext;
 import jcuda.driver.CUdevice;
 import jcuda.driver.JCudaDriver;
 
+import javax.swing.*;
+
+import java.awt.*;
+import java.io.IOException;
+
 import static jcuda.driver.JCudaDriver.*;
 
-public class Main extends Application {
+public class Main {
 
-    @Override
-    public void start(Stage primaryStage) throws Exception {
-        Parent root = FXMLLoader.load(getClass().getResource("/window.fxml"));
-        primaryStage.setTitle("Mandelzoomer");
-        primaryStage.setScene(new Scene(root, 1024, 1024));
-        primaryStage.show();
+    private static void initFXinSwing(JFXPanel fxPanel) {
+        Parent root;
+        try {
+            root = FXMLLoader.load(Main.class.getResource("/window.fxml"));
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.exit(2);
+            return;
+        }
+        Scene scene = new Scene(root);
+        fxPanel.setScene(scene);
     }
 
+    private static void createAndShowGUI() {
+        //Create and set up the window.
+        final JFrame root = new JFrame("Mandelzoomer");
+        root.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+        final JFXPanel fxPanel = new JFXPanel();
+        Platform.runLater(() -> initFXinSwing(fxPanel));
+
+        while (ControllerFX.getSingleton() == null) {
+            //TODO TODO TODO this is super bad bad practice
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        root.setLayout(new BoxLayout(root.getContentPane(), BoxLayout.X_AXIS));
+        root.add(getGLCanvas(ControllerFX.getSingleton()));
+        root.add(fxPanel);
+
+        root.setSize(800, 800);
+        root.setVisible(true);
+    }
+
+    private static JPanel getGLCanvas(ControllerFX controllerFX) {
+        final GLProfile profile = GLProfile.get(GLProfile.GL2);
+        final GLCapabilities capabilities = new GLCapabilities(profile);
+
+        final GLCanvas fractalCanvas = new GLCanvas(capabilities);
+        final RenderingController renderingController = new RenderingController(fractalCanvas, controllerFX);
+        {
+            fractalCanvas.addGLEventListener(renderingController);
+            fractalCanvas.addMouseWheelListener(renderingController);
+            fractalCanvas.addMouseMotionListener(renderingController);
+            fractalCanvas.addMouseListener(renderingController);
+        }
+
+        final JPanel panel = new JPanel();
+        {
+            panel.setLayout(new BorderLayout(0, 0));
+            panel.add(fractalCanvas);
+        }
+        return panel;
+    }
 
     public static void main(String[] args) {
-        launch(args);
+        SwingUtilities.invokeLater(Main::createAndShowGUI);
     }
 
     public static void testCudaEtc() {
@@ -57,7 +116,6 @@ public class Main extends Application {
         CUdevice[] devices = new CUdevice[10];
         cuGLGetDevices(deviceCount, devices, 10, 1);
 
-        return;
     }
 
 }

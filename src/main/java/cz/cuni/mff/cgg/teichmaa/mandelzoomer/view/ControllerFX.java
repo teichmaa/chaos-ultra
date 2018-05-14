@@ -49,33 +49,24 @@ public class ControllerFX implements Initializable {
 
     private RenderingController renderingController;
 
-    @Override
-    public void initialize(URL location, ResourceBundle resources) {
-
-        Rectangle2D bounds = Screen.getPrimary().getVisualBounds();
-        GLInit();
+    private static ControllerFX singleton = null;
+    static ControllerFX getSingleton(){
+        return singleton;
     }
 
-    private void GLInit() {
-        final GLProfile profile = GLProfile.get(GLProfile.GL2);
-        GLCapabilities capabilities = new GLCapabilities(profile);
-
-        fractalCanvas = new GLJPanel(capabilities);
-        renderingController = new RenderingController(fractalCanvas, this);
-        {
-            fractalCanvas.addGLEventListener(renderingController);
-            fractalCanvas.addMouseWheelListener(renderingController);
-            fractalCanvas.addMouseMotionListener(renderingController);
-            fractalCanvas.addMouseListener(renderingController);
+    @Override
+    public void initialize(URL location, ResourceBundle resources) {
+        singleton = this;
+//        System.out.println("Controller FX initialized. Waiting for RenderingController to instantiate.");
+        while(RenderingController.getSingleton() == null){
+            //TODO TODO TODO this is super bad bad practice
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
-
-        final JPanel panel = new JPanel();
-        {
-            panel.setLayout(new BorderLayout(0, 0));
-            panel.add(fractalCanvas);
-            //panel.add(new JTextField("rest space"));
-        }
-        swingNode.setContent(panel);
+        renderingController = RenderingController.getSingleton();
     }
 
     public void renderClicked(ActionEvent actionEvent) {

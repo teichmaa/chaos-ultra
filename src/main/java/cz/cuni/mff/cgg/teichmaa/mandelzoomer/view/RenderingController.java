@@ -1,11 +1,13 @@
 package cz.cuni.mff.cgg.teichmaa.mandelzoomer.view;
 
 import com.jogamp.opengl.*;
+import com.jogamp.opengl.awt.GLCanvas;
 import cz.cuni.mff.cgg.teichmaa.mandelzoomer.cuda_renderer.FractalRenderer;
 import cz.cuni.mff.cgg.teichmaa.mandelzoomer.cuda_renderer.MandelbrotKernel;
 import javafx.application.Platform;
 
 import javax.swing.*;
+import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
@@ -18,6 +20,11 @@ import static com.jogamp.opengl.GL2.GL_QUADS;
 import static com.jogamp.opengl.fixedfunc.GLMatrixFunc.GL_MODELVIEW;
 
 public class RenderingController extends MouseAdapter implements GLEventListener {
+
+    private static RenderingController singleton = null;
+    static RenderingController getSingleton(){
+        return singleton;
+    }
 
     // terminology of private fields:
     //   texture: {int x int} discrete set, representing the surface that we draw on
@@ -40,6 +47,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     private int paletteTextureGLhandle;
     private FractalRenderer fractalRenderer;
     private JComponent owner;
+    private Canvas ownerCanvas;
     private ControllerFX controllerFX;
 
     private int width_t;
@@ -55,6 +63,14 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         this.height_t = owner.getHeight();
         this.owner = owner;
         this.controllerFX = controllerFX;
+        singleton = this;
+    }
+    public RenderingController(Canvas owner, ControllerFX controllerFX) {
+        this.width_t = owner.getWidth();
+        this.height_t = owner.getHeight();
+        this.ownerCanvas = owner;
+        this.controllerFX = controllerFX;
+        singleton = this;
     }
 
     @Override
@@ -295,7 +311,10 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     }
 
     void repaint() {
-        owner.repaint();
+        if(owner != null)
+            owner.repaint();
+        if(ownerCanvas !=null)
+            ownerCanvas.repaint();
     }
 
     void setAdaptiveSS(boolean adaptiveSS) {
