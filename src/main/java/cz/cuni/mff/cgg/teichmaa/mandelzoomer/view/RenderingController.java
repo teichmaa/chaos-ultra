@@ -113,10 +113,9 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     }
 
     /**
-     *
      * @param texture_x zooming center, texture x-coordinate
      * @param texture_y zooming center, texture y-coordinate
-     * @param into whether to zoom in or out
+     * @param into      whether to zoom in or out
      */
     private void zoomAt(int texture_x, int texture_y, boolean into) {
         float plane_width = getPlaneWidth();
@@ -247,8 +246,10 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     public void reshape(GLAutoDrawable drawable, int x, int y, int width, int height) {
 
         final GL2 gl = drawable.getGL().getGL2();
+        int oldHeight = height_t;
         this.width_t = width;
         this.height_t = height;
+        setBounds(getCenterX(), getCenterY(), getZoom() * height / (float) oldHeight);
 
         fractalRenderer.unregisterOutputTexture();
         registerOutputTexture(gl); //using the new dimensions
