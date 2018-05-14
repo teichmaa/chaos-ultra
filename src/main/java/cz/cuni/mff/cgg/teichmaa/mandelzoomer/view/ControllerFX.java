@@ -93,10 +93,8 @@ public class ControllerFX implements Initializable {
         int supsamp = supsamp_tmp; //for lambda, to pass effectively final value
 
         SwingUtilities.invokeLater(() -> {
-            renderingController.setX(x);
-            renderingController.setY(y);
+            renderingController.setBounds(x, y, zoom);
             renderingController.setDwell(dwell);
-            renderingController.setZoom(zoom);
             renderingController.setSuperSamplingLevel(supsamp);
             renderingController.repaint();
         });
