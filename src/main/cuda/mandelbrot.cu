@@ -5,6 +5,7 @@ const int WHITE = 0xffffffff;
 const int PINK = 0xffb469ff;
 const int YELLOW = 0xff00ffff;
 const int GOLD = 0xff00d7ff;
+const int MAX_SS_LEVEL = 256;
 
 #define CUDA_CALL(x) do { if((x) != cudaSuccess) { \
   printf("Mandelbrot: Error at %s:%d\n",__FILE__,__LINE__); \
@@ -48,6 +49,17 @@ __device__  __forceinline__ float computeDispersion(int* data, int dataLength, f
   return variance / mean;
 }
 
+__device__ void printParams_debug(cudaSurfaceObject_t surfaceOutput, long outputDataPitch_debug, int width, int height, float left_bottom_x, float left_bottom_y, float right_top_x, float right_top_y, int dwell, int** outputData_debug, cudaSurfaceObject_t colorPalette, int paletteLength, float* randomSamples, int superSamplingLevel, bool adaptiveSS, bool visualiseSS){
+  const int idx_x = blockDim.x * blockIdx.x + threadIdx.x;
+  const int idx_y = blockDim.y * blockIdx.y + threadIdx.y;
+  if(idx_x != 0 || idx_y != 0)
+    return;
+  printf("\n");
+  printf("width:\t%d\n",width);
+  printf("height:\t%d\n",height);
+  printf("dwell:\t%d\n",dwell);
+  printf("SS lvl:\t%d\n",superSamplingLevel);
+}
 
 extern "C"
 __global__ void mandelbrot(cudaSurfaceObject_t surfaceOutput, long outputDataPitch_debug, int width, int height, float left_bottom_x, float left_bottom_y, float right_top_x, float right_top_y, int dwell, int** outputData_debug, cudaSurfaceObject_t colorPalette, int paletteLength, float* randomSamples, int superSamplingLevel, bool adaptiveSS, bool visualiseSS)
@@ -58,6 +70,8 @@ __global__ void mandelbrot(cudaSurfaceObject_t surfaceOutput, long outputDataPit
   const int idx_y = blockDim.y * blockIdx.y + threadIdx.y;
   if(idx_x >= width || idx_y >= height) return;
 
+  //printParams_debug( surfaceOutput,  outputDataPitch_debug,  width,  height,  left_bottom_x,  left_bottom_y, right_top_x,  right_top_y, dwell, outputData_debug,  colorPalette, paletteLength, randomSamples,  superSamplingLevel,  adaptiveSS,  visualiseSS);
+
   //We are in a complex plane from (left_bottom) to (right_top), so we scale the pixels to it
   float pixelWidth = (right_top_x - left_bottom_x) / (float) width;
   float pixelHeight = (right_top_y - left_bottom_y) / (float) height;
@@ -67,12 +81,13 @@ __global__ void mandelbrot(cudaSurfaceObject_t surfaceOutput, long outputDataPit
   int adaptivnessUsed = 0;
 
   int escapeTimeSum = 0;
-  //int randomSamplePixelsIdx = (idx_y * width + idx_x)*superSamplingLevel;
+  int randomSamplePixelsIdx = (idx_y * width + idx_x)*MAX_SS_LEVEL;
+  //assert superSamplingLevel <= MAX_SS_LEVEL
   for(int i = 0; i < superSamplingLevel; i++){
-    //float random_xd = randomSamples[randomSamplePixelsIdx + i/2 ];
-    //float random_yd = randomSamples[randomSamplePixelsIdx + i/2 + superSamplingLevel/2];
     float random_xd = i / (float) superSamplingLevel; //not really random, just uniform
     float random_yd = random_xd;
+    //float random_xd = randomSamples[randomSamplePixelsIdx + i];
+    //float random_yd = randomSamples[randomSamplePixelsIdx + i + superSamplingLevel/2];
     float cx = left_bottom_x + (idx_x + random_xd)  * pixelWidth;
     float cy = right_top_y - (idx_y + random_yd) * pixelHeight;
 
@@ -89,16 +104,15 @@ __global__ void mandelbrot(cudaSurfaceObject_t surfaceOutput, long outputDataPit
         adaptivnessUsed = WHITE;
       }
       else if(dispersion <= 10){
-        superSamplingLevel = min(i+1,superSamplingLevel / 2); //slightly reducing SS
+        superSamplingLevel = max(i+1,superSamplingLevel / 2); //slightly reducing SS, but not below i+1
         adaptivnessUsed = PINK;
       }
       else if(dispersion <= 100){
-        superSamplingLevel = min(i+1,(int) (superSamplingLevel * 0.8f)); //slightly reducing SS
+        superSamplingLevel = max(i+1,(int) (superSamplingLevel * 0.8f)); //slightly reducing SS, but not below i+1
         adaptivnessUsed = GOLD;
       }else{ //else we are on an chaotic edge, thus as many samples as possible are needed
         adaptivnessUsed = BLACK;
-      }
-      
+      }      
     }
   }
   int mean = escapeTimeSum / superSamplingLevel;  

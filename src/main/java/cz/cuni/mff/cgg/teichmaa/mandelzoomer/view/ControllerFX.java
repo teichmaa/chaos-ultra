@@ -1,20 +1,15 @@
 package cz.cuni.mff.cgg.teichmaa.mandelzoomer.view;
 
-import com.jogamp.opengl.*;
 import com.jogamp.opengl.awt.GLJPanel;
 import javafx.embed.swing.SwingNode;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.geometry.Rectangle2D;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Label;
-import javafx.stage.Screen;
 
-
-import java.awt.BorderLayout;
 
 import javax.swing.*;
 import java.net.URL;
@@ -24,7 +19,7 @@ import java.util.ResourceBundle;
 
 public class ControllerFX implements Initializable {
 
-    public final int SUPERSAMPLING_MAX_LEVEL = 256;
+    static final int SUPER_SAMPLING_MAX_LEVEL = RenderingController.SUPER_SAMPLING_MAX_LEVEL;
     @FXML
     private SwingNode swingNode;
     @FXML
@@ -57,7 +52,6 @@ public class ControllerFX implements Initializable {
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         singleton = this;
-//        System.out.println("Controller FX initialized. Waiting for RenderingController to instantiate.");
         while(RenderingController.getSingleton() == null){
             //TODO TODO TODO this is super bad bad practice
             try {
@@ -76,8 +70,8 @@ public class ControllerFX implements Initializable {
         float zoom = Float.parseFloat(fractal_zoom.getText());
         int dwell = Integer.parseInt(fractal_dwell.getText());
         int supsamp_tmp = Integer.parseInt(fractal_superSamplingLevel.getText());
-        if (supsamp_tmp >= SUPERSAMPLING_MAX_LEVEL) {
-            supsamp_tmp = SUPERSAMPLING_MAX_LEVEL;
+        if (supsamp_tmp >= SUPER_SAMPLING_MAX_LEVEL) {
+            supsamp_tmp = SUPER_SAMPLING_MAX_LEVEL;
             System.out.println("Warning: super sampling level clamped to " + supsamp_tmp + ", higher is not supported");
             fractal_superSamplingLevel.setText("" + supsamp_tmp);
         }
@@ -97,6 +91,14 @@ public class ControllerFX implements Initializable {
 
     void setY(float y) {
         fractal_y.setText("" + y);
+    }
+
+    void setSuperSamplingLevel(int SSlevel){
+        fractal_superSamplingLevel.setText("" + SSlevel);
+    }
+
+    void setDwell(int dwell){
+        fractal_dwell.setText("" + dwell);
     }
 
     void setZoom(float zoom) {

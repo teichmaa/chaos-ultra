@@ -4,8 +4,6 @@ package cz.cuni.mff.cgg.teichmaa.mandelzoomer.view;
 import com.jogamp.opengl.*;
 
 import com.jogamp.opengl.awt.GLCanvas;
-import com.jogamp.opengl.awt.GLJPanel;
-import com.jogamp.opengl.util.FPSAnimator;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.embed.swing.JFXPanel;

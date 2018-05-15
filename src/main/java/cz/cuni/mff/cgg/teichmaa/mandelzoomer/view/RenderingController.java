@@ -1,13 +1,15 @@
 package cz.cuni.mff.cgg.teichmaa.mandelzoomer.view;
 
 import com.jogamp.opengl.*;
+
 import com.jogamp.opengl.awt.GLCanvas;
+import com.jogamp.opengl.util.Animator;
 import cz.cuni.mff.cgg.teichmaa.mandelzoomer.cuda_renderer.FractalRenderer;
 import cz.cuni.mff.cgg.teichmaa.mandelzoomer.cuda_renderer.MandelbrotKernel;
+
 import javafx.application.Platform;
 
 import javax.swing.*;
-import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
@@ -15,16 +17,18 @@ import java.nio.Buffer;
 import java.nio.IntBuffer;
 
 import static com.jogamp.opengl.GL.*;
-import static com.jogamp.opengl.GL.GL_TEXTURE_2D;
 import static com.jogamp.opengl.GL2.GL_QUADS;
 import static com.jogamp.opengl.fixedfunc.GLMatrixFunc.GL_MODELVIEW;
+import static cz.cuni.mff.cgg.teichmaa.mandelzoomer.view.RenderingMode.*;
 
 public class RenderingController extends MouseAdapter implements GLEventListener {
 
     private static RenderingController singleton = null;
-    static RenderingController getSingleton(){
+
+    static RenderingController getSingleton() {
         return singleton;
     }
+    public static final int SUPER_SAMPLING_MAX_LEVEL = FractalRenderer.SUPER_SAMPLING_MAX_LEVEL;
 
     // terminology of private fields:
     //   texture: {int x int} discrete set, representing the surface that we draw on
@@ -46,9 +50,10 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     private int outputTextureGLhandle;
     private int paletteTextureGLhandle;
     private FractalRenderer fractalRenderer;
-    private JComponent owner;
-    private Canvas ownerCanvas;
+    private GLCanvas target;
     private ControllerFX controllerFX;
+    private Animator animator;
+    private RenderingMode currentMode = Nothing;
 
     private int width_t;
     private int height_t;
@@ -58,31 +63,30 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     private float plane_right_top_x;
     private float plane_right_top_y;
 
-    public RenderingController(JComponent owner, ControllerFX controllerFX) {
-        this.width_t = owner.getWidth();
-        this.height_t = owner.getHeight();
-        this.owner = owner;
+    public RenderingController(GLCanvas target, ControllerFX controllerFX) {
+        this.width_t = target.getWidth();
+        this.height_t = target.getHeight();
+        this.target = target;
         this.controllerFX = controllerFX;
+        animator = new Animator(target);
+        animator.setRunAsFastAsPossible(true);
+        animator.stop();
+        currentMode = Nothing;
         singleton = this;
-    }
-    public RenderingController(Canvas owner, ControllerFX controllerFX) {
-        this.width_t = owner.getWidth();
-        this.height_t = owner.getHeight();
-        this.ownerCanvas = owner;
-        this.controllerFX = controllerFX;
-        singleton = this;
-    }
-
-    @Override
-    public void mouseWheelMoved(MouseWheelEvent e) {
-        zoomAt(e, e.getWheelRotation() < 0);
-        repaint();
     }
 
     private MouseEvent lastMousePosition;
 
     @Override
+    public void mouseWheelMoved(MouseWheelEvent e) {
+        nothingHasHappened = false;
+        zoomAt(e, e.getWheelRotation() < 0);
+        target.repaint();
+    }
+
+    @Override
     public void mouseDragged(MouseEvent e) {
+        nothingHasHappened = false;
         if (SwingUtilities.isLeftMouseButton(e)) {
             if (lastMousePosition == null) {
                 return;
@@ -95,34 +99,42 @@ public class RenderingController extends MouseAdapter implements GLEventListener
             plane_left_bottom_x += dx;
             plane_left_bottom_y += dy;
 
-            repaint();
+            target.repaint();
         }
         lastMousePosition = e;
     }
-
-    private Timer zoomingTimer = new Timer(30, __ -> {
-        zoomAt(lastMousePosition, true);
-        repaint();
-    });
-
 
     @Override
     public void mousePressed(MouseEvent e) {
         lastMousePosition = e;
+        nothingHasHappened = false;
         if (SwingUtilities.isRightMouseButton(e)) {
-            zoomingTimer.setRepeats(true);
-            zoomingTimer.start();
+            currentMode = ZoomingIn;
+            animator.start();
         }
     }
+
+    private boolean nothingHasHappened = false;
+    private Timer renderHQAfterWaiting = new Timer(100, __ -> {
+        if(nothingHasHappened){
+            currentMode = HighQuality;
+            nothingHasHappened = false;
+            target.repaint();
+        }
+    });
 
     @Override
     public void mouseReleased(MouseEvent e) {
-        if (SwingUtilities.isRightMouseButton(e)) {
-            zoomingTimer.stop();
+        if (SwingUtilities.isRightMouseButton(e) && (currentMode== ZoomingIn || currentMode == ZoomingOut)) {
+            animator.stop();
+            currentMode = Balanced;
+            nothingHasHappened = true;
+            renderHQAfterWaiting.setRepeats(false);
+            renderHQAfterWaiting.start();
         }
     }
 
-    private final float zoom_coeff = 0.97f;
+    private static final float ZOOM_COEFF = 0.977f;
 
     private void zoomAt(MouseEvent e, boolean into) {
         zoomAt(e.getX(), e.getY(), into);
@@ -145,8 +157,8 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         float plane_x = plane_left_bottom_x + plane_width * relLeft;
         float plane_y = plane_left_bottom_y + plane_height * relBtm;
 
-        float zoom_coeff = this.zoom_coeff;
-        if (!into) zoom_coeff = 2f - this.zoom_coeff;
+        float zoom_coeff = this.ZOOM_COEFF;
+        if (!into) zoom_coeff = 2f - this.ZOOM_COEFF;
 
         float l_b_new_x = plane_x - plane_width * relLeft * zoom_coeff;
         float l_b_new_y = plane_y - plane_height * relBtm * zoom_coeff;
@@ -161,10 +173,15 @@ public class RenderingController extends MouseAdapter implements GLEventListener
 
     private void updateKernelParams() {
         fractalRenderer.setBounds(plane_left_bottom_x, plane_left_bottom_y, plane_right_top_x, plane_right_top_y);
+    }
+
+    private void updateFXUI() {
         Platform.runLater(() -> {
             controllerFX.setZoom(getZoom());
             controllerFX.setX(getCenterX());
             controllerFX.setY(getCenterY());
+            controllerFX.setDwell(fractalRenderer.getDwell());
+            controllerFX.setSuperSamplingLevel(fractalRenderer.getSuperSamplingLevel());
         });
     }
 
@@ -190,17 +207,14 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         }
         gl.glBindTexture(GL_TEXTURE_2D, 0);
 
-
-        //todo prepsat vybirani kernelu na Factory, neco jako Kernels.createMandelbrot
         fractalRenderer = new FractalRenderer(new MandelbrotKernel(),
                 outputTextureGLhandle, GL_TEXTURE_2D, paletteTextureGLhandle, GL_TEXTURE_2D, colorPalette.limit());
-        updateKernelParams();
+
         Platform.runLater(controllerFX::showDefaultView);
+        currentMode = Balanced;
     }
 
     private void registerOutputTexture(GL gl) {
-        //the following code is inspired by https://stackoverflow.com/questions/19244191/cuda-opengl-interop-draw-to-opengl-texture-with-cuda
-
         gl.glBindTexture(GL_TEXTURE_2D, outputTextureGLhandle);
         {
             gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -217,10 +231,16 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         fractalRenderer.close();
     }
 
-    private boolean already = false;
-
     @Override
     public void display(GLAutoDrawable drawable) {
+
+        long startTime = System.currentTimeMillis();
+        if (currentMode == Nothing)
+            return;
+
+        //todo tohle cele by asi ocenilo lepsi navrh. Inspiruj se u her a u Update smycky atd
+        //  ve finale by kernel launch asi mohl nebyt blocking
+        //      trivialni napad: double buffering, GL vzdy vykresli tu druhou, nez cuda zrovna pocita
 
         if (saveImageRequested) {
             saveImageInternal(drawable.getGL().getGL2());
@@ -228,13 +248,52 @@ public class RenderingController extends MouseAdapter implements GLEventListener
             return;
         }
 
-        long startTime = System.currentTimeMillis();
+        if (currentMode == ZoomingIn)
+            zoomAt(lastMousePosition, true);
+        else if (currentMode == ZoomingOut)
+            zoomAt(lastMousePosition, false);
+
+        if(currentMode != Manual)
+            updateQuality();
         updateKernelParams();
+        updateFXUI();
+        render(drawable.getGL().getGL2());
+
+        if(currentMode == HighQuality) //HQ is one-time use only
+            currentMode = Balanced;
+
+        long endTime = System.currentTimeMillis();
+        lastFrameRenderTime = (int) (endTime - startTime);
+        //System.out.println("" + lastFrameRenderTime + " ms (frame total render time)");
+    }
+
+    private final int idealFrameRenderTime = 15;
+    private int lastFrameRenderTime = idealFrameRenderTime;
+
+    private void updateQuality() {
+        if (currentMode == ZoomingIn || currentMode == ZoomingOut) {
+            setParamsToBeRenderedIn(idealFrameRenderTime);
+        }
+        if(currentMode == Balanced){
+            setParamsToBeRenderedIn(idealFrameRenderTime * 4);
+        }
+        if(currentMode == HighQuality){
+            setParamsToBeRenderedIn(idealFrameRenderTime * 10);
+        }
+    }
+
+    private void setParamsToBeRenderedIn(int ms){
+        //todo tohle musi byt prumer poslednich nekolika, jinak to bude blikat
+        int newSS = fractalRenderer.getSuperSamplingLevel() * ms / Math.max(1, lastFrameRenderTime);
+        System.out.println("newSS = " + newSS);
+        setSuperSamplingLevel(newSS);
+    }
+
+    private void render(final GL2 gl) {
         fractalRenderer.launchKernel(false, false);
 
-        final GL2 gl = drawable.getGL().getGL2();
         gl.glMatrixMode(GL_MODELVIEW);
-        gl.glPushMatrix();
+        //gl.glPushMatrix();
         gl.glLoadIdentity();
         gl.glBindTexture(GL_TEXTURE_2D, outputTextureGLhandle);
         gl.glBegin(GL_QUADS);
@@ -250,17 +309,13 @@ public class RenderingController extends MouseAdapter implements GLEventListener
             gl.glVertex2f(-1f, +1f);
         }
         gl.glEnd();
-        gl.glBindTexture(GL_TEXTURE_2D, 0);
-        gl.glPopMatrix();
-        gl.glFinish();
-
-        long endTime = System.currentTimeMillis();
-        System.out.println("" + (endTime - startTime) + " ms (frame total render time)");
+        //gl.glBindTexture(GL_TEXTURE_2D, 0);
+        //gl.glPopMatrix();
+        //gl.glFinish();
     }
 
     @Override
     public void reshape(GLAutoDrawable drawable, int x, int y, int width, int height) {
-
         final GL2 gl = drawable.getGL().getGL2();
         int oldHeight = height_t;
         this.width_t = width;
@@ -268,9 +323,9 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         setBounds(getCenterX(), getCenterY(), getZoom() * height / (float) oldHeight);
 
         fractalRenderer.unregisterOutputTexture();
-        registerOutputTexture(gl); //using the new dimensions
+        registerOutputTexture(gl); //already using the new dimensions
         fractalRenderer.resize(width, height, outputTextureGLhandle, GL_TEXTURE_2D);
-        repaint();
+        //repaint();
     }
 
     private float getPlaneWidth() {
@@ -307,14 +362,13 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     }
 
     void setSuperSamplingLevel(int supSampLvl) {
-        fractalRenderer.setSuperSamplingLevel(supSampLvl);
+        //supSampLvl will be clamped to be >=1 and <= SUPER_SAMPLING_MAX_LEVEL
+        fractalRenderer.setSuperSamplingLevel(Math.max(1,Math.min(supSampLvl, SUPER_SAMPLING_MAX_LEVEL)));
     }
 
     void repaint() {
-        if(owner != null)
-            owner.repaint();
-        if(ownerCanvas !=null)
-            ownerCanvas.repaint();
+        currentMode = Manual;
+        target.repaint();
     }
 
     void setAdaptiveSS(boolean adaptiveSS) {
