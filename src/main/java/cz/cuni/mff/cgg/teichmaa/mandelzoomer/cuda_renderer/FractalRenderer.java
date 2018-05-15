@@ -60,45 +60,43 @@ public class FractalRenderer implements Closeable {
     }
 
     private void randomSamplesInit() {
-
-
-        if(randomValues != null){
-            JCuda.cudaFree(randomValues);
-        }else{
-            randomValues = new CUdeviceptr();
-        }
-
-        int w = kernel.getWidth();
-        int h = kernel.getHeight();
-
-        int sampleCount = w * h * SUPER_SAMPLING_MAX_LEVEL * 2; //2 because we are in 2D
-
-        curandGenerator gen = new curandGenerator();
-        //JCurand.curandCreateGenerator(gen, CURAND_RNG_QUASI_SOBOL32);
-        JCurand.curandCreateGenerator(gen, CURAND_RNG_PSEUDO_DEFAULT);
-        //JCurand.curandSetQuasiRandomGeneratorDimensions(gen, 2);
-        JCuda.cudaMalloc(randomValues, sampleCount * Sizeof.FLOAT);
-/*
-        //crazy slow and hacky solution, which yet might give desired results
-        for (int i = 0; i < w; i++) {
-            for (int j = 0; j < h; j++) {
-                PointerHelpers.nativePointerArtihmeticHack(randomValues, ssl * Sizeof.FLOAT);
-                JCurand.curandGenerateUniform(gen, randomValues, ssl);
-            }
-        }
-        PointerHelpers.nativePointerArtihmeticHack(randomValues, - w * h * ssl * Sizeof.FLOAT);*/
-        JCurand.curandGenerateUniform(gen, randomValues, sampleCount);
-
-        /*ByteBuffer testOut = ByteBuffer.allocateDirect(sampleCount * Sizeof.FLOAT);
-        JCuda.cudaMemcpy(Pointer.to(testOut), randomValues, sampleCount * Sizeof.FLOAT, cudaMemcpyKind.cudaMemcpyDeviceToHost);
-        float[] floats = new float[sampleCount];
-        for (int i = 0; i < floats.length; i++) {
-            floats[i] = (float) testOut.getInt();
-        }
-        for (int i = 0; i < 100; i++) {
-            System.out.println(floats[i]);
-        }*/
-        int a = 0; //breakpoint
+//        if(randomValues != null){
+//            JCuda.cudaFree(randomValues);
+//        }else{
+//            randomValues = new CUdeviceptr();
+//        }
+//
+//        int w = kernel.getWidth();
+//        int h = kernel.getHeight();
+//
+//        int sampleCount = w * h * SUPER_SAMPLING_MAX_LEVEL * 2; //2 because we are in 2D
+//
+//        curandGenerator gen = new curandGenerator();
+//        //JCurand.curandCreateGenerator(gen, CURAND_RNG_QUASI_SOBOL32);
+//        JCurand.curandCreateGenerator(gen, CURAND_RNG_PSEUDO_DEFAULT);
+//        //JCurand.curandSetQuasiRandomGeneratorDimensions(gen, 2);
+//        JCuda.cudaMalloc(randomValues, sampleCount * Sizeof.FLOAT);
+///*
+//        //crazy slow and hacky solution, which yet might give desired results
+//        for (int i = 0; i < w; i++) {
+//            for (int j = 0; j < h; j++) {
+//                PointerHelpers.nativePointerArtihmeticHack(randomValues, ssl * Sizeof.FLOAT);
+//                JCurand.curandGenerateUniform(gen, randomValues, ssl);
+//            }
+//        }
+//        PointerHelpers.nativePointerArtihmeticHack(randomValues, - w * h * ssl * Sizeof.FLOAT);*/
+//        JCurand.curandGenerateUniform(gen, randomValues, sampleCount);
+//
+//        /*ByteBuffer testOut = ByteBuffer.allocateDirect(sampleCount * Sizeof.FLOAT);
+//        JCuda.cudaMemcpy(Pointer.to(testOut), randomValues, sampleCount * Sizeof.FLOAT, cudaMemcpyKind.cudaMemcpyDeviceToHost);
+//        float[] floats = new float[sampleCount];
+//        for (int i = 0; i < floats.length; i++) {
+//            floats[i] = (float) testOut.getInt();
+//        }
+//        for (int i = 0; i < 100; i++) {
+//            System.out.println(floats[i]);
+//        }*/
+//        int a = 0; //breakpoint
     }
 
 
@@ -114,7 +112,6 @@ public class FractalRenderer implements Closeable {
                 kernelParams, null
         );
         cuCtxSynchronize();
-
     }
 
     public void registerOutputTexture(int outputTextureGLhandle, int GLtarget) {

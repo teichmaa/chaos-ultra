@@ -24,7 +24,7 @@
                 </padding>
                 x:
             </Label>
-            <TextField fx:id="fractal_x" text="-0.5"/>
+            <TextField fx:id="center_x" text="-0.5"/>
         </HBox>
         <HBox>
             <Label>
@@ -33,7 +33,7 @@
                 </padding>
                 y:
             </Label>
-            <TextField fx:id="fractal_y" text="0"/>
+            <TextField fx:id="center_y" text="0"/>
         </HBox>
         <HBox>
             <Label>
@@ -42,7 +42,7 @@
                 </padding>
                 zoom:
             </Label>
-            <TextField fx:id="fractal_zoom" text="2"/>
+            <TextField fx:id="zoom" text="2"/>
         </HBox>
         <HBox>
             <Label>
@@ -51,7 +51,7 @@
                 </padding>
                 dwell:
             </Label>
-            <TextField fx:id="fractal_dwell" text="2000"/>
+            <TextField fx:id="dwell" text="2000"/>
         </HBox>
         <HBox>
             <Label>
@@ -60,7 +60,7 @@
                 </padding>
                 sup samp lvl:
             </Label>
-            <TextField fx:id="fractal_superSamplingLevel" text="32"/>
+            <TextField fx:id="superSamplingLevel" text="32"/>
         </HBox>
         <Button text="render" fx:id="renderButton" onAction="#renderClicked"/>
         <HBox>
@@ -70,7 +70,7 @@
                 </padding>
                 adaptive SS:
             </Label>
-            <CheckBox fx:id="fractal_adaptiveSS" selected="true" onAction="#adaptiveSSselected"/>
+            <CheckBox fx:id="useAdaptiveSS" selected="true" onAction="#adaptiveSSSelected"/>
         </HBox>
         <HBox>
             <Label>
@@ -79,7 +79,16 @@
                 </padding>
                 visualise adaptive SS:
             </Label>
-            <CheckBox fx:id="visualiseAdaptiveSS" selected="false" onAction="#visualiseAdaptiveSSselected"/>
+            <CheckBox fx:id="visualiseAdaptiveSS" selected="false" onAction="#visualiseAdaptiveSSSelected"/>
+        </HBox>
+        <HBox>
+            <Label>
+                <padding>
+                    <Insets top="5" right="5" bottom="5" left="5"/>
+                </padding>
+                Automatic quality:
+            </Label>
+            <CheckBox fx:id="useAutomaticQuality" selected="true" onAction="#automaticQualitySelected"/>
         </HBox>
         <HBox>
             <Label>

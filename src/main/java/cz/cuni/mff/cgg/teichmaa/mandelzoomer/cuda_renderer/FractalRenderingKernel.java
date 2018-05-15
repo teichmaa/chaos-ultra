@@ -38,7 +38,6 @@ abstract class FractalRenderingKernel {
 
 
     /**
-     *
      * @param ptxFileFullPath
      * @param mainFunctionName
      * @param initFunctionName name of the kernel function to be called before start. If null or empty, no function will be called to init.
@@ -53,7 +52,7 @@ abstract class FractalRenderingKernel {
         //initialize params[] :
         setWidth(width);
         setHeight(height);
-        setBounds(left_bottom_x,left_bottom_y,right_top_x,right_top_y);
+        setBounds(left_bottom_x, left_bottom_y, right_top_x, right_top_y);
         setDwell(100);
         setAdaptiveSS(true);
         setVisualiseAdaptiveSS(false);
@@ -132,6 +131,7 @@ abstract class FractalRenderingKernel {
         this.superSamplingLevel = superSamplingLevel;
         params[PARAM_IDX_SUPER_SAMPLING_LEVEL] = Pointer.to(new int[]{superSamplingLevel});
     }
+
     int getSuperSamplingLevel() {
         return superSamplingLevel;
     }
@@ -200,6 +200,14 @@ abstract class FractalRenderingKernel {
         setLeft_bottom_y(left_bottom_y);
         setRight_top_x(right_top_x);
         setRight_top_y(right_top_y);
+        if (isNumbersTooSmall())
+            System.err.println("Warning: rendering kernel bounds are too near to each other");
+    }
+
+    boolean isNumbersTooSmall() {
+        float EPSILON = Math.ulp(1f);
+        return (Math.abs(right_top_x - left_bottom_x) / width < EPSILON)
+                || (Math.abs(right_top_y - left_bottom_y) / height < EPSILON);
     }
 
     String getMainFunctionName() {
@@ -214,10 +222,10 @@ abstract class FractalRenderingKernel {
             module = new CUmodule();
             try {
                 cuModuleLoad(module, ptxFileFullPath);
-            }catch (CudaException e){
-                if(e.getMessage().contains(CUresult.stringFor(CUresult.CUDA_ERROR_FILE_NOT_FOUND))){
+            } catch (CudaException e) {
+                if (e.getMessage().contains(CUresult.stringFor(CUresult.CUDA_ERROR_FILE_NOT_FOUND))) {
                     System.err.println("Invalid ptx file name: " + ptxFileFullPath);
-                }else{
+                } else {
                     throw e;
                 }
 
@@ -233,8 +241,9 @@ abstract class FractalRenderingKernel {
         }
         return mainFunction;
     }
+
     CUfunction getInitFunction() {
-        if(!hasInitFunction)
+        if (!hasInitFunction)
             throw new UnsupportedOperationException("cannot call getInitFunction on a kernel without init function");
         if (initFunction == null) {
             initFunction = new CUfunction();

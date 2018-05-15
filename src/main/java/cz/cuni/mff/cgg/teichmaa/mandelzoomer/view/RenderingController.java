@@ -15,11 +15,12 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 import java.nio.Buffer;
 import java.nio.IntBuffer;
+import java.util.HashMap;
+import java.util.Map;
 
 import static com.jogamp.opengl.GL.*;
 import static com.jogamp.opengl.GL2.GL_QUADS;
 import static com.jogamp.opengl.fixedfunc.GLMatrixFunc.GL_MODELVIEW;
-import static cz.cuni.mff.cgg.teichmaa.mandelzoomer.view.RenderingMode.*;
 
 public class RenderingController extends MouseAdapter implements GLEventListener {
 
@@ -53,7 +54,8 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     private GLCanvas target;
     private ControllerFX controllerFX;
     private Animator animator;
-    private RenderingMode currentMode = Nothing;
+    private RenderingModeFSM currentMode = new RenderingModeFSM();
+    private boolean useAutomaticQuality = true;
 
     private int width_t;
     private int height_t;
@@ -71,23 +73,27 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         animator = new Animator(target);
         animator.setRunAsFastAsPossible(true);
         animator.stop();
-        currentMode = Nothing;
-        singleton = this;
+        renderInFuture.setRepeats(false);
+
+//        for(RenderingModeFSM.RenderingMode mode : RenderingModeFSM.RenderingMode.values()){
+//            lastFramesRenderTime.put(mode, new CyclicBuffer(lastFramesRenderTimeBufferLength, desiredFrameRenderTime));
+//        }
+
+        if(singleton == null)
+            singleton = this;
     }
 
     private MouseEvent lastMousePosition;
 
     @Override
     public void mouseWheelMoved(MouseWheelEvent e) {
-        nothingHasHappened = false;
         zoomAt(e, e.getWheelRotation() < 0);
         target.repaint();
     }
 
     @Override
     public void mouseDragged(MouseEvent e) {
-        nothingHasHappened = false;
-        if (SwingUtilities.isLeftMouseButton(e)) {
+        if (SwingUtilities.isLeftMouseButton(e) && currentMode.isMoving()) {
             if (lastMousePosition == null) {
                 return;
             }
@@ -98,8 +104,6 @@ public class RenderingController extends MouseAdapter implements GLEventListener
             plane_right_top_y += dy;
             plane_left_bottom_x += dx;
             plane_left_bottom_y += dy;
-
-            target.repaint();
         }
         lastMousePosition = e;
     }
@@ -107,30 +111,33 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     @Override
     public void mousePressed(MouseEvent e) {
         lastMousePosition = e;
-        nothingHasHappened = false;
-        if (SwingUtilities.isRightMouseButton(e)) {
-            currentMode = ZoomingIn;
+        if(SwingUtilities.isRightMouseButton(e) && SwingUtilities.isLeftMouseButton(e)){
+            currentMode.startZoomingAndMoving(true);
+            animator.start();
+        }
+        else if (SwingUtilities.isRightMouseButton(e)) {
+            currentMode.startZooming(true);
+            animator.start();
+        }
+        else if (SwingUtilities.isLeftMouseButton(e)) {
+            currentMode.startMoving();
             animator.start();
         }
     }
 
-    private boolean nothingHasHappened = false;
-    private Timer renderHQAfterWaiting = new Timer(100, __ -> {
-        if(nothingHasHappened){
-            currentMode = HighQuality;
-            nothingHasHappened = false;
-            target.repaint();
-        }
-    });
+    private Timer renderInFuture = new Timer(100, __ ->
+            target.repaint());
 
     @Override
     public void mouseReleased(MouseEvent e) {
-        if (SwingUtilities.isRightMouseButton(e) && (currentMode== ZoomingIn || currentMode == ZoomingOut)) {
-            animator.stop();
-            currentMode = Balanced;
-            nothingHasHappened = true;
-            renderHQAfterWaiting.setRepeats(false);
-            renderHQAfterWaiting.start();
+        animator.stop();
+        if (SwingUtilities.isLeftMouseButton(e) && currentMode.isMoving()) {
+            currentMode.stopMoving();
+            renderInFuture.start();
+        }
+        if (SwingUtilities.isRightMouseButton(e) && currentMode.isZooming()) {
+            currentMode.stopZooming();
+            renderInFuture.start();
         }
     }
 
@@ -182,6 +189,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
             controllerFX.setY(getCenterY());
             controllerFX.setDwell(fractalRenderer.getDwell());
             controllerFX.setSuperSamplingLevel(fractalRenderer.getSuperSamplingLevel());
+            controllerFX.setDimensions(fractalRenderer.getWidth(), fractalRenderer.getHeight());
         });
     }
 
@@ -211,7 +219,6 @@ public class RenderingController extends MouseAdapter implements GLEventListener
                 outputTextureGLhandle, GL_TEXTURE_2D, paletteTextureGLhandle, GL_TEXTURE_2D, colorPalette.limit());
 
         Platform.runLater(controllerFX::showDefaultView);
-        currentMode = Balanced;
     }
 
     private void registerOutputTexture(GL gl) {
@@ -235,8 +242,6 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     public void display(GLAutoDrawable drawable) {
 
         long startTime = System.currentTimeMillis();
-        if (currentMode == Nothing)
-            return;
 
         //todo tohle cele by asi ocenilo lepsi navrh. Inspiruj se u her a u Update smycky atd
         //  ve finale by kernel launch asi mohl nebyt blocking
@@ -248,44 +253,58 @@ public class RenderingController extends MouseAdapter implements GLEventListener
             return;
         }
 
-        if (currentMode == ZoomingIn)
-            zoomAt(lastMousePosition, true);
-        else if (currentMode == ZoomingOut)
-            zoomAt(lastMousePosition, false);
+        if (currentMode.isZooming())
+            zoomAt(lastMousePosition, currentMode.getZoomingDirection());
 
-        if(currentMode != Manual)
-            updateQuality();
+        updateQuality();
         updateKernelParams();
         updateFXUI();
         render(drawable.getGL().getGL2());
 
-        if(currentMode == HighQuality) //HQ is one-time use only
-            currentMode = Balanced;
+        currentMode.step();
 
         long endTime = System.currentTimeMillis();
+
         lastFrameRenderTime = (int) (endTime - startTime);
-        //System.out.println("" + lastFrameRenderTime + " ms (frame total render time)");
+        //lastFramesRenderTime.get(currentMode.getCurrent()).add((int) (endTime - startTime));
+//        System.out.println("" + lastFrameRenderTime + " ms (frame total render time)");
     }
 
-    private final int idealFrameRenderTime = 15;
-    private int lastFrameRenderTime = idealFrameRenderTime;
+    private static final int desiredFrameRenderTime = 15;
+    private static final int lastFramesRenderTimeBufferLength = 2;
+    //private Map<RenderingModeFSM.RenderingMode, CyclicBuffer> lastFramesRenderTime = new HashMap<>();
+    private int lastFrameRenderTime = desiredFrameRenderTime;
 
     private void updateQuality() {
-        if (currentMode == ZoomingIn || currentMode == ZoomingOut) {
-            setParamsToBeRenderedIn(idealFrameRenderTime);
+        if(!useAutomaticQuality) return;
+
+        if (currentMode.isZooming()) {
+            setParamsToBeRenderedIn(desiredFrameRenderTime);
         }
-        if(currentMode == Balanced){
-            setParamsToBeRenderedIn(idealFrameRenderTime * 4);
+        else if(currentMode.isBalanced()){
+            setParamsToBeRenderedIn(desiredFrameRenderTime * 5);
         }
-        if(currentMode == HighQuality){
-            setParamsToBeRenderedIn(idealFrameRenderTime * 10);
+        else if(currentMode.isMoving()){
+            setParamsToBeRenderedIn(desiredFrameRenderTime );
+        }
+        else if(currentMode.isHighQuality()){
+            setParamsToBeRenderedIn(desiredFrameRenderTime * 30);
         }
     }
 
     private void setParamsToBeRenderedIn(int ms){
-        //todo tohle musi byt prumer poslednich nekolika, jinak to bude blikat
+
+        //debug:
+//        System.out.print(currentMode + ": ");
+//        CyclicBuffer b = lastFramesRenderTime.get(currentMode.getCurrent());
+//        for (int i = 0; i < lastFramesRenderTimeBufferLength; i++) {
+//            System.out.print(b.get(i) + "\t");
+//        }
+//        System.out.println();
+
+        //int mean = Math.round(lastFramesRenderTime.get(currentMode.getCurrent()).getMeanValue());
         int newSS = fractalRenderer.getSuperSamplingLevel() * ms / Math.max(1, lastFrameRenderTime);
-        System.out.println("newSS = " + newSS);
+        //System.out.println("newSS = " + newSS);
         setSuperSamplingLevel(newSS);
     }
 
@@ -367,7 +386,6 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     }
 
     void repaint() {
-        currentMode = Manual;
         target.repaint();
     }
 
@@ -377,6 +395,10 @@ public class RenderingController extends MouseAdapter implements GLEventListener
 
     void setVisualiseAdaptiveSS(boolean visualiseAdaptiveSS) {
         fractalRenderer.setVisualiseAdaptiveSS(visualiseAdaptiveSS);
+    }
+
+    void setUseAutomaticQuality(boolean useAutomaticQuality){
+        this.useAutomaticQuality = useAutomaticQuality;
     }
 
     public void saveImage(String fileName, String format) {
