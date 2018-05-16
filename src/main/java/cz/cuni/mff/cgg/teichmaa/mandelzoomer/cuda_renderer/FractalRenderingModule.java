@@ -43,6 +43,7 @@ abstract class FractalRenderingModule {
         //add known kernels:
         kernels.put(KernelMain.class, new KernelMain(module));
         kernels.put(KernelInit.class, new KernelInit(module));
+        kernels.put(KernelUnderSampled.class, new KernelUnderSampled(module));
     }
 
     private final String ptxFileFullPath;

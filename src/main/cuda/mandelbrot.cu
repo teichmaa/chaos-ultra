@@ -140,17 +140,43 @@ __global__ void fractalRenderMain(cudaSurfaceObject_t surfaceOutput, int width, 
 }
 
 extern "C"
-__global__ void init(){
+__global__ void fractalRenderUnderSampled(cudaSurfaceObject_t surfaceOutput, int width, int height, cudaSurfaceObject_t colorPalette, int paletteLength, float left_bottom_x, float left_bottom_y, float right_top_x, float right_top_y, int dwell)
+// todo: usporadat poradi paramateru, cudaXXObjects predavat pointrem, ne kopirovanim (tohle rozmyslet, mozna je to takhle dobre)
+//  todo ma to fakt hodne pointeru, mnoho z nich je pritom pro vsechny launche stejny - nezdrzuje tohle? omezene registry a tak
+{
+  const int underSamplingLevel = 4;
   const int idx_x = blockDim.x * blockIdx.x + threadIdx.x;
   const int idx_y = blockDim.y * blockIdx.y + threadIdx.y;
-  if(idx_x == 0 && idx_y == 0){
-    int sobolCount = 2 * 4096;
-    unsigned int * sobolDirectionVectors = (unsigned int *) malloc(sobolCount * sizeof(unsigned int));
-    curandStateSobol32_t * sobolStates= (curandStateSobol32_t *) malloc(sobolCount * sizeof(curandStateSobol32_t));
-    printf("sizeof(curandStateSobol32_t): %d\n", sizeof(curandStateSobol32_t));
-    if(sobolDirectionVectors == NULL || sobolStates == NULL){
-      printf("init sobolDirectionVectors malloc failed");
-      return;
+  if(idx_x >= width || idx_y >= height) return;
+  if(idx_x % underSamplingLevel != 0) return;
+  if(idx_y % underSamplingLevel != 0) return;
+  //work only at ever Nth pixel:
+
+  //We are in a complex plane from (left_bottom) to (right_top), so we scale the pixels to it
+  float pixelWidth = (right_top_x - left_bottom_x) / (float) width;
+  float pixelHeight = (right_top_y - left_bottom_y) / (float) height;
+  
+  float cx = left_bottom_x + (idx_x)  * pixelWidth;
+  float cy = right_top_y - (idx_y) * pixelHeight;
+
+  int escapeTime = escape(dwell, cx, cy);
+
+  int paletteIdx = paletteLength - (escapeTime % paletteLength) - 1;
+  int resultColor;
+  surf2Dread(&resultColor, colorPalette, paletteIdx * 4, 0);
+  if(escapeTime == dwell)
+    resultColor = BLACK;
+
+  for(int x = 0; x < underSamplingLevel; x++){
+    for(int y = 0; y < underSamplingLevel; y++){
+      surf2Dwrite(resultColor, surfaceOutput, (idx_x + x) * sizeof(unsigned int), (idx_y+y));
     }
-  }  
+  }
+
+}
+
+
+extern "C"
+__global__ void init(){
+
 }

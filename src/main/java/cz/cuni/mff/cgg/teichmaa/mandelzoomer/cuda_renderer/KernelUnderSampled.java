@@ -1,6 +1,5 @@
 package cz.cuni.mff.cgg.teichmaa.mandelzoomer.cuda_renderer;
 
-import jcuda.NativePointerObject;
 import jcuda.driver.CUmodule;
 
 public class KernelUnderSampled extends RenderingKernel {
@@ -13,8 +12,4 @@ public class KernelUnderSampled extends RenderingKernel {
         super(name, ownerModule);
     }
 
-    @Override
-    public NativePointerObject[] getKernelParams() {
-        return new NativePointerObject[0];
-    }
 }
