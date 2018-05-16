@@ -15,7 +15,7 @@ public abstract class CudaKernel {
     private String functionName;
     private CUmodule ownerModule;
 
-    public final CUfunction getFunction(){
+    final CUfunction getFunction(){
         return function;
     }
 
@@ -24,7 +24,7 @@ public abstract class CudaKernel {
      * @param functionName Exact (mangled, case sensitive) name of the __device__ function as defined in the .ptx file.
      * @param ownerModule
      */
-    public CudaKernel(String functionName, CUmodule ownerModule) {
+    CudaKernel(String functionName, CUmodule ownerModule) {
         this.functionName = functionName;
         this.ownerModule = ownerModule;
 

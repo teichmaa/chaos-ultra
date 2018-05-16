@@ -12,7 +12,7 @@ public class ModuleJulia extends FractalRenderingModule {
         this.cx = cx;
         this.cy = cy;
 
-        KernelFractalRenderMain main = super.getKernel(KernelFractalRenderMain.class);
+        KernelMain main = super.getKernel(KernelMain.class);
 
         PARAM_IDX_C_X = main.addParam(Pointer.to(new float[]{cy}));
         PARAM_IDX_C_Y = main.addParam(Pointer.to(new float[]{cx}));

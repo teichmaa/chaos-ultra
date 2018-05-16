@@ -38,19 +38,17 @@
 	.param .u64 fractalRenderMain_param_0,
 	.param .u32 fractalRenderMain_param_1,
 	.param .u32 fractalRenderMain_param_2,
-	.param .u32 fractalRenderMain_param_3,
-	.param .f32 fractalRenderMain_param_4,
+	.param .u64 fractalRenderMain_param_3,
+	.param .u32 fractalRenderMain_param_4,
 	.param .f32 fractalRenderMain_param_5,
 	.param .f32 fractalRenderMain_param_6,
 	.param .f32 fractalRenderMain_param_7,
-	.param .u32 fractalRenderMain_param_8,
-	.param .u64 fractalRenderMain_param_9,
-	.param .u64 fractalRenderMain_param_10,
-	.param .u32 fractalRenderMain_param_11,
-	.param .u64 fractalRenderMain_param_12,
-	.param .u32 fractalRenderMain_param_13,
-	.param .u8 fractalRenderMain_param_14,
-	.param .u8 fractalRenderMain_param_15
+	.param .f32 fractalRenderMain_param_8,
+	.param .u32 fractalRenderMain_param_9,
+	.param .u32 fractalRenderMain_param_10,
+	.param .u8 fractalRenderMain_param_11,
+	.param .u8 fractalRenderMain_param_12,
+	.param .u64 fractalRenderMain_param_13
 )
 {
 	.local .align 4 .b8 	__local_depot0[40];
@@ -67,18 +65,18 @@
 	mov.u64 	%rd7, __local_depot0;
 	cvta.local.u64 	%SP, %rd7;
 	ld.param.u64 	%rd2, [fractalRenderMain_param_0];
-	ld.param.u32 	%r19, [fractalRenderMain_param_2];
-	ld.param.u32 	%r20, [fractalRenderMain_param_3];
-	ld.param.f32 	%f15, [fractalRenderMain_param_4];
-	ld.param.f32 	%f16, [fractalRenderMain_param_5];
-	ld.param.f32 	%f17, [fractalRenderMain_param_6];
-	ld.param.f32 	%f18, [fractalRenderMain_param_7];
-	ld.param.u32 	%r21, [fractalRenderMain_param_8];
-	ld.param.u64 	%rd3, [fractalRenderMain_param_10];
-	ld.param.u32 	%r22, [fractalRenderMain_param_11];
-	ld.param.u32 	%r98, [fractalRenderMain_param_13];
-	ld.param.s8 	%rs2, [fractalRenderMain_param_15];
-	ld.param.s8 	%rs1, [fractalRenderMain_param_14];
+	ld.param.u32 	%r19, [fractalRenderMain_param_1];
+	ld.param.u32 	%r20, [fractalRenderMain_param_2];
+	ld.param.u64 	%rd3, [fractalRenderMain_param_3];
+	ld.param.u32 	%r21, [fractalRenderMain_param_4];
+	ld.param.f32 	%f15, [fractalRenderMain_param_5];
+	ld.param.f32 	%f16, [fractalRenderMain_param_6];
+	ld.param.f32 	%f17, [fractalRenderMain_param_7];
+	ld.param.f32 	%f18, [fractalRenderMain_param_8];
+	ld.param.u32 	%r22, [fractalRenderMain_param_9];
+	ld.param.u32 	%r98, [fractalRenderMain_param_10];
+	ld.param.s8 	%rs2, [fractalRenderMain_param_12];
+	ld.param.s8 	%rs1, [fractalRenderMain_param_11];
 	add.u64 	%rd4, %SP, 0;
 	cvta.to.local.u64 	%rd1, %rd4;
 	mov.u32 	%r24, %ctaid.x;
@@ -131,7 +129,7 @@ BB0_3:
 	mov.f32 	%f67, 0f00000000;
 	mov.f32 	%f66, %f67;
 	mov.u32 	%r90, %r34;
-	setp.lt.s32	%p5, %r21, 1;
+	setp.lt.s32	%p5, %r22, 1;
 	mov.u32 	%r89, %r34;
 	@%p5 bra 	BB0_6;
 
@@ -151,7 +149,7 @@ BB0_4:
 	add.f32 	%f32, %f9, %f9;
 	fma.rn.f32 	%f66, %f66, %f32, %f7;
 	add.s32 	%r90, %r7, 1;
-	setp.lt.s32	%p7, %r90, %r21;
+	setp.lt.s32	%p7, %r90, %r22;
 	mov.u32 	%r83, %r90;
 	mov.u32 	%r89, %r83;
 	@%p7 bra 	BB0_4;
@@ -267,12 +265,12 @@ BB0_14:
 BB0_15:
 	mov.u32 	%r17, %r88;
 	div.s32 	%r62, %r81, %r98;
-	rem.s32 	%r63, %r62, %r22;
-	add.s32 	%r64, %r22, -1;
+	rem.s32 	%r63, %r62, %r21;
+	add.s32 	%r64, %r21, -1;
 	sub.s32 	%r65, %r64, %r63;
 	shl.b32 	%r66, %r65, 2;
 	suld.b.2d.b32.trap {%r68}, [%rd3, {%r66, %r31}];
-	setp.eq.s32	%p16, %r62, %r21;
+	setp.eq.s32	%p16, %r62, %r22;
 	selp.b32	%r69, -16777216, %r68, %p16;
 	setp.ne.s32	%p17, %r17, 0;
 	and.b16  	%rs4, %rs2, 255;

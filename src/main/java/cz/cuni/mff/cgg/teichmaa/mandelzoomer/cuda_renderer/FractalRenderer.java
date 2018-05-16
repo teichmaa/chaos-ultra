@@ -11,8 +11,6 @@ import java.io.Closeable;
 import java.nio.Buffer;
 import java.security.InvalidParameterException;
 
-
-import static cz.cuni.mff.cgg.teichmaa.mandelzoomer.cuda_renderer.FractalRenderingModule.*;
 import static jcuda.driver.JCudaDriver.*;
 import static jcuda.runtime.cudaGraphicsRegisterFlags.cudaGraphicsRegisterFlagsReadOnly;
 import static jcuda.runtime.cudaGraphicsRegisterFlags.cudaGraphicsRegisterFlagsWriteDiscard;
@@ -28,15 +26,15 @@ public class FractalRenderer implements Closeable {
         CudaHelpers.cudaInit();
     }
 
-    private KernelFractalRenderMain kernelMain;
+    private KernelMain kernelMain;
     private FractalRenderingModule module;
 
     private int blockDimX = 32;
     private int blockDimY = 32;
     private int paletteLength;
 
-    private CUdeviceptr devout_debug = new CUdeviceptr();
-    private long devout_pitch_debug;
+    //private CUdeviceptr devout_debug = new CUdeviceptr();
+    //private long devout_pitch_debug;
     private CUdeviceptr randomValues;
 
     private cudaGraphicsResource outputTextureResource = new cudaGraphicsResource();
@@ -45,7 +43,7 @@ public class FractalRenderer implements Closeable {
 
     public FractalRenderer(FractalRenderingModule module, int outputTextureGLHandle, int outputTextureGLTarget, int paletteTextureGLHandle, int paletteTextureGLTarget, int paletteLength) {
         this.module = module;
-        this.kernelMain = module.getKernel(KernelFractalRenderMain.class);
+        this.kernelMain = module.getKernel(KernelMain.class);
         this.paletteLength = paletteLength;
 
         // devout_pitch_debug = allocateDevice2DBuffer(kernelMain.getWidth(), kernelMain.getHeight(), devout_debug);
@@ -187,16 +185,13 @@ public class FractalRenderer implements Closeable {
     }
 
     /**
-     * @param async   when true, the function will return just after launching the kernelMain and will not wait for it to end. The bitmaps will still be synchronized.
+     * @param async when true, the function will return just after launching the kernelMain and will not wait for it to end. The bitmaps will still be synchronized.
      */
     public void launchKernel(boolean async) {
-        launchKernel(async, functionMain);
+        launchKernel(async, KernelMain.class);
     }
 
-    /**
-     * @param async   when true, the function will return just after launching the kernelMain and will not wait for it to end. The bitmaps will still be synchronized.
-     */
-    private void launchKernel(boolean async, String functionName) {
+    private void launchKernel(boolean async, Class<? extends CudaKernel> kernel) {
         long start = System.currentTimeMillis();
 
         int width = kernelMain.getWidth();
@@ -237,8 +232,6 @@ public class FractalRenderer implements Closeable {
                         kernelParamsArr[kernelMain.PARAM_IDX_SURFACE_PALETTE] = Pointer.to(surfacePalette);
                         kernelParamsArr[kernelMain.PARAM_IDX_RANDOM_SAMPLES] = Pointer.to(randomValues);
                         kernelParamsArr[kernelMain.PARAM_IDX_PALETTE_LENGTH] = Pointer.to(new int[]{paletteLength}); //device out is obsolete, only used for debugging
-                        kernelParamsArr[kernelMain.PARAM_IDX_PITCH] = Pointer.to(new long[]{devout_pitch_debug}); //pitch is obsolete, only used for debugging
-                        kernelParamsArr[kernelMain.PARAM_IDX_DEVICE_OUT] = Pointer.to(devout_debug); //device out is obsolete, only used for debugging
                     }
                     Pointer kernelParams = Pointer.to(kernelParamsArr);
                     CUfunction kernelFunction = kernelMain.getFunction();
