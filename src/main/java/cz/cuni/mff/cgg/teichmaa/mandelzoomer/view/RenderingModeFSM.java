@@ -1,10 +1,6 @@
 package cz.cuni.mff.cgg.teichmaa.mandelzoomer.view;
 
 
-import com.jogamp.graph.curve.opengl.RenderState;
-
-import java.awt.event.MouseEvent;
-
 import static cz.cuni.mff.cgg.teichmaa.mandelzoomer.view.RenderingModeFSM.RenderingMode.*;
 
 /***
@@ -13,33 +9,57 @@ import static cz.cuni.mff.cgg.teichmaa.mandelzoomer.view.RenderingModeFSM.Render
 class RenderingModeFSM {
 
     enum RenderingMode {
-        Balanced,
-        ZoomingIn,
-        ZoomingOut,
+        Waiting,
+        ZoomingAuto,
+        ZoomingOnce,
         Moving,
-        HighQuality;
+        ProgressiveRendering;
     }
+
+    static final int MAX_PROGRESSIVE_RENDERING_LEVEL = 6;
 
     @Override
     public String toString() {
         String state = !zoomingAndMoving ? current.toString() : "ZoomingAndMoving";
-        return "FSM in state " + state;
+        String lvl = isProgressiveRendering() ? " lvl " + PRlvl : "";
+        return "FSM in state " + state + lvl;
     }
 
-    private RenderingMode current = Balanced;
-    private RenderingMode last;
+    private RenderingMode current = Waiting;
+    private RenderingMode last = Waiting;
+    private int PRlvl = 0;
 
     private boolean zoomingAndMoving = false;
+    private boolean zoomingDirection = false;
+
+    void reset() {
+        current = Waiting;
+        last = Waiting;
+        zoomingAndMoving = false;
+    }
 
     void step() {
         RenderingMode newValue = current;
-        if (current == Balanced && (last == ZoomingIn || last == ZoomingOut || last == Moving))
-            newValue = HighQuality;
-        else if (current == HighQuality)
-            newValue = Balanced;
+        if ((current == Waiting && (last == ZoomingAuto || last == Moving))
+                || current == ZoomingOnce
+                ) {
+            newValue = ProgressiveRendering;
+            PRlvl = 0;
+        } else if (current == ProgressiveRendering && PRlvl == MAX_PROGRESSIVE_RENDERING_LEVEL)
+            newValue = Waiting;
         //default: do nothing
         last = current;
         current = newValue;
+        if (current == ProgressiveRendering) {
+            PRlvl = Math.min(MAX_PROGRESSIVE_RENDERING_LEVEL, PRlvl + 1);
+        }
+    }
+
+    void doZoomingManualOnce(boolean inside) {
+        last = current;
+        current = ZoomingOnce;
+        zoomingDirection = inside;
+        zoomingAndMoving = false;
     }
 
     void startZoomingAndMoving(boolean inside) {
@@ -50,57 +70,68 @@ class RenderingModeFSM {
 
     void startZooming(boolean inside) {
         last = current;
-        if (inside)
-            current = ZoomingIn;
-        else
-            current = ZoomingOut;
+        current = ZoomingAuto;
+        zoomingDirection = inside;
         zoomingAndMoving = false;
     }
 
     void stopZooming() {
         last = current;
-        if(!zoomingAndMoving)
-            current = Balanced;
+        if (!zoomingAndMoving)
+            current = Waiting;
         else
             current = Moving;
         zoomingAndMoving = false;
     }
 
-    boolean isZooming(){
-        return current == ZoomingOut || current == ZoomingIn || zoomingAndMoving;
+    boolean isZooming() {
+        return current == ZoomingAuto || zoomingAndMoving || current == ZoomingOnce;
     }
 
-    boolean getZoomingDirection(){
-        if(!isZooming()) throw new IllegalStateException("cannot ask for zooming direction when not zooming");
-        return current == ZoomingIn;
+    boolean getZoomingDirection() {
+        if (!isZooming()) throw new IllegalStateException("cannot ask for zooming direction when not zooming");
+        return zoomingDirection;
     }
 
-    void startMoving(){
+    void startMoving() {
         last = current;
         current = Moving;
-        zoomingAndMoving = false;
     }
 
-    boolean isMoving(){
+    boolean isMoving() {
         return current == Moving || zoomingAndMoving;
     }
 
-    void stopMoving(){
+    void stopMoving() {
         last = current;
-        if(!zoomingAndMoving)
-            current = Balanced; //zooming will be kept set
+        if (!zoomingAndMoving)
+            current = Waiting;
+        //else: current == Zooming{In,Out}, which is correct
         zoomingAndMoving = false;
     }
 
-    boolean isHighQuality(){
-        return current == HighQuality;
+    void startProgressiveRendering() {
+        last = current;
+        current = ProgressiveRendering;
+        PRlvl = 0;
+        zoomingAndMoving = false;
     }
 
-    boolean isBalanced(){
-        return current == Balanced;
+    int getProgressiveRenderingLevel() {
+        if (!isProgressiveRendering())
+            throw new IllegalStateException("cannot ask for Progressive rendering level when not Progressive rendering");
+        return PRlvl;
     }
 
-    RenderingMode getCurrent(){
+    boolean isProgressiveRendering() {
+        return current == ProgressiveRendering;
+    }
+
+    boolean isWaiting() {
+        return current == Waiting;
+    }
+
+    RenderingMode getCurrent() {
         return current;
     }
 

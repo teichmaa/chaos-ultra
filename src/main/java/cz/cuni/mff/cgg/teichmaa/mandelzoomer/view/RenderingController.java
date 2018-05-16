@@ -15,8 +15,6 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 import java.nio.Buffer;
 import java.nio.IntBuffer;
-import java.util.HashMap;
-import java.util.Map;
 
 import static com.jogamp.opengl.GL.*;
 import static com.jogamp.opengl.GL2.GL_QUADS;
@@ -76,7 +74,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         renderInFuture.setRepeats(false);
 
 //        for(RenderingModeFSM.RenderingMode mode : RenderingModeFSM.RenderingMode.values()){
-//            lastFramesRenderTime.put(mode, new CyclicBuffer(lastFramesRenderTimeBufferLength, desiredFrameRenderTime));
+//            lastFramesRenderTime.put(mode, new CyclicBuffer(lastFramesRenderTimeBufferLength, shortestFrameRenderTime));
 //        }
 
         if(singleton == null)
@@ -87,13 +85,14 @@ public class RenderingController extends MouseAdapter implements GLEventListener
 
     @Override
     public void mouseWheelMoved(MouseWheelEvent e) {
-        zoomAt(e, e.getWheelRotation() < 0);
+        lastMousePosition = e;
+        currentMode.doZoomingManualOnce(e.getWheelRotation() < 0);
         target.repaint();
     }
 
     @Override
     public void mouseDragged(MouseEvent e) {
-        if (SwingUtilities.isLeftMouseButton(e) && currentMode.isMoving()) {
+        if (SwingUtilities.isLeftMouseButton(e)) {
             if (lastMousePosition == null) {
                 return;
             }
@@ -104,6 +103,8 @@ public class RenderingController extends MouseAdapter implements GLEventListener
             plane_right_top_y += dy;
             plane_left_bottom_x += dx;
             plane_left_bottom_y += dy;
+            currentMode.startMoving();
+            target.repaint();
         }
         lastMousePosition = e;
     }
@@ -120,8 +121,8 @@ public class RenderingController extends MouseAdapter implements GLEventListener
             animator.start();
         }
         else if (SwingUtilities.isLeftMouseButton(e)) {
-            currentMode.startMoving();
-            animator.start();
+            //currentMode.startMoving();
+            //animator.start();
         }
     }
 
@@ -262,38 +263,49 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         render(drawable.getGL().getGL2());
 
         currentMode.step();
+        if(currentMode.isProgressiveRendering())
+            this.repaint();
 
         long endTime = System.currentTimeMillis();
 
         lastFrameRenderTime = (int) (endTime - startTime);
         //lastFramesRenderTime.get(currentMode.getCurrent()).add((int) (endTime - startTime));
-//        System.out.println("" + lastFrameRenderTime + " ms (frame total render time)");
+        System.out.println("" + lastFrameRenderTime + " ms (frame total render time)");
     }
 
-    private static final int desiredFrameRenderTime = 15;
+    private static final int shortestFrameRenderTime = 15;
+    private static final int maxFrameRenderTime = 1000;
     private static final int lastFramesRenderTimeBufferLength = 2;
     //private Map<RenderingModeFSM.RenderingMode, CyclicBuffer> lastFramesRenderTime = new HashMap<>();
-    private int lastFrameRenderTime = desiredFrameRenderTime;
+    private int lastFrameRenderTime = shortestFrameRenderTime;
 
     private void updateQuality() {
         if(!useAutomaticQuality) return;
 
+        System.out.println("currentMode = " + currentMode);
         if (currentMode.isZooming()) {
-            setParamsToBeRenderedIn(desiredFrameRenderTime);
-        }
-        else if(currentMode.isBalanced()){
-            setParamsToBeRenderedIn(desiredFrameRenderTime * 5);
+            setParamsToBeRenderedIn(shortestFrameRenderTime);
         }
         else if(currentMode.isMoving()){
-            setParamsToBeRenderedIn(desiredFrameRenderTime );
+            setParamsToBeRenderedIn(shortestFrameRenderTime);
         }
-        else if(currentMode.isHighQuality()){
-            setParamsToBeRenderedIn(desiredFrameRenderTime * 30);
+        else if(currentMode.isWaiting()){
+            setParamsToBeRenderedIn(shortestFrameRenderTime * 2);
         }
+        else if(currentMode.isProgressiveRendering()){
+            int desiredFrameRenderTime = shortestFrameRenderTime * 2 << currentMode.getProgressiveRenderingLevel();
+            if(desiredFrameRenderTime > maxFrameRenderTime)
+                currentMode.reset();
+            else
+                setParamsToBeRenderedIn(desiredFrameRenderTime);
+            //pridat sem currentMode.getHighQualityIteration()
+            //   a do RenderingMode::step dat highQIteration++
+        }
+        if(fractalRenderer.getSuperSamplingLevel() == SUPER_SAMPLING_MAX_LEVEL)
+            currentMode.reset();
     }
 
     private void setParamsToBeRenderedIn(int ms){
-
         //debug:
 //        System.out.print(currentMode + ": ");
 //        CyclicBuffer b = lastFramesRenderTime.get(currentMode.getCurrent());
@@ -303,7 +315,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
 //        System.out.println();
 
         //int mean = Math.round(lastFramesRenderTime.get(currentMode.getCurrent()).getMeanValue());
-        int newSS = fractalRenderer.getSuperSamplingLevel() * ms / Math.max(1, lastFrameRenderTime);
+        int newSS = Math.round(fractalRenderer.getSuperSamplingLevel() * ms / (float) Math.max(1, lastFrameRenderTime));
         //System.out.println("newSS = " + newSS);
         setSuperSamplingLevel(newSS);
     }
@@ -344,7 +356,8 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         fractalRenderer.unregisterOutputTexture();
         registerOutputTexture(gl); //already using the new dimensions
         fractalRenderer.resize(width, height, outputTextureGLhandle, GL_TEXTURE_2D);
-        //repaint();
+
+        currentMode.startProgressiveRendering();
     }
 
     private float getPlaneWidth() {

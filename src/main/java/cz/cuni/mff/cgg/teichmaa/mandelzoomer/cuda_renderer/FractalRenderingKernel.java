@@ -234,6 +234,24 @@ abstract class FractalRenderingKernel {
         return module;
     }
 
+    CUfunction testEmpty;
+    CUfunction getFunctionTestEmpty(){
+        if (testEmpty == null) {
+            testEmpty = new CUfunction();
+            cuModuleGetFunction(testEmpty, getModule(), "testEmpty");
+        }
+        return testEmpty;
+    }
+
+    CUfunction testIterate;
+    CUfunction getFunctionTestIterate(){
+        if (testIterate == null) {
+            testIterate = new CUfunction();
+            cuModuleGetFunction(testIterate, getModule(), "testIterate");
+        }
+        return testIterate;
+    }
+
     CUfunction getMainFunction() {
         if (mainFunction == null) {
             mainFunction = new CUfunction();

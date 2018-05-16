@@ -185,7 +185,7 @@ public class FractalRenderer implements Closeable {
         return dev;
     }
 
-    public void resize(int width, int height, int outputTextureGLhandle, int GLtarget){
+    public void resize(int width, int height, int outputTextureGLhandle, int GLtarget) {
         //System.out.println("resize: " +width + " x " + height);
         kernel.setWidth(width);
         kernel.setHeight(height);
@@ -193,11 +193,11 @@ public class FractalRenderer implements Closeable {
         registerOutputTexture(outputTextureGLhandle, GLtarget);
     }
 
-    public int getWidth(){
+    public int getWidth() {
         return kernel.getWidth();
     }
 
-    public int getHeight(){
+    public int getHeight() {
         return kernel.getHeight();
     }
 
@@ -270,7 +270,7 @@ public class FractalRenderer implements Closeable {
                         );
                         if (!async)
                             cuCtxSynchronize();
-                    }catch (CudaException e){
+                    } catch (CudaException e) {
                         System.err.println("Error just after launching a kernel:");
                         System.err.println(e);
                     }
@@ -282,7 +282,7 @@ public class FractalRenderer implements Closeable {
                 JCuda.cudaGraphicsUnmapResources(1, new cudaGraphicsResource[]{outputTextureResource}, defaultStream);
                 JCuda.cudaGraphicsUnmapResources(1, new cudaGraphicsResource[]{paletteTextureResource}, defaultStream);
             }
-        }catch (CudaException | FractalRendererException e){
+        } catch (CudaException | FractalRendererException e) {
             System.err.println("Error during kernel launch preparation:");
             System.err.println(e);
         }
@@ -322,7 +322,7 @@ public class FractalRenderer implements Closeable {
         unregisterOutputTexture();
         //cuMemFree(deviceOut);
         //      cuMemFree(devicePalette);
-        if(randomValues != null)
+        if (randomValues != null)
             JCuda.cudaFree(randomValues);
     }
 
@@ -343,16 +343,16 @@ public class FractalRenderer implements Closeable {
         kernel.setDwell(dwell);
     }
 
-    public int getSuperSamplingLevel(){
+    public int getSuperSamplingLevel() {
         return kernel.getSuperSamplingLevel();
     }
 
-    public int getDwell(){
+    public int getDwell() {
         return kernel.getDwell();
     }
 
     public void setBounds(float left_bottom_x, float left_bottom_y, float right_top_x, float right_top_y) {
-        kernel.setBounds(left_bottom_x,left_bottom_y,right_top_x,right_top_y);
+        kernel.setBounds(left_bottom_x, left_bottom_y, right_top_x, right_top_y);
     }
 
 }

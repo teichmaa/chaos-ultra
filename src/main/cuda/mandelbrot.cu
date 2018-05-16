@@ -101,11 +101,12 @@ __global__ void mandelbrot(cudaSurfaceObject_t surfaceOutput, long outputDataPit
       float dispersion = computeDispersion(r, i, mean);
       if(dispersion <= 0.01){
         superSamplingLevel = i+1; //effectively disabling high SS and storing info about actual number of samples taken
-        adaptivnessUsed = WHITE;
-      }
+        adaptivnessUsed = WHITE; 
+      } //TODO vyssi vyhodnocovat az po vice iteracich
+        //  coz se zobecni na to, co rikal oskar = po kazde iteraci se rozhodnout, zdali pokracovat
       else if(dispersion <= 10){
         superSamplingLevel = max(i+1,superSamplingLevel / 2); //slightly reducing SS, but not below i+1
-        adaptivnessUsed = PINK;
+        adaptivnessUsed = PINK; 
       }
       else if(dispersion <= 100){
         superSamplingLevel = max(i+1,(int) (superSamplingLevel * 0.8f)); //slightly reducing SS, but not below i+1
