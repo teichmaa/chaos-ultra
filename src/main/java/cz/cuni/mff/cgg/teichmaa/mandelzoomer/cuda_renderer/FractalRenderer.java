@@ -1,24 +1,19 @@
 package cz.cuni.mff.cgg.teichmaa.mandelzoomer.cuda_renderer;
 
-import cz.cuni.mff.cgg.teichmaa.mandelzoomer.view.ImageHelpers;
 import jcuda.CudaException;
 import jcuda.NativePointerObject;
 import jcuda.Pointer;
 import jcuda.Sizeof;
 import jcuda.driver.*;
-import jcuda.jcurand.JCurand;
-import jcuda.jcurand.curandGenerator;
 import jcuda.runtime.*;
 
-import javax.sound.midi.Soundbank;
 import java.io.Closeable;
 import java.nio.Buffer;
 import java.security.InvalidParameterException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 
+
+import static cz.cuni.mff.cgg.teichmaa.mandelzoomer.cuda_renderer.FractalRenderingModule.*;
 import static jcuda.driver.JCudaDriver.*;
-import static jcuda.jcurand.curandRngType.CURAND_RNG_PSEUDO_DEFAULT;
 import static jcuda.runtime.cudaGraphicsRegisterFlags.cudaGraphicsRegisterFlagsReadOnly;
 import static jcuda.runtime.cudaGraphicsRegisterFlags.cudaGraphicsRegisterFlagsWriteDiscard;
 import static jcuda.runtime.cudaResourceType.cudaResourceTypeArray;
@@ -29,7 +24,12 @@ public class FractalRenderer implements Closeable {
     public static final int SUPER_SAMPLING_MAX_LEVEL = 256;
     private static final Pointer NULLPTR = Pointer.to(new byte[0]);
 
-    private FractalRenderingKernel kernel;
+    static {
+        CudaHelpers.cudaInit();
+    }
+
+    private KernelFractalRenderMain kernelMain;
+    private FractalRenderingModule module;
 
     private int blockDimX = 32;
     private int blockDimY = 32;
@@ -43,20 +43,19 @@ public class FractalRenderer implements Closeable {
     private cudaGraphicsResource paletteTextureResource = new cudaGraphicsResource();
     private cudaStream_t defaultStream = new cudaStream_t();
 
-    public FractalRenderer(FractalRenderingKernel kernel, int outputTextureGLhandle, int outputTextureGLtarget, int paletteTextureGLhandle, int paletteTextureGLtarget, int paletteLength) {
-        this.kernel = kernel;
+    public FractalRenderer(FractalRenderingModule module, int outputTextureGLHandle, int outputTextureGLTarget, int paletteTextureGLHandle, int paletteTextureGLTarget, int paletteLength) {
+        this.module = module;
+        this.kernelMain = module.getKernel(KernelFractalRenderMain.class);
         this.paletteLength = paletteLength;
 
-        cudaInit();
-        // devout_pitch_debug = allocateDevice2DBuffer(kernel.getWidth(), kernel.getHeight(), devout_debug);
+        // devout_pitch_debug = allocateDevice2DBuffer(kernelMain.getWidth(), kernelMain.getHeight(), devout_debug);
 
-        registerOutputTexture(outputTextureGLhandle, outputTextureGLtarget);
-        jcuda.runtime.JCuda.cudaGraphicsGLRegisterImage(paletteTextureResource, paletteTextureGLhandle, paletteTextureGLtarget, cudaGraphicsRegisterFlagsReadOnly);
+        registerOutputTexture(outputTextureGLHandle, outputTextureGLTarget);
+        jcuda.runtime.JCuda.cudaGraphicsGLRegisterImage(paletteTextureResource, paletteTextureGLHandle, paletteTextureGLTarget, cudaGraphicsRegisterFlagsReadOnly);
 
-        //kernelInit();
+        //moduleInit();
 
         randomSamplesInit();
-
     }
 
     private void randomSamplesInit() {
@@ -66,8 +65,8 @@ public class FractalRenderer implements Closeable {
 //            randomValues = new CUdeviceptr();
 //        }
 //
-//        int w = kernel.getWidth();
-//        int h = kernel.getHeight();
+//        int w = kernelMain.getWidth();
+//        int h = kernelMain.getHeight();
 //
 //        int sampleCount = w * h * SUPER_SAMPLING_MAX_LEVEL * 2; //2 because we are in 2D
 //
@@ -100,12 +99,12 @@ public class FractalRenderer implements Closeable {
     }
 
 
-    private void kernelInit() {
-        if (!kernel.isInitiable())
-            return;
+    private void moduleInit() {
 
-        Pointer kernelParams = Pointer.to(NULLPTR);
-        cuLaunchKernel(kernel.getInitFunction(),
+        KernelInit kernel = module.getKernel(KernelInit.class);
+
+        Pointer kernelParams = Pointer.to(kernel.getKernelParams());
+        cuLaunchKernel(kernel.getFunction(),
                 1, 1, 1,
                 1, 1, 1,
                 0, null,
@@ -157,7 +156,7 @@ public class FractalRenderer implements Closeable {
     private void copy2DFromDevToHost(Buffer hostOut, int width, int height, long pitch, CUdeviceptr deviceOut) {
         if (hostOut.capacity() < width * height * 4)
             throw new InvalidParameterException("Output buffer must be at least width * height * 4 bytes long. Buffer capacity: " + hostOut.capacity());
-        //copy kernel result to host memory:
+        //copy kernelMain result to host memory:
         CUDA_MEMCPY2D copyInfo = new CUDA_MEMCPY2D();
         {
             copyInfo.srcMemoryType = CUmemorytype.CU_MEMORYTYPE_DEVICE;
@@ -171,45 +170,37 @@ public class FractalRenderer implements Closeable {
         cuMemcpy2D(copyInfo);
     }
 
-    private CUdevice cudaInit() {
-        // Enable exceptions and omit all subsequent error checks
-        JCudaDriver.setExceptionsEnabled(true);
-
-        cuInit(0);
-
-        CUdevice dev = new CUdevice();
-        CUcontext ctx = new CUcontext();
-        cuDeviceGet(dev, 0);
-        cuCtxCreate(ctx, 0, dev);
-
-        return dev;
-    }
-
     public void resize(int width, int height, int outputTextureGLhandle, int GLtarget) {
         //System.out.println("resize: " +width + " x " + height);
-        kernel.setWidth(width);
-        kernel.setHeight(height);
+        kernelMain.setWidth(width);
+        kernelMain.setHeight(height);
         randomSamplesInit();
         registerOutputTexture(outputTextureGLhandle, GLtarget);
     }
 
     public int getWidth() {
-        return kernel.getWidth();
+        return kernelMain.getWidth();
     }
 
     public int getHeight() {
-        return kernel.getHeight();
+        return kernelMain.getHeight();
     }
 
     /**
-     * @param verbose whether to print out how long the rendering has taken
-     * @param async   when true, the function will return just after launching the kernel and will not wait for it to end. The bitmaps will still be synchronized.
+     * @param async   when true, the function will return just after launching the kernelMain and will not wait for it to end. The bitmaps will still be synchronized.
      */
-    public void launchKernel(boolean verbose, boolean async) {
+    public void launchKernel(boolean async) {
+        launchKernel(async, functionMain);
+    }
+
+    /**
+     * @param async   when true, the function will return just after launching the kernelMain and will not wait for it to end. The bitmaps will still be synchronized.
+     */
+    private void launchKernel(boolean async, String functionName) {
         long start = System.currentTimeMillis();
 
-        int width = kernel.getWidth();
-        int height = kernel.getHeight();
+        int width = kernelMain.getWidth();
+        int height = kernelMain.getHeight();
 
         try {
             JCuda.cudaGraphicsMapResources(1, new cudaGraphicsResource[]{outputTextureResource}, defaultStream);
@@ -238,19 +229,19 @@ public class FractalRenderer implements Closeable {
                     JCuda.cudaCreateSurfaceObject(surfacePalette, surfaceDesc);
                 }
                 try {
-                    // Set up the kernel parameters: A pointer to an array
+                    // Set up the kernelMain parameters: A pointer to an array
                     // of pointers which point to the actual values.
-                    NativePointerObject[] kernelParamsArr = kernel.getKernelParams();
+                    NativePointerObject[] kernelParamsArr = kernelMain.getKernelParams();
                     {
-                        kernelParamsArr[kernel.PARAM_IDX_SURFACE_OUT] = Pointer.to(surfaceOutput);
-                        kernelParamsArr[kernel.PARAM_IDX_SURFACE_PALETTE] = Pointer.to(surfacePalette);
-                        kernelParamsArr[kernel.PARAM_IDX_RANDOM_SAMPLES] = Pointer.to(randomValues);
-                        kernelParamsArr[kernel.PARAM_IDX_PALETTE_LENGTH] = Pointer.to(new int[]{paletteLength}); //device out is obsolete, only used for debugging
-                        kernelParamsArr[kernel.PARAM_IDX_PITCH] = Pointer.to(new long[]{devout_pitch_debug}); //pitch is obsolete, only used for debugging
-                        kernelParamsArr[kernel.PARAM_IDX_DEVICE_OUT] = Pointer.to(devout_debug); //device out is obsolete, only used for debugging
+                        kernelParamsArr[kernelMain.PARAM_IDX_SURFACE_OUT] = Pointer.to(surfaceOutput);
+                        kernelParamsArr[kernelMain.PARAM_IDX_SURFACE_PALETTE] = Pointer.to(surfacePalette);
+                        kernelParamsArr[kernelMain.PARAM_IDX_RANDOM_SAMPLES] = Pointer.to(randomValues);
+                        kernelParamsArr[kernelMain.PARAM_IDX_PALETTE_LENGTH] = Pointer.to(new int[]{paletteLength}); //device out is obsolete, only used for debugging
+                        kernelParamsArr[kernelMain.PARAM_IDX_PITCH] = Pointer.to(new long[]{devout_pitch_debug}); //pitch is obsolete, only used for debugging
+                        kernelParamsArr[kernelMain.PARAM_IDX_DEVICE_OUT] = Pointer.to(devout_debug); //device out is obsolete, only used for debugging
                     }
                     Pointer kernelParams = Pointer.to(kernelParamsArr);
-                    CUfunction kernelFunction = kernel.getMainFunction();
+                    CUfunction kernelFunction = kernelMain.getFunction();
                     int gridDimX = width / blockDimX;
                     int gridDimY = height / blockDimY;
 
@@ -271,7 +262,7 @@ public class FractalRenderer implements Closeable {
                         if (!async)
                             cuCtxSynchronize();
                     } catch (CudaException e) {
-                        System.err.println("Error just after launching a kernel:");
+                        System.err.println("Error just after launching a kernelMain:");
                         System.err.println(e);
                     }
                 } finally {
@@ -283,38 +274,12 @@ public class FractalRenderer implements Closeable {
                 JCuda.cudaGraphicsUnmapResources(1, new cudaGraphicsResource[]{paletteTextureResource}, defaultStream);
             }
         } catch (CudaException | FractalRendererException e) {
-            System.err.println("Error during kernel launch preparation:");
+            System.err.println("Error during kernelMain launch preparation:");
             System.err.println(e);
         }
 
         long end = System.currentTimeMillis();
-        if (verbose) {
-            System.out.println("Kernel " + kernel.getMainFunctionName() + " launched and finished in " + (end - start) + "ms");
-        }
-    }
-
-    private void saveAsImage(long createImageStartTime, int renderTimeTotalMs, int[] data) {
-        int dwell = kernel.getDwell();
-        int width = kernel.getWidth();
-        int height = kernel.getHeight();
-
-        String directoryPath = "E:\\Tonda\\Desktop\\fractal-out";
-        //String fileName = directoryPath+"\\"+ new SimpleDateFormat("dd.MM.yy_HH-mm-ss").format(new Date()) +"_"+ kernel.getMainFunctionName()+ ".tiff";
-        String juliaResult = "";
-        if (kernel instanceof JuliaKernel) {
-            JuliaKernel j = (JuliaKernel) kernel;
-            juliaResult = "__c-" + j.getCx() + "+" + j.getCy() + "i";
-        }
-        String fileName = directoryPath + "\\" + new SimpleDateFormat("dd-MM-YY_mm-ss").format(new Date()) + "_" + kernel.getMainFunctionName().substring(0, 5)
-                + "__dwell-" + dwell
-                + "__res-" + width + "x" + height
-                + "__time-" + renderTimeTotalMs + "ms"
-                + juliaResult
-                + ".tiff";
-        ImageHelpers.createImage(data, width, height, fileName, "tiff");
-        long createImageEndTime = System.currentTimeMillis();
-        System.out.println(kernel.getMainFunctionName() + " saved to disk in " + (createImageEndTime - createImageStartTime) + " ms. Location: " + fileName);
-
+        //System.out.println("Kernel " + kernelMain.getMainFunctionName() + " launched and finished in " + (end - start) + "ms");
     }
 
     @Override
@@ -327,32 +292,32 @@ public class FractalRenderer implements Closeable {
     }
 
     public void setAdaptiveSS(boolean adaptiveSS) {
-        kernel.setAdaptiveSS(adaptiveSS);
+        kernelMain.setAdaptiveSS(adaptiveSS);
     }
 
     public void setVisualiseAdaptiveSS(boolean visualiseAdaptiveSS) {
-        kernel.setVisualiseAdaptiveSS(visualiseAdaptiveSS);
+        kernelMain.setVisualiseAdaptiveSS(visualiseAdaptiveSS);
     }
 
     public void setSuperSamplingLevel(int supSampLvl) {
-        kernel.setSuperSamplingLevel(supSampLvl);
+        kernelMain.setSuperSamplingLevel(supSampLvl);
         //randomSamplesInit();
     }
 
     public void setDwell(int dwell) {
-        kernel.setDwell(dwell);
+        kernelMain.setDwell(dwell);
     }
 
     public int getSuperSamplingLevel() {
-        return kernel.getSuperSamplingLevel();
+        return kernelMain.getSuperSamplingLevel();
     }
 
     public int getDwell() {
-        return kernel.getDwell();
+        return kernelMain.getDwell();
     }
 
     public void setBounds(float left_bottom_x, float left_bottom_y, float right_top_x, float right_top_y) {
-        kernel.setBounds(left_bottom_x, left_bottom_y, right_top_x, right_top_y);
+        kernelMain.setBounds(left_bottom_x, left_bottom_y, right_top_x, right_top_y);
     }
 
 }

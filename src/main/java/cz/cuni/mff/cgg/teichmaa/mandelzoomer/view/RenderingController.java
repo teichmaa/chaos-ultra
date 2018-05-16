@@ -5,7 +5,7 @@ import com.jogamp.opengl.*;
 import com.jogamp.opengl.awt.GLCanvas;
 import com.jogamp.opengl.util.Animator;
 import cz.cuni.mff.cgg.teichmaa.mandelzoomer.cuda_renderer.FractalRenderer;
-import cz.cuni.mff.cgg.teichmaa.mandelzoomer.cuda_renderer.MandelbrotKernel;
+import cz.cuni.mff.cgg.teichmaa.mandelzoomer.cuda_renderer.ModuleMandelbrot;
 
 import javafx.application.Platform;
 
@@ -216,7 +216,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         }
         gl.glBindTexture(GL_TEXTURE_2D, 0);
 
-        fractalRenderer = new FractalRenderer(new MandelbrotKernel(),
+        fractalRenderer = new FractalRenderer(new ModuleMandelbrot(),
                 outputTextureGLhandle, GL_TEXTURE_2D, paletteTextureGLhandle, GL_TEXTURE_2D, colorPalette.limit());
 
         Platform.runLater(controllerFX::showDefaultView);
@@ -282,7 +282,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     private void updateQuality() {
         if(!useAutomaticQuality) return;
 
-        System.out.println("currentMode = " + currentMode);
+        //System.out.println("currentMode = " + currentMode);
         if (currentMode.isZooming()) {
             setParamsToBeRenderedIn(shortestFrameRenderTime);
         }
@@ -321,7 +321,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     }
 
     private void render(final GL2 gl) {
-        fractalRenderer.launchKernel(false, false);
+        fractalRenderer.launchKernel(false);
 
         gl.glMatrixMode(GL_MODELVIEW);
         //gl.glPushMatrix();
