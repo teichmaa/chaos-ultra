@@ -6,16 +6,16 @@ import jcuda.driver.CUmodule;
 
 public abstract class RenderingKernel extends CudaKernel {
 
-    final short PARAM_IDX_SURFACE_OUT = 0;
-    private final short PARAM_IDX_WIDTH = 1;
-    private final short PARAM_IDX_HEIGHT = 2;
-    final short PARAM_IDX_SURFACE_PALETTE = 3;
-    final short PARAM_IDX_PALETTE_LENGTH = 4;
-    private final short PARAM_IDX_LEFT_BOTTOM_X = 5;
-    private final short PARAM_IDX_LEFT_BOTTOM_Y = 6;
-    private final short PARAM_IDX_RIGHT_TOP_X = 7;
-    private final short PARAM_IDX_RIGHT_TOP_Y = 8;
-    private final short PARAM_IDX_DWELL = 9;
+    //final short PARAM_IDX_SURFACE_OUT = 0;
+    final short PARAM_IDX_2DARR_OUT = 0;
+    final short PARAM_IDX_2DARR_OUT_PITCH = 1;
+    private final short PARAM_IDX_WIDTH = 2;
+    private final short PARAM_IDX_HEIGHT = 3;
+    private final short PARAM_IDX_LEFT_BOTTOM_X = 4;
+    private final short PARAM_IDX_LEFT_BOTTOM_Y = 5;
+    private final short PARAM_IDX_RIGHT_TOP_X = 6;
+    private final short PARAM_IDX_RIGHT_TOP_Y = 7;
+    private final short PARAM_IDX_DWELL = 8;
 
     RenderingKernel(String functionName, CUmodule ownerModule) {
         super(functionName, ownerModule);

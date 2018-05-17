@@ -17,6 +17,8 @@ abstract class FractalRenderingModule {
     static final String kernelInit = KernelInit.name;
     static final String kernelMain = KernelMain.name;
     static final String kernelUnderSampled = KernelUnderSampled.name;
+    static final String kernelCompose = KernelCompose.name;
+    static final String kernelBlur = KernelBlur.name;
 
     static {
         CudaHelpers.cudaInit();
@@ -44,6 +46,8 @@ abstract class FractalRenderingModule {
         kernels.put(KernelMain.class, new KernelMain(module));
         kernels.put(KernelInit.class, new KernelInit(module));
         kernels.put(KernelUnderSampled.class, new KernelUnderSampled(module));
+        kernels.put(KernelCompose.class, new KernelCompose(module));
+        kernels.put(KernelBlur.class, new KernelBlur(module));
     }
 
     private final String ptxFileFullPath;

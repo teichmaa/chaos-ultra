@@ -88,12 +88,14 @@ public class ControllerFX implements Initializable {
             }
             int supsamp = supsamp_tmp; //for lambda, to pass effectively final value
             boolean autoQuality = useAutomaticQuality.isSelected();
+            boolean adaptiveSS = useAdaptiveSS.isSelected();
 
             SwingUtilities.invokeLater(() -> {
                 renderingController.setBounds(x, y, zoom);
                 renderingController.setDwell(dwell);
                 renderingController.setSuperSamplingLevel(supsamp);
                 renderingController.setUseAutomaticQuality(autoQuality);
+                renderingController.setAdaptiveSS(adaptiveSS);
                 renderingController.repaint();
             });
         }catch (NumberFormatException e){
@@ -126,6 +128,7 @@ public class ControllerFX implements Initializable {
         center_y.setText("0");
         zoom.setText("2");
         dwell.setText("1400");
+        useAdaptiveSS.setSelected(false);
         superSamplingLevel.setText("5");
         useAutomaticQuality.setSelected(true);
         render();

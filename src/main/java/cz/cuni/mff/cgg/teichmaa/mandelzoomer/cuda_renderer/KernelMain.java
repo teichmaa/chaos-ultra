@@ -1,7 +1,5 @@
 package cz.cuni.mff.cgg.teichmaa.mandelzoomer.cuda_renderer;
 
-import cz.cuni.mff.cgg.teichmaa.mandelzoomer.cuda_renderer.CudaKernel;
-import jcuda.NativePointerObject;
 import jcuda.Pointer;
 import jcuda.driver.CUmodule;
 

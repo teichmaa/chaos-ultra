@@ -62,7 +62,7 @@ __device__ void printParams_debug(cudaSurfaceObject_t surfaceOutput, long output
 }
 
 extern "C"
-__global__ void fractalRenderMain(cudaSurfaceObject_t surfaceOutput, int width, int height, cudaSurfaceObject_t colorPalette, int paletteLength, float left_bottom_x, float left_bottom_y, float right_top_x, float right_top_y, int dwell, int superSamplingLevel, bool adaptiveSS, bool visualiseSS, float* randomSamples)
+__global__ void fractalRenderMain(int** output, long outputPitch, int width, int height, float left_bottom_x, float left_bottom_y, float right_top_x, float right_top_y, int dwell, int superSamplingLevel, bool adaptiveSS, bool visualiseSS, float* randomSamples)
 // todo: usporadat poradi paramateru, cudaXXObjects predavat pointrem, ne kopirovanim (tohle rozmyslet, mozna je to takhle dobre)
 //  todo ma to fakt hodne pointeru, mnoho z nich je pritom pro vsechny launche stejny - nezdrzuje tohle? omezene registry a tak
 {
@@ -102,7 +102,7 @@ __global__ void fractalRenderMain(cudaSurfaceObject_t surfaceOutput, int width, 
       if(dispersion <= 0.01){
         superSamplingLevel = i+1; //effectively disabling high SS and storing info about actual number of samples taken
         adaptivnessUsed = WHITE; 
-      } //TODO vyssi vyhodnocovat az po vice iteracich
+      /*} //TODO vyssi vyhodnocovat az po vice iteracich
         //  coz se zobecni na to, co rikal oskar = po kazde iteraci se rozhodnout, zdali pokracovat
       else if(dispersion <= 10){
         superSamplingLevel = max(i+1,superSamplingLevel / 2); //slightly reducing SS, but not below i+1
@@ -110,7 +110,7 @@ __global__ void fractalRenderMain(cudaSurfaceObject_t surfaceOutput, int width, 
       }
       else if(dispersion <= 100){
         superSamplingLevel = max(i+1,(int) (superSamplingLevel * 0.8f)); //slightly reducing SS, but not below i+1
-        adaptivnessUsed = GOLD;
+        adaptivnessUsed = GOLD;*/
       }else{ //else we are on an chaotic edge, thus as many samples as possible are needed
         adaptivnessUsed = BLACK;
       }      
@@ -118,14 +118,10 @@ __global__ void fractalRenderMain(cudaSurfaceObject_t surfaceOutput, int width, 
   }
   int mean = escapeTimeSum / superSamplingLevel;  
 
-  int paletteIdx = paletteLength - (mean % paletteLength) - 1;
-  int resultColor;
-  surf2Dread(&resultColor, colorPalette, paletteIdx * 4, 0);
-  if(mean == dwell)
-    resultColor = BLACK;
+  /*
   if(adaptivnessUsed && visualiseSS){
     resultColor = adaptivnessUsed;
-  }
+  }*/
   /*if(idx_x < 10 && idx_y < 10){
     printf("%f\t", randomSample);
     __syncthreads();
@@ -133,25 +129,71 @@ __global__ void fractalRenderMain(cudaSurfaceObject_t surfaceOutput, int width, 
       printf("\n");
   }*/
 
-  surf2Dwrite(resultColor, surfaceOutput, idx_x * sizeof(unsigned int), idx_y);
-  //int* pOutputDebug = (int*)((char*)outputData_debug + idx_y * outputDataPitch_debug) + idx_x;
-  //*pOutputDebug = result;
-
+  int* pOutput = ((int*)((char*)output + idx_y * outputPitch)) + idx_x;
+  *pOutput = mean;
 }
 
+typedef struct color{
+  char r;
+  char g;
+  char b;
+  char a;
+
+} color_t;
+
 extern "C"
-__global__ void fractalRenderUnderSampled(cudaSurfaceObject_t surfaceOutput, int width, int height, cudaSurfaceObject_t colorPalette, int paletteLength, float left_bottom_x, float left_bottom_y, float right_top_x, float right_top_y, int dwell)
-// todo: usporadat poradi paramateru, cudaXXObjects predavat pointrem, ne kopirovanim (tohle rozmyslet, mozna je to takhle dobre)
-//  todo ma to fakt hodne pointeru, mnoho z nich je pritom pro vsechny launche stejny - nezdrzuje tohle? omezene registry a tak
-{
-  const int underSamplingLevel = 4;
+__global__ void compose(int** input1, long input1pitch, cudaSurfaceObject_t surfaceOutput, int width, int height, cudaSurfaceObject_t colorPalette, int paletteLength, int dwell){
   const int idx_x = blockDim.x * blockIdx.x + threadIdx.x;
   const int idx_y = blockDim.y * blockIdx.y + threadIdx.y;
   if(idx_x >= width || idx_y >= height) return;
-  if(idx_x % underSamplingLevel != 0) return;
-  if(idx_y % underSamplingLevel != 0) return;
-  //work only at ever Nth pixel:
 
+  
+  const int blurSize = 4;
+  
+  const int convolution[blurSize][blurSize] = {
+      //  {1,2,1},
+      //  {2,4,2},
+      //  {1,2,1}
+      {0,0,0},
+      {0,1,0},
+      {0,0,0}
+  };
+  const int convolutionDivisor = 1;
+
+  int sum = 0;
+  #pragma unroll
+  for(int i = -blurSize/2; i < blurSize/2; i++){ 
+    #pragma unroll
+    for(int j = -blurSize/2; j < blurSize/2; j++){
+      int x = max(0,min(width,idx_x + i));
+      int y = max(0,min(height,idx_y + j));
+      int* pInput1 = (int*)((char*)input1 + y * input1pitch) + x;
+      sum += (*pInput1) * convolution[i+blurSize/2][j+blurSize/2];
+    }
+  }
+  int result;
+  result = sum / convolutionDivisor;
+
+  int paletteIdx = paletteLength - (result % paletteLength) - 1;
+  int resultColor;
+  surf2Dread(&resultColor, colorPalette, paletteIdx * sizeof(int), 0);
+  if(result == dwell)
+    resultColor = YELLOW;
+
+  surf2Dwrite(resultColor, surfaceOutput, idx_x * sizeof(int), idx_y);
+}
+
+extern "C"
+__global__ void blur(){}
+
+extern "C"
+__global__ void fractalRenderUnderSampled(int** output, long outputPitch, int width, int height, float left_bottom_x, float left_bottom_y, float right_top_x, float right_top_y, int dwell, int underSamplingLevel)
+{
+  //work only at every Nth pixel:
+  const int idx_x = (blockDim.x * blockIdx.x + threadIdx.x) * underSamplingLevel;
+  const int idx_y = (blockDim.y * blockIdx.y + threadIdx.y) * underSamplingLevel;
+  if(idx_x >= width-underSamplingLevel || idx_y >= height-underSamplingLevel) return;
+  
   //We are in a complex plane from (left_bottom) to (right_top), so we scale the pixels to it
   float pixelWidth = (right_top_x - left_bottom_x) / (float) width;
   float pixelHeight = (right_top_y - left_bottom_y) / (float) height;
@@ -161,15 +203,11 @@ __global__ void fractalRenderUnderSampled(cudaSurfaceObject_t surfaceOutput, int
 
   int escapeTime = escape(dwell, cx, cy);
 
-  int paletteIdx = paletteLength - (escapeTime % paletteLength) - 1;
-  int resultColor;
-  surf2Dread(&resultColor, colorPalette, paletteIdx * 4, 0);
-  if(escapeTime == dwell)
-    resultColor = BLACK;
-
   for(int x = 0; x < underSamplingLevel; x++){
     for(int y = 0; y < underSamplingLevel; y++){
-      surf2Dwrite(resultColor, surfaceOutput, (idx_x + x) * sizeof(unsigned int), (idx_y+y));
+      //surf2Dwrite(resultColor, surfaceOutput, (idx_x + x) * sizeof(unsigned int), (idx_y+y));
+      int* pOutput = ((int*)((char*)output + (idx_y+y) * outputPitch)) + (idx_x+x);
+      *pOutput = escapeTime;
     }
   }
 

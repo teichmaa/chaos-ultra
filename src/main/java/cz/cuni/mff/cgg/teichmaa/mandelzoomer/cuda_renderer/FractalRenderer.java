@@ -27,14 +27,18 @@ public class FractalRenderer implements Closeable {
     }
 
     private RenderingKernel kernel;
+    private KernelMain kernelMain;
+    private KernelBlur kernelBlur;
+    private KernelCompose kernelCompose;
+
     private FractalRenderingModule module;
 
     private int blockDimX = 32;
     private int blockDimY = 32;
     private int paletteLength;
 
-    //private CUdeviceptr devout_debug = new CUdeviceptr();
-    //private long devout_pitch_debug;
+    private CUdeviceptr output2Darray = new CUdeviceptr();
+    private long output2DarrayPitch;
     private CUdeviceptr randomValues;
 
     private cudaGraphicsResource outputTextureResource = new cudaGraphicsResource();
@@ -43,16 +47,20 @@ public class FractalRenderer implements Closeable {
 
     public FractalRenderer(FractalRenderingModule module, int outputTextureGLHandle, int outputTextureGLTarget, int paletteTextureGLHandle, int paletteTextureGLTarget, int paletteLength) {
         this.module = module;
-        kernel = module.getKernel(KernelUnderSampled.class);
         this.paletteLength = paletteLength;
-
-        // devout_pitch_debug = allocateDevice2DBuffer(kernel.getWidth(), kernel.getHeight(), devout_debug);
-
         registerOutputTexture(outputTextureGLHandle, outputTextureGLTarget);
-        jcuda.runtime.JCuda.cudaGraphicsGLRegisterImage(paletteTextureResource, paletteTextureGLHandle, paletteTextureGLTarget, cudaGraphicsRegisterFlagsReadOnly);
+        JCuda.cudaGraphicsGLRegisterImage(paletteTextureResource, paletteTextureGLHandle, paletteTextureGLTarget, cudaGraphicsRegisterFlagsReadOnly);
+
+        KernelUnderSampled kernelUndersampled = module.getKernel(KernelUnderSampled.class);
+        kernelUndersampled.setUnderSamplingLevel(4);
+        kernelMain = module.getKernel(KernelMain.class);
+        kernelCompose = module.getKernel(KernelCompose.class);
+        kernelBlur = module.getKernel(KernelBlur.class);
+        this.kernel = kernelMain;
+
+        output2DarrayPitch = allocateDevice2DBuffer(kernel.getWidth(), kernel.getHeight(), output2Darray);
 
         //moduleInit();
-
         randomSamplesInit();
     }
 
@@ -102,12 +110,7 @@ public class FractalRenderer implements Closeable {
         KernelInit kernel = module.getKernel(KernelInit.class);
 
         Pointer kernelParams = Pointer.to(kernel.getKernelParams());
-        cuLaunchKernel(kernel.getFunction(),
-                1, 1, 1,
-                1, 1, 1,
-                0, null,
-                kernelParams, null
-        );
+        cuLaunchKernel(kernel.getFunction(),1, 1,kernelParams);
         cuCtxSynchronize();
     }
 
@@ -127,7 +130,7 @@ public class FractalRenderer implements Closeable {
      * @param width
      * @param height
      * @param target output parameter, will contain pointer to allocated memory
-     * @return pitch
+     * @return pitch (actual row length (in bytes) as aligned by CUDA. pitch >= width * sizeof element.)
      */
     private long allocateDevice2DBuffer(int width, int height, CUdeviceptr target) {
 
@@ -136,6 +139,15 @@ public class FractalRenderer implements Closeable {
          */
         long pitch;
         long[] pitchptr = new long[1];
+
+        if(target != null){
+            cuMemFree(target);
+        }else{
+            target = new CUdeviceptr();
+        }
+
+        if(width * height == 0)
+            return 0;
 
         cuMemAllocPitch(target, pitchptr, (long) width * (long) Sizeof.INT, (long) height, Sizeof.INT);
 
@@ -146,7 +158,7 @@ public class FractalRenderer implements Closeable {
 
         if (pitch > Integer.MAX_VALUE) {
             //this would mean an array with length bigger that Integer.MAX_VALUE and this is not supported by Java
-            throw new CudaException("Pitch is too big (bigger than Integer.MAX_VALUE): " + pitch);
+            System.err.println("Warning: allocateDevice2DBuffer: pitch > Integer.MAX_VALUE");
         }
         return pitch;
     }
@@ -174,6 +186,7 @@ public class FractalRenderer implements Closeable {
         kernel.setHeight(height);
         randomSamplesInit();
         registerOutputTexture(outputTextureGLhandle, GLtarget);
+        output2DarrayPitch = allocateDevice2DBuffer(width, height, output2Darray);
     }
 
     public int getWidth() {
@@ -228,9 +241,8 @@ public class FractalRenderer implements Closeable {
                     // of pointers which point to the actual values.
                     NativePointerObject[] kernelParamsArr = kernel.getKernelParams();
                     {
-                        kernelParamsArr[kernel.PARAM_IDX_SURFACE_OUT] = Pointer.to(surfaceOutput);
-                        kernelParamsArr[kernel.PARAM_IDX_SURFACE_PALETTE] = Pointer.to(surfacePalette);
-                        kernelParamsArr[kernel.PARAM_IDX_PALETTE_LENGTH] = Pointer.to(new int[]{paletteLength});
+                        kernelParamsArr[kernel.PARAM_IDX_2DARR_OUT] = Pointer.to(output2Darray);
+                        kernelParamsArr[kernel.PARAM_IDX_2DARR_OUT_PITCH] = Pointer.to(new long[]{output2DarrayPitch});
                         if(kernel instanceof KernelMain)
                             kernelParamsArr[((KernelMain)kernel).PARAM_IDX_RANDOM_SAMPLES] = Pointer.to(randomValues);
                     }
@@ -238,6 +250,18 @@ public class FractalRenderer implements Closeable {
                     CUfunction kernelFunction = kernel.getFunction();
                     int gridDimX = width / blockDimX;
                     int gridDimY = height / blockDimY;
+
+                    NativePointerObject[] composeParamsArr = kernelCompose.getKernelParams();
+                    {
+                        composeParamsArr[kernelCompose.PARAM_IDX_WIDTH] = Pointer.to(new int[]{width});
+                        composeParamsArr[kernelCompose.PARAM_IDX_HEIGHT] = Pointer.to(new int[]{height});
+                        composeParamsArr[kernelCompose.PARAM_IDX_SURFACE_OUT] = Pointer.to(surfaceOutput);
+                        composeParamsArr[kernelCompose.PARAM_IDX_INPUT1] = Pointer.to(output2Darray);
+                        composeParamsArr[kernelCompose.PARAM_IDX_INPUT1_PITCH] = Pointer.to(new long[]{output2DarrayPitch});
+                        composeParamsArr[kernelCompose.PARAM_IDX_SURFACE_PALETTE] = Pointer.to(surfacePalette);
+                        composeParamsArr[kernelCompose.PARAM_IDX_PALETTE_LENGTH] = Pointer.to(new int[]{paletteLength});
+                        composeParamsArr[kernelCompose.PARAM_IDX_DWELL] = Pointer.to(new int[]{getDwell()});
+                    }
 
                     if (gridDimX <= 0 || gridDimY <= 0) return;
                     if (gridDimX > CUDA_MAX_GRID_DIM) {
@@ -248,10 +272,13 @@ public class FractalRenderer implements Closeable {
                     }
                     try {
                         cuLaunchKernel(kernelFunction,
-                                gridDimX, gridDimY, 1,
-                                blockDimX, blockDimY, 1,
-                                0, null,           // Shared memory size and defaultStream
-                                kernelParams, null // Kernel- and extra parameters
+                                gridDimX, gridDimY,
+                                kernelParams
+                        );
+                        cuCtxSynchronize();
+                        cuLaunchKernel(kernelCompose.getFunction(),
+                                gridDimX, gridDimY,
+                                Pointer.to(composeParamsArr)
                         );
                         if (!async)
                             cuCtxSynchronize();
@@ -274,6 +301,15 @@ public class FractalRenderer implements Closeable {
 
         long end = System.currentTimeMillis();
         //System.out.println("Kernel " + kernel.getMainFunctionName() + " launched and finished in " + (end - start) + "ms");
+    }
+
+    private void cuLaunchKernel(CUfunction kernelFunction, int gridDimX, int gridDimY, Pointer kernelParams){
+        JCudaDriver.cuLaunchKernel(kernelFunction,
+                gridDimX, gridDimY, 1,
+                blockDimX, blockDimY, 1,
+                0, null,           // Shared memory size and defaultStream
+                kernelParams, null // Kernel- and extra parameters
+        );
     }
 
     @Override
