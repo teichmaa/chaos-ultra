@@ -27,6 +27,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     static RenderingController getSingleton() {
         return singleton;
     }
+
     public static final int SUPER_SAMPLING_MAX_LEVEL = FractalRenderer.SUPER_SAMPLING_MAX_LEVEL;
 
     // terminology of private fields:
@@ -77,7 +78,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
 //            lastFramesRenderTime.put(mode, new CyclicBuffer(lastFramesRenderTimeBufferLength, shortestFrameRenderTime));
 //        }
 
-        if(singleton == null)
+        if (singleton == null)
             singleton = this;
     }
 
@@ -112,15 +113,13 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     @Override
     public void mousePressed(MouseEvent e) {
         lastMousePosition = e;
-        if(SwingUtilities.isRightMouseButton(e) && SwingUtilities.isLeftMouseButton(e)){
+        if (SwingUtilities.isRightMouseButton(e) && SwingUtilities.isLeftMouseButton(e)) {
             currentMode.startZoomingAndMoving(true);
             animator.start();
-        }
-        else if (SwingUtilities.isRightMouseButton(e)) {
+        } else if (SwingUtilities.isRightMouseButton(e)) {
             currentMode.startZooming(true);
             animator.start();
-        }
-        else if (SwingUtilities.isLeftMouseButton(e)) {
+        } else if (SwingUtilities.isLeftMouseButton(e)) {
             //currentMode.startMoving();
             //animator.start();
         }
@@ -263,7 +262,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         render(drawable.getGL().getGL2());
 
         currentMode.step();
-        if(currentMode.isProgressiveRendering())
+        if (currentMode.isProgressiveRendering())
             this.repaint();
 
         long endTime = System.currentTimeMillis();
@@ -280,32 +279,29 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     private int lastFrameRenderTime = shortestFrameRenderTime;
 
     private void updateQuality() {
-        if(!useAutomaticQuality) return;
+        if (!useAutomaticQuality) return;
 
         //System.out.println("currentMode = " + currentMode);
         if (currentMode.isZooming()) {
             setParamsToBeRenderedIn(shortestFrameRenderTime);
-        }
-        else if(currentMode.isMoving()){
+        } else if (currentMode.isMoving()) {
             setParamsToBeRenderedIn(shortestFrameRenderTime);
-        }
-        else if(currentMode.isWaiting()){
+        } else if (currentMode.isWaiting()) {
             setParamsToBeRenderedIn(shortestFrameRenderTime * 2);
-        }
-        else if(currentMode.isProgressiveRendering()){
+        } else if (currentMode.isProgressiveRendering()) {
             int desiredFrameRenderTime = shortestFrameRenderTime * 2 << currentMode.getProgressiveRenderingLevel();
-            if(desiredFrameRenderTime > maxFrameRenderTime)
+            if (desiredFrameRenderTime > maxFrameRenderTime)
                 currentMode.reset();
             else
                 setParamsToBeRenderedIn(desiredFrameRenderTime);
             //pridat sem currentMode.getHighQualityIteration()
             //   a do RenderingMode::step dat highQIteration++
         }
-        if(fractalRenderer.getSuperSamplingLevel() == SUPER_SAMPLING_MAX_LEVEL)
+        if (fractalRenderer.getSuperSamplingLevel() == SUPER_SAMPLING_MAX_LEVEL)
             currentMode.reset();
     }
 
-    private void setParamsToBeRenderedIn(int ms){
+    private void setParamsToBeRenderedIn(int ms) {
         //debug:
 //        System.out.print(currentMode + ": ");
 //        CyclicBuffer b = lastFramesRenderTime.get(currentMode.getCurrent());
@@ -321,7 +317,12 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     }
 
     private void render(final GL2 gl) {
-        fractalRenderer.launchKernel(false);
+        if (currentMode.wasProgressiveRendering())
+            fractalRenderer.launchQualityKernel();
+        else
+            if(lastMousePosition != null)
+                fractalRenderer.launchFastKernel(lastMousePosition.getX(), lastMousePosition.getY());
+        //fractalRenderer.launchQualityKernel();
 
         gl.glMatrixMode(GL_MODELVIEW);
         //gl.glPushMatrix();
@@ -395,7 +396,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
 
     void setSuperSamplingLevel(int supSampLvl) {
         //supSampLvl will be clamped to be >=1 and <= SUPER_SAMPLING_MAX_LEVEL
-        fractalRenderer.setSuperSamplingLevel(Math.max(1,Math.min(supSampLvl, SUPER_SAMPLING_MAX_LEVEL)));
+        fractalRenderer.setSuperSamplingLevel(Math.max(1, Math.min(supSampLvl, SUPER_SAMPLING_MAX_LEVEL)));
     }
 
     void repaint() {
@@ -410,7 +411,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         fractalRenderer.setVisualiseAdaptiveSS(visualiseAdaptiveSS);
     }
 
-    void setUseAutomaticQuality(boolean useAutomaticQuality){
+    void setUseAutomaticQuality(boolean useAutomaticQuality) {
         this.useAutomaticQuality = useAutomaticQuality;
     }
 

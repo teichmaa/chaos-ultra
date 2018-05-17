@@ -33,8 +33,8 @@ class RenderingModeFSM {
     private boolean zoomingDirection = false;
 
     void reset() {
+        last = current;
         current = Waiting;
-        last = Waiting;
         zoomingAndMoving = false;
     }
 
@@ -125,6 +125,9 @@ class RenderingModeFSM {
 
     boolean isProgressiveRendering() {
         return current == ProgressiveRendering;
+    }
+    boolean wasProgressiveRendering() {
+        return last == ProgressiveRendering;
     }
 
     boolean isWaiting() {

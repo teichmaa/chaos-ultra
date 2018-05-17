@@ -20,15 +20,16 @@ public class FractalRenderer implements Closeable {
 
     public static final int CUDA_MAX_GRID_DIM = 65536 - 1;
     public static final int SUPER_SAMPLING_MAX_LEVEL = 256;
+    public static final int FOVEATION_CENTER_RADIUS = 400;//todo zjistit vypoctem
     private static final Pointer NULLPTR = Pointer.to(new byte[0]);
 
     static {
         CudaHelpers.cudaInit();
     }
 
-    private RenderingKernel kernel;
+    private KernelUnderSampled kernelUndersampled;
     private KernelMain kernelMain;
-    private KernelBlur kernelBlur;
+    //private KernelBlur kernelBlur;
     private KernelCompose kernelCompose;
 
     private FractalRenderingModule module;
@@ -37,8 +38,10 @@ public class FractalRenderer implements Closeable {
     private int blockDimY = 32;
     private int paletteLength;
 
-    private CUdeviceptr output2Darray = new CUdeviceptr();
-    private long output2DarrayPitch;
+    private CUdeviceptr output2Darray1 = new CUdeviceptr();
+    private CUdeviceptr output2Darray2 = new CUdeviceptr();
+    private long output2Darray1Pitch;
+    private long output2Darray2Pitch;
     private CUdeviceptr randomValues;
 
     private cudaGraphicsResource outputTextureResource = new cudaGraphicsResource();
@@ -51,14 +54,14 @@ public class FractalRenderer implements Closeable {
         registerOutputTexture(outputTextureGLHandle, outputTextureGLTarget);
         JCuda.cudaGraphicsGLRegisterImage(paletteTextureResource, paletteTextureGLHandle, paletteTextureGLTarget, cudaGraphicsRegisterFlagsReadOnly);
 
-        KernelUnderSampled kernelUndersampled = module.getKernel(KernelUnderSampled.class);
+        kernelUndersampled = module.getKernel(KernelUnderSampled.class);
         kernelUndersampled.setUnderSamplingLevel(4);
         kernelMain = module.getKernel(KernelMain.class);
         kernelCompose = module.getKernel(KernelCompose.class);
-        kernelBlur = module.getKernel(KernelBlur.class);
-        this.kernel = kernelMain;
+        //kernelBlur = module.getKernel(KernelBlur.class);
 
-        output2DarrayPitch = allocateDevice2DBuffer(kernel.getWidth(), kernel.getHeight(), output2Darray);
+        output2Darray1Pitch = allocateDevice2DBuffer(kernelMain.getWidth(), kernelMain.getHeight(), output2Darray1);
+        output2Darray2Pitch = allocateDevice2DBuffer(kernelMain.getWidth(), kernelMain.getHeight(), output2Darray2);
 
         //moduleInit();
         randomSamplesInit();
@@ -182,33 +185,84 @@ public class FractalRenderer implements Closeable {
 
     public void resize(int width, int height, int outputTextureGLhandle, int GLtarget) {
         //System.out.println("resize: " +width + " x " + height);
-        kernel.setWidth(width);
-        kernel.setHeight(height);
+        kernelMain.setWidth(width);
+        kernelUndersampled.setWidth(width);
+        kernelMain.setHeight(height);
+        kernelUndersampled.setHeight(height);
         randomSamplesInit();
         registerOutputTexture(outputTextureGLhandle, GLtarget);
-        output2DarrayPitch = allocateDevice2DBuffer(width, height, output2Darray);
+        output2Darray1Pitch = allocateDevice2DBuffer(width, height, output2Darray1);
+        output2Darray2Pitch = allocateDevice2DBuffer(width, height, output2Darray2);
     }
 
     public int getWidth() {
-        return kernel.getWidth();
+        return kernelMain.getWidth();
     }
 
     public int getHeight() {
-        return kernel.getHeight();
+        return kernelMain.getHeight();
     }
 
     /**
-     * @param async when true, the function will return just after launching the kernel and will not wait for it to end. The bitmaps will still be synchronized.
+     *
      */
-    public void launchKernel(boolean async) {
-        launchKernel(async, kernel);
+    public void launchFastKernel(int focusx, int focusy) {
+        kernelMain.setFocus(focusx, focusy);
+        kernelMain.setRenderRadius(FOVEATION_CENTER_RADIUS);
+        //todo nejak spustit ty prvni dva najednou a pak pockat?
+        launchRenderingKernel(false, kernelMain, output2Darray1, output2Darray1Pitch);
+        launchRenderingKernel(false, kernelUndersampled, output2Darray2, output2Darray2Pitch);
+        launchDrawingKernel(false, kernelCompose);
     }
 
-    private void launchKernel(boolean async, RenderingKernel kernel) {
-        long start = System.currentTimeMillis();
+    public void launchQualityKernel(){
+        kernelMain.setRenderRadiusToMax();
+        kernelMain.setFocusDefault();
+        launchRenderingKernel(false, kernelMain, output2Darray1, output2Darray1Pitch);
+        launchDrawingKernel(false, kernelCompose);
+    }
 
+    private void launchRenderingKernel(boolean async, RenderingKernel kernel, CUdeviceptr output, long outputPitch){
         int width = kernel.getWidth();
         int height = kernel.getHeight();
+
+        // Set up the kernel parameters: A pointer to an array
+        // of pointers which point to the actual values.
+        NativePointerObject[] kernelParamsArr = kernel.getKernelParams();
+        {
+            kernelParamsArr[kernel.PARAM_IDX_2DARR_OUT] = Pointer.to(output);
+            kernelParamsArr[kernel.PARAM_IDX_2DARR_OUT_PITCH] = Pointer.to(new long[]{outputPitch});
+            if(kernel instanceof KernelMain)
+                kernelParamsArr[((KernelMain)kernel).PARAM_IDX_RANDOM_SAMPLES] = Pointer.to(randomValues);
+        }
+        Pointer kernelParams = Pointer.to(kernelParamsArr);
+        CUfunction kernelFunction = kernel.getFunction();
+        int gridDimX = width / blockDimX;
+        int gridDimY = height / blockDimY;
+
+        if (gridDimX <= 0 || gridDimY <= 0) return;
+        if (gridDimX > CUDA_MAX_GRID_DIM) {
+            throw new FractalRendererException("Unsupported input parameter: width must be smaller than " + CUDA_MAX_GRID_DIM * blockDimX);
+        }
+        if (gridDimY > CUDA_MAX_GRID_DIM) {
+            throw new FractalRendererException("Unsupported input parameter: height must be smaller than " + CUDA_MAX_GRID_DIM * blockDimY);
+        }
+        try {
+            cuLaunchKernel(kernelFunction,
+                    gridDimX, gridDimY,
+                    kernelParams
+            );
+            cuCtxSynchronize();
+            if (!async)
+                cuCtxSynchronize();
+        } catch (CudaException e) {
+            System.err.println("Error just after launching a kernel:");
+            System.err.println(e);
+        }
+    }
+
+    private void launchDrawingKernel(boolean async, KernelCompose kernel) {
+        long start = System.currentTimeMillis();
 
         try {
             JCuda.cudaGraphicsMapResources(1, new cudaGraphicsResource[]{outputTextureResource}, defaultStream);
@@ -239,28 +293,24 @@ public class FractalRenderer implements Closeable {
                 try {
                     // Set up the kernel parameters: A pointer to an array
                     // of pointers which point to the actual values.
-                    NativePointerObject[] kernelParamsArr = kernel.getKernelParams();
-                    {
-                        kernelParamsArr[kernel.PARAM_IDX_2DARR_OUT] = Pointer.to(output2Darray);
-                        kernelParamsArr[kernel.PARAM_IDX_2DARR_OUT_PITCH] = Pointer.to(new long[]{output2DarrayPitch});
-                        if(kernel instanceof KernelMain)
-                            kernelParamsArr[((KernelMain)kernel).PARAM_IDX_RANDOM_SAMPLES] = Pointer.to(randomValues);
-                    }
-                    Pointer kernelParams = Pointer.to(kernelParamsArr);
-                    CUfunction kernelFunction = kernel.getFunction();
-                    int gridDimX = width / blockDimX;
-                    int gridDimY = height / blockDimY;
+                    int gridDimX = getWidth() / blockDimX;
+                    int gridDimY = getHeight() / blockDimY;
 
-                    NativePointerObject[] composeParamsArr = kernelCompose.getKernelParams();
+                    NativePointerObject[] composeParamsArr = kernel.getKernelParams();
                     {
-                        composeParamsArr[kernelCompose.PARAM_IDX_WIDTH] = Pointer.to(new int[]{width});
-                        composeParamsArr[kernelCompose.PARAM_IDX_HEIGHT] = Pointer.to(new int[]{height});
-                        composeParamsArr[kernelCompose.PARAM_IDX_SURFACE_OUT] = Pointer.to(surfaceOutput);
-                        composeParamsArr[kernelCompose.PARAM_IDX_INPUT1] = Pointer.to(output2Darray);
-                        composeParamsArr[kernelCompose.PARAM_IDX_INPUT1_PITCH] = Pointer.to(new long[]{output2DarrayPitch});
-                        composeParamsArr[kernelCompose.PARAM_IDX_SURFACE_PALETTE] = Pointer.to(surfacePalette);
-                        composeParamsArr[kernelCompose.PARAM_IDX_PALETTE_LENGTH] = Pointer.to(new int[]{paletteLength});
-                        composeParamsArr[kernelCompose.PARAM_IDX_DWELL] = Pointer.to(new int[]{getDwell()});
+                        composeParamsArr[kernel.PARAM_IDX_WIDTH] = Pointer.to(new int[]{getWidth()});
+                        composeParamsArr[kernel.PARAM_IDX_HEIGHT] = Pointer.to(new int[]{getHeight()});
+                        composeParamsArr[kernel.PARAM_IDX_SURFACE_OUT] = Pointer.to(surfaceOutput);
+                        composeParamsArr[kernel.PARAM_IDX_INPUT_MAIN] = Pointer.to(output2Darray1);
+                        composeParamsArr[kernel.PARAM_IDX_INPUT_BCG] = Pointer.to(output2Darray2);
+                        composeParamsArr[kernel.PARAM_IDX_INPUT_MAIN_PITCH] = Pointer.to(new long[]{output2Darray1Pitch});
+                        composeParamsArr[kernel.PARAM_IDX_INPUT_BCG_PITCH] = Pointer.to(new long[]{output2Darray2Pitch});
+                        composeParamsArr[kernel.PARAM_IDX_SURFACE_PALETTE] = Pointer.to(surfacePalette);
+                        composeParamsArr[kernel.PARAM_IDX_PALETTE_LENGTH] = Pointer.to(new int[]{paletteLength});
+                        composeParamsArr[kernel.PARAM_IDX_DWELL] = Pointer.to(new int[]{getDwell()});
+                        composeParamsArr[kernel.PARAM_IDX_MAIN_RADIUS] = Pointer.to(new int[]{kernelMain.getRenderRadius()});
+                        composeParamsArr[kernel.PARAM_IDX_FOCUS_X] = Pointer.to(new int[]{kernelMain.getFocusx()});
+                        composeParamsArr[kernel.PARAM_IDX_FOCUS_Y] = Pointer.to(new int[]{kernelMain.getFocusy()});
                     }
 
                     if (gridDimX <= 0 || gridDimY <= 0) return;
@@ -271,12 +321,7 @@ public class FractalRenderer implements Closeable {
                         throw new FractalRendererException("Unsupported input parameter: height must be smaller than " + CUDA_MAX_GRID_DIM * blockDimY);
                     }
                     try {
-                        cuLaunchKernel(kernelFunction,
-                                gridDimX, gridDimY,
-                                kernelParams
-                        );
-                        cuCtxSynchronize();
-                        cuLaunchKernel(kernelCompose.getFunction(),
+                        cuLaunchKernel(kernel.getFunction(),
                                 gridDimX, gridDimY,
                                 Pointer.to(composeParamsArr)
                         );
@@ -322,44 +367,34 @@ public class FractalRenderer implements Closeable {
     }
 
     public void setAdaptiveSS(boolean adaptiveSS) {
-        if(!(this.kernel instanceof KernelMain))
-            return;
-        KernelMain kernelMain = (KernelMain) this.kernel;
         kernelMain.setAdaptiveSS(adaptiveSS);
     }
 
     public void setVisualiseAdaptiveSS(boolean visualiseAdaptiveSS) {
-        if(!(this.kernel instanceof KernelMain))
-            return;
-        KernelMain kernelMain = (KernelMain) this.kernel;
         kernelMain.setVisualiseAdaptiveSS(visualiseAdaptiveSS);
     }
 
     public void setSuperSamplingLevel(int supSampLvl) {
-        if(!(this.kernel instanceof KernelMain))
-            return;
-        KernelMain kernelMain = (KernelMain) this.kernel;
         kernelMain.setSuperSamplingLevel(supSampLvl);
         //randomSamplesInit();
     }
 
     public void setDwell(int dwell) {
-        kernel.setDwell(dwell);
+        kernelMain.setDwell(dwell);
+        kernelUndersampled.setDwell(dwell);
     }
 
     public int getSuperSamplingLevel() {
-        if(!(this.kernel instanceof KernelMain))
-            return -1;
-        KernelMain kernelMain = (KernelMain) this.kernel;
         return kernelMain.getSuperSamplingLevel();
     }
 
     public int getDwell() {
-        return kernel.getDwell();
+        return kernelMain.getDwell();
     }
 
     public void setBounds(float left_bottom_x, float left_bottom_y, float right_top_x, float right_top_y) {
-        kernel.setBounds(left_bottom_x, left_bottom_y, right_top_x, right_top_y);
+        kernelMain.setBounds(left_bottom_x, left_bottom_y, right_top_x, right_top_y);
+        kernelUndersampled.setBounds(left_bottom_x, left_bottom_y, right_top_x, right_top_y);
     }
 
 }

@@ -14,6 +14,9 @@ class KernelMain extends RenderingKernel {
     private final short PARAM_IDX_ADAPTIVE_SS;
     private final short PARAM_IDX_VISUALISE_ADAPTIVE_SS;
     final short PARAM_IDX_RANDOM_SAMPLES;
+    private final short PARAM_IDX_RENDER_RADIUS;
+    private final short PARAM_IDX_FOCUS_X;
+    private final short PARAM_IDX_FOCUS_Y;
 
     KernelMain(CUmodule ownerModule) {
         super(name, ownerModule);
@@ -23,15 +26,22 @@ class KernelMain extends RenderingKernel {
         PARAM_IDX_ADAPTIVE_SS = addParam(null);
         PARAM_IDX_VISUALISE_ADAPTIVE_SS = addParam(null);
         PARAM_IDX_RANDOM_SAMPLES = addParam(null);
+        PARAM_IDX_RENDER_RADIUS = addParam(null);
+        PARAM_IDX_FOCUS_X = addParam(null);
+        PARAM_IDX_FOCUS_Y = addParam(null);
 
         setSuperSamplingLevel(1);
         setAdaptiveSS(true);
         setVisualiseAdaptiveSS(false);
+        setRenderRadius(FractalRenderer.FOVEATION_CENTER_RADIUS);
     }
 
     private int superSamplingLevel;
     private boolean adaptiveSS;
     private boolean visualiseAdaptiveSS;
+    private int renderRadius;
+    private int focusx;
+    private int focusy;
 
     boolean isVisualiseAdaptiveSS() {
         return visualiseAdaptiveSS;
@@ -61,4 +71,35 @@ class KernelMain extends RenderingKernel {
         return superSamplingLevel;
     }
 
+    public int getRenderRadius() {
+        return renderRadius;
+    }
+
+    public void setRenderRadiusToMax(){
+        setRenderRadius(Math.max(getWidth(),getHeight()));
+    }
+
+    public void setRenderRadius(int renderRadius) {
+        this.renderRadius = renderRadius;
+        params[PARAM_IDX_RENDER_RADIUS] = Pointer.to(new int[]{renderRadius});
+    }
+
+    public void setFocusDefault(){
+        setFocus(getWidth() / 2, getHeight() /2);
+    }
+
+    public void setFocus(int x, int y){
+        params[PARAM_IDX_FOCUS_X] = Pointer.to(new int[]{x});
+        params[PARAM_IDX_FOCUS_Y] = Pointer.to(new int[]{y});
+        this.focusx = x;
+        this.focusy = y;
+    }
+
+    public int getFocusx() {
+        return focusx;
+    }
+
+    public int getFocusy() {
+        return focusy;
+    }
 }

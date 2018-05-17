@@ -61,14 +61,27 @@ __device__ void printParams_debug(cudaSurfaceObject_t surfaceOutput, long output
   printf("SS lvl:\t%d\n",superSamplingLevel);
 }
 
+__device__ __forceinline__ bool isWithinRadius(int idx_x, int idx_y, int width, int height, int radius, int focus_x, int focus_y){
+  if(__sad(idx_x, focus_x, 0) > radius / 2) return false;
+  if(__sad(idx_y, focus_y, 0) > radius / 2) return false;
+  else return true;
+
+  // if(idx_x < (width - radius)/2 || idx_y < (height-radius)/2) return false;
+  // if(idx_x > (width + radius)/2 || idx_y > (height+radius)/2) return false;
+  // else return true;
+}
+
 extern "C"
-__global__ void fractalRenderMain(int** output, long outputPitch, int width, int height, float left_bottom_x, float left_bottom_y, float right_top_x, float right_top_y, int dwell, int superSamplingLevel, bool adaptiveSS, bool visualiseSS, float* randomSamples)
+__global__ void fractalRenderMain(int** output, long outputPitch, int width, int height, float left_bottom_x, float left_bottom_y, float right_top_x, float right_top_y, int dwell, int superSamplingLevel, bool adaptiveSS, bool visualiseSS, float* randomSamples, int renderRadius, int focus_x, int focus_y)
 // todo: usporadat poradi paramateru, cudaXXObjects predavat pointrem, ne kopirovanim (tohle rozmyslet, mozna je to takhle dobre)
 //  todo ma to fakt hodne pointeru, mnoho z nich je pritom pro vsechny launche stejny - nezdrzuje tohle? omezene registry a tak
 {
   const int idx_x = blockDim.x * blockIdx.x + threadIdx.x;
   const int idx_y = blockDim.y * blockIdx.y + threadIdx.y;
   if(idx_x >= width || idx_y >= height) return;
+  
+  if(!isWithinRadius(idx_x, idx_y, width, height, renderRadius, focus_x, focus_y)) return;
+
 
   //printParams_debug( surfaceOutput,  outputDataPitch_debug,  width,  height,  left_bottom_x,  left_bottom_y, right_top_x,  right_top_y, dwell, outputData_debug,  colorPalette, paletteLength, randomSamples,  superSamplingLevel,  adaptiveSS,  visualiseSS);
 
@@ -142,12 +155,12 @@ typedef struct color{
 } color_t;
 
 extern "C"
-__global__ void compose(int** input1, long input1pitch, cudaSurfaceObject_t surfaceOutput, int width, int height, cudaSurfaceObject_t colorPalette, int paletteLength, int dwell){
+__global__ void compose(int** inputMain, long inputMainPitch, int** inputBcg, long inputBcgPitch, cudaSurfaceObject_t surfaceOutput, int width, int height, cudaSurfaceObject_t colorPalette, int paletteLength, int dwell, int mainRenderRadius, int focus_x, int focus_y){
   const int idx_x = blockDim.x * blockIdx.x + threadIdx.x;
   const int idx_y = blockDim.y * blockIdx.y + threadIdx.y;
   if(idx_x >= width || idx_y >= height) return;
 
-  
+  /*
   const int blurSize = 4;
   
   const int convolution[blurSize][blurSize] = {
@@ -173,6 +186,16 @@ __global__ void compose(int** input1, long input1pitch, cudaSurfaceObject_t surf
   }
   int result;
   result = sum / convolutionDivisor;
+  */
+  //choose result from one or two
+
+  int* pResult;
+  if(isWithinRadius(idx_x, idx_y, width, height, mainRenderRadius, focus_x, focus_y)){
+    pResult = (int*)((char*)inputMain + idx_y * inputMainPitch) + idx_x;
+  }else{
+    pResult = (int*)((char*)inputBcg + idx_y * inputBcgPitch) + idx_x;
+  }
+  int result = *pResult;
 
   int paletteIdx = paletteLength - (result % paletteLength) - 1;
   int resultColor;
