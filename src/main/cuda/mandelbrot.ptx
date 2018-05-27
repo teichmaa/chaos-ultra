@@ -256,7 +256,7 @@ BB0_14:
 )
 {
 	.reg .pred 	%p<10>;
-	.reg .b32 	%r<36>;
+	.reg .b32 	%r<37>;
 	.reg .b64 	%rd<15>;
 
 
@@ -319,15 +319,16 @@ BB1_6:
 	mul.wide.s32 	%rd12, %r1, 4;
 	add.s64 	%rd13, %rd14, %rd12;
 	ld.global.u32 	%r27, [%rd13];
-	rem.s32 	%r28, %r27, %r6;
-	add.s32 	%r29, %r6, 1073741823;
-	sub.s32 	%r30, %r29, %r28;
-	shl.b32 	%r31, %r30, 2;
-	suld.b.2d.b32.trap {%r33}, [%rd7, {%r31, %r19}];
+	abs.s32 	%r28, %r27;
+	rem.s32 	%r29, %r28, %r6;
+	add.s32 	%r30, %r6, 1073741823;
+	sub.s32 	%r31, %r30, %r29;
+	shl.b32 	%r32, %r31, 2;
+	suld.b.2d.b32.trap {%r34}, [%rd7, {%r32, %r19}];
 	setp.eq.s32	%p8, %r27, %r7;
-	selp.b32	%r34, -16711681, %r33, %p8;
-	shl.b32 	%r35, %r1, 2;
-	sust.b.2d.b32.trap 	[%rd6, {%r35, %r2}], {%r34};
+	selp.b32	%r35, -16711681, %r34, %p8;
+	shl.b32 	%r36, %r1, 2;
+	sust.b.2d.b32.trap 	[%rd6, {%r36, %r2}], {%r35};
 
 BB1_7:
 	ret;

@@ -71,6 +71,13 @@ __device__ __forceinline__ bool isWithinRadius(int idx_x, int idx_y, int width, 
   // else return true;
 }
 
+__device__ __forceinline__ int simpleRandom(int seed){
+    long long a = 1103515245;
+    long long c = 12345;
+    long long m = 4294967295l; //2**32 - 1
+    return (a *  seed + c) % m;
+}
+
 extern "C"
 __global__ void fractalRenderMain(int** output, long outputPitch, int width, int height, float left_bottom_x, float left_bottom_y, float right_top_x, float right_top_y, int dwell, int superSamplingLevel, bool adaptiveSS, bool visualiseSS, float* randomSamples, int renderRadius, int focus_x, int focus_y)
 // todo: usporadat poradi paramateru, cudaXXObjects predavat pointrem, ne kopirovanim (tohle rozmyslet, mozna je to takhle dobre)
@@ -81,7 +88,6 @@ __global__ void fractalRenderMain(int** output, long outputPitch, int width, int
   if(idx_x >= width || idx_y >= height) return;
   
   if(!isWithinRadius(idx_x, idx_y, width, height, renderRadius, focus_x, focus_y)) return;
-
 
   //printParams_debug( surfaceOutput,  outputDataPitch_debug,  width,  height,  left_bottom_x,  left_bottom_y, right_top_x,  right_top_y, dwell, outputData_debug,  colorPalette, paletteLength, randomSamples,  superSamplingLevel,  adaptiveSS,  visualiseSS);
 
@@ -95,6 +101,7 @@ __global__ void fractalRenderMain(int** output, long outputPitch, int width, int
 
   int escapeTimeSum = 0;
   int randomSamplePixelsIdx = (idx_y * width + idx_x)*MAX_SS_LEVEL;
+  //superSamplingLevel = 1;
   //assert superSamplingLevel <= MAX_SS_LEVEL
   for(int i = 0; i < superSamplingLevel; i++){
     float random_xd = i / (float) superSamplingLevel; //not really random, just uniform
@@ -196,7 +203,7 @@ __global__ void compose(int** inputMain, long inputMainPitch, int** inputBcg, lo
   }
   int result = *pResult;
 
-  int paletteIdx = paletteLength - (result % paletteLength) - 1;
+  int paletteIdx = paletteLength - (abs(result) % paletteLength) - 1;
   int resultColor;
   surf2Dread(&resultColor, colorPalette, paletteIdx * sizeof(int), 0);
   if(result == dwell)
