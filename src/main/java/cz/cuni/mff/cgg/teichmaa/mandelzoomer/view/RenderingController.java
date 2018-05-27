@@ -280,6 +280,10 @@ public class RenderingController extends MouseAdapter implements GLEventListener
 
     private void updateQuality() {
         if (!useAutomaticQuality) return;
+        if(currentMode.isWaiting() && currentMode.wasProgressiveRendering()){
+            fractalRenderer.setSuperSamplingLevel(10);
+            return;
+        }
 
         //System.out.println("currentMode = " + currentMode);
         if (currentMode.isZooming()) {

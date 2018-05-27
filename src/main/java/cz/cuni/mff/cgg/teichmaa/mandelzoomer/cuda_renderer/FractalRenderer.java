@@ -20,7 +20,7 @@ public class FractalRenderer implements Closeable {
 
     public static final int CUDA_MAX_GRID_DIM = 65536 - 1;
     public static final int SUPER_SAMPLING_MAX_LEVEL = 256;
-    public static final int FOVEATION_CENTER_RADIUS = 400;//todo zjistit vypoctem
+    public static final int FOVEATION_CENTER_RADIUS = 600;//todo zjistit vypoctem
     private static final Pointer NULLPTR = Pointer.to(new byte[0]);
 
     static {

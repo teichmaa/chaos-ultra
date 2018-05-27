@@ -1,4 +1,4 @@
-#include <curand_kernel.h>
+#include <cuda_runtime_api.h>
 #include "math.h"
 const int BLACK = 0xff000000;
 const int WHITE = 0xffffffff;
@@ -109,21 +109,20 @@ __global__ void fractalRenderMain(int** output, long outputPitch, int width, int
     if(i < adaptiveTreshold){
       r[i] = escapeTime;
     }
+
     if(i == adaptiveTreshold && adaptiveSS){ //decide whether to continue with supersampling or not
       float mean = escapeTimeSum / (i+1);
       float dispersion = computeDispersion(r, i, mean);
-      if(dispersion <= 0.01){
+      int stop = dispersion <= 0.01;
+#ifndef CUDART_VERSION
+#error CUDART_VERSION Undefined!
+#elif (CUDART_VERSION >= 9000) //for cuda 9 and later, use __any_sync(__activemask(), predicate) instead, see Programming guide, B.13 for more details
+      if(__all_sync(__activemask(), stop)){
+#else
+      if(__all(stop)){
+#endif
         superSamplingLevel = i+1; //effectively disabling high SS and storing info about actual number of samples taken
         adaptivnessUsed = WHITE; 
-      /*} //TODO vyssi vyhodnocovat az po vice iteracich
-        //  coz se zobecni na to, co rikal oskar = po kazde iteraci se rozhodnout, zdali pokracovat
-      else if(dispersion <= 10){
-        superSamplingLevel = max(i+1,superSamplingLevel / 2); //slightly reducing SS, but not below i+1
-        adaptivnessUsed = PINK; 
-      }
-      else if(dispersion <= 100){
-        superSamplingLevel = max(i+1,(int) (superSamplingLevel * 0.8f)); //slightly reducing SS, but not below i+1
-        adaptivnessUsed = GOLD;*/
       }else{ //else we are on an chaotic edge, thus as many samples as possible are needed
         adaptivnessUsed = BLACK;
       }      
