@@ -1,32 +1,41 @@
 package cz.cuni.mff.cgg.teichmaa.mandelzoomer.cuda_renderer;
 
-import jcuda.NativePointerObject;
 import jcuda.driver.CUmodule;
 
 public class KernelCompose extends CudaKernel {
 
-    final short PARAM_IDX_INPUT_MAIN = 0;
-    final short PARAM_IDX_INPUT_MAIN_PITCH = 1;
-    final short PARAM_IDX_INPUT_BCG = 2;
-    final short PARAM_IDX_INPUT_BCG_PITCH = 3;
-    final short PARAM_IDX_SURFACE_OUT = 4;
-    final short PARAM_IDX_WIDTH = 5;
-    final short PARAM_IDX_HEIGHT = 6;
-    final short PARAM_IDX_SURFACE_PALETTE = 7;
-    final short PARAM_IDX_PALETTE_LENGTH = 8;
-    final short PARAM_IDX_DWELL = 9;
-    final short PARAM_IDX_MAIN_RADIUS = 10;
-    final short PARAM_IDX_FOCUS_X = 11;
-    final short PARAM_IDX_FOCUS_Y = 12;
+    final short PARAM_IDX_INPUT_MAIN;
+    final short PARAM_IDX_INPUT_MAIN_PITCH;
+    final short PARAM_IDX_INPUT_BCG;
+    final short PARAM_IDX_INPUT_BCG_PITCH;
+    final short PARAM_IDX_SURFACE_OUT;
+    final short PARAM_IDX_WIDTH;
+    final short PARAM_IDX_HEIGHT;
+    final short PARAM_IDX_SURFACE_PALETTE;
+    final short PARAM_IDX_PALETTE_LENGTH;
+    final short PARAM_IDX_DWELL;
+    final short PARAM_IDX_MAIN_RADIUS;
+    final short PARAM_IDX_FOCUS_X;
+    final short PARAM_IDX_FOCUS_Y;
 
     public static final String name = "compose";
 
     public KernelCompose(CUmodule ownerModule) {
         super(name, ownerModule);
+
+        PARAM_IDX_INPUT_MAIN = registerParam();
+        PARAM_IDX_INPUT_MAIN_PITCH = registerParam();
+        PARAM_IDX_INPUT_BCG = registerParam();
+        PARAM_IDX_INPUT_BCG_PITCH = registerParam();
+        PARAM_IDX_SURFACE_OUT = registerParam();
+        PARAM_IDX_WIDTH = registerParam();
+        PARAM_IDX_HEIGHT = registerParam();
+        PARAM_IDX_SURFACE_PALETTE = registerParam();
+        PARAM_IDX_PALETTE_LENGTH = registerParam();
+        PARAM_IDX_DWELL = registerParam();
+        PARAM_IDX_MAIN_RADIUS  = registerParam();
+        PARAM_IDX_FOCUS_X  = registerParam();
+        PARAM_IDX_FOCUS_Y  = registerParam();
     }
 
-    @Override
-    public NativePointerObject[] getKernelParams() {
-        return new NativePointerObject[PARAM_IDX_FOCUS_Y+1];
-    }
 }

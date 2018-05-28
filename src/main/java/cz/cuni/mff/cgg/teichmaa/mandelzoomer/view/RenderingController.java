@@ -59,10 +59,10 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     private int width_t;
     private int height_t;
 
-    private float plane_left_bottom_x;
-    private float plane_left_bottom_y;
-    private float plane_right_top_x;
-    private float plane_right_top_y;
+    private double plane_left_bottom_x;
+    private double plane_left_bottom_y;
+    private double plane_right_top_x;
+    private double plane_right_top_y;
 
     public RenderingController(GLCanvas target, ControllerFX controllerFX) {
         this.width_t = target.getWidth();
@@ -97,9 +97,9 @@ public class RenderingController extends MouseAdapter implements GLEventListener
             if (lastMousePosition == null) {
                 return;
             }
-            float textureToZoomCoeff = getPlaneHeight() / height_t;
-            float dx = (lastMousePosition.getX() - e.getX()) * textureToZoomCoeff;
-            float dy = -(lastMousePosition.getY() - e.getY()) * textureToZoomCoeff;
+            double textureToZoomCoeff = getPlaneHeight() / height_t;
+            double dx = (lastMousePosition.getX() - e.getX()) * textureToZoomCoeff;
+            double dy = -(lastMousePosition.getY() - e.getY()) * textureToZoomCoeff;
             plane_right_top_x += dx;
             plane_right_top_y += dy;
             plane_left_bottom_x += dx;
@@ -141,7 +141,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         }
     }
 
-    private static final float ZOOM_COEFF = 0.977f;
+    private static final double ZOOM_COEFF = 0.977f;
 
     private void zoomAt(MouseEvent e, boolean into) {
         zoomAt(e.getX(), e.getY(), into);
@@ -153,24 +153,24 @@ public class RenderingController extends MouseAdapter implements GLEventListener
      * @param into      whether to zoom in or out
      */
     private void zoomAt(int texture_x, int texture_y, boolean into) {
-        float plane_width = getPlaneWidth();
-        float plane_height = getPlaneHeight();
+        double plane_width = getPlaneWidth();
+        double plane_height = getPlaneHeight();
 
-        float relTop = texture_y / (float) height_t; //relative distance from zoomingCenter to border, \in (0,1)
-        float relBtm = 1 - relTop;
-        float relLeft = texture_x / (float) width_t;
-        float relRght = 1 - relLeft;
+        double relTop = texture_y / (double) height_t; //relative distance from zoomingCenter to border, \in (0,1)
+        double relBtm = 1 - relTop;
+        double relLeft = texture_x / (double) width_t;
+        double relRght = 1 - relLeft;
 
-        float plane_x = plane_left_bottom_x + plane_width * relLeft;
-        float plane_y = plane_left_bottom_y + plane_height * relBtm;
+        double plane_x = plane_left_bottom_x + plane_width * relLeft;
+        double plane_y = plane_left_bottom_y + plane_height * relBtm;
 
-        float zoom_coeff = this.ZOOM_COEFF;
+        double zoom_coeff = this.ZOOM_COEFF;
         if (!into) zoom_coeff = 2f - this.ZOOM_COEFF;
 
-        float l_b_new_x = plane_x - plane_width * relLeft * zoom_coeff;
-        float l_b_new_y = plane_y - plane_height * relBtm * zoom_coeff;
-        float r_t_new_x = plane_x + plane_width * relRght * zoom_coeff;
-        float r_t_new_y = plane_y + plane_height * relTop * zoom_coeff;
+        double l_b_new_x = plane_x - plane_width * relLeft * zoom_coeff;
+        double l_b_new_y = plane_y - plane_height * relBtm * zoom_coeff;
+        double r_t_new_x = plane_x + plane_width * relRght * zoom_coeff;
+        double r_t_new_y = plane_y + plane_height * relTop * zoom_coeff;
 
         this.plane_left_bottom_x = l_b_new_x;
         this.plane_left_bottom_y = l_b_new_y;
@@ -356,7 +356,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         int oldHeight = height_t;
         this.width_t = width;
         this.height_t = height;
-        setBounds(getCenterX(), getCenterY(), getZoom() * height / (float) oldHeight);
+        setBounds(getCenterX(), getCenterY(), getZoom() * height / (double) oldHeight);
 
         fractalRenderer.unregisterOutputTexture();
         registerOutputTexture(gl); //already using the new dimensions
@@ -365,29 +365,29 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         currentMode.startProgressiveRendering();
     }
 
-    private float getPlaneWidth() {
+    private double getPlaneWidth() {
         return plane_right_top_x - plane_left_bottom_x;
     }
 
-    private float getPlaneHeight() {
+    private double getPlaneHeight() {
         return plane_right_top_y - plane_left_bottom_y;
     }
 
-    float getCenterX() {
+    double getCenterX() {
         return plane_left_bottom_x + getPlaneWidth() / 2;
     }
 
-    float getCenterY() {
+    double getCenterY() {
         return plane_left_bottom_y + getPlaneHeight() / 2;
     }
 
-    float getZoom() {
+    double getZoom() {
         return plane_right_top_y - plane_left_bottom_y;
     }
 
-    void setBounds(float center_x, float center_y, float zoom) {
-        float windowHeight = 1;
-        float windowWidth = windowHeight / (float) height_t * width_t;
+    void setBounds(double center_x, double center_y, double zoom) {
+        double windowHeight = 1;
+        double windowWidth = windowHeight / (double) height_t * width_t;
         plane_left_bottom_x = center_x - windowWidth * zoom / 2;
         plane_left_bottom_y = center_y - windowHeight * zoom / 2;
         plane_right_top_x = center_x + windowWidth * zoom / 2;

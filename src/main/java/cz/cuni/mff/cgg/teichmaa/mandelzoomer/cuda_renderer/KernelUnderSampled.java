@@ -14,7 +14,7 @@ class KernelUnderSampled extends RenderingKernel {
 
     KernelUnderSampled(CUmodule ownerModule) {
         super(name, ownerModule);
-        PARAM_IDX_UNDER_SAMPLING_LEVEL = addParam(null);
+        PARAM_IDX_UNDER_SAMPLING_LEVEL = registerParam();
 
         setUnderSamplingLevel(1);
     }
@@ -25,12 +25,16 @@ class KernelUnderSampled extends RenderingKernel {
         if(underSamplingLevel < 1)
             throw new IllegalArgumentException("underSamplingLevel must be at least 1: " + underSamplingLevel);
         this.underSamplingLevel = underSamplingLevel;
-        params[PARAM_IDX_UNDER_SAMPLING_LEVEL] = Pointer.to(new int[]{underSamplingLevel});
+        params[PARAM_IDX_UNDER_SAMPLING_LEVEL] = pointerTo(underSamplingLevel);
     }
 
     int getUnderSamplingLevel() {
         return underSamplingLevel;
     }
 
+    @Override
+    Pointer pointerToAbstractReal(double value) {
+        return pointerTo((float)value);
+    }
 
 }

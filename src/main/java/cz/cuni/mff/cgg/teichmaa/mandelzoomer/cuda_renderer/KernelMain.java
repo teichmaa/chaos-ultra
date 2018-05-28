@@ -1,14 +1,8 @@
 package cz.cuni.mff.cgg.teichmaa.mandelzoomer.cuda_renderer;
 
-import jcuda.Pointer;
 import jcuda.driver.CUmodule;
 
-class KernelMain extends RenderingKernel {
-
-    /**
-     * Exact (mangled, case sensitive) name of the __device__ function as defined in the .ptx file.
-     */
-    public static final String name = "fractalRenderMain";
+abstract class KernelMain extends RenderingKernel {
 
     private final short PARAM_IDX_SUPER_SAMPLING_LEVEL;
     private final short PARAM_IDX_ADAPTIVE_SS;
@@ -18,17 +12,17 @@ class KernelMain extends RenderingKernel {
     private final short PARAM_IDX_FOCUS_X;
     private final short PARAM_IDX_FOCUS_Y;
 
-    KernelMain(CUmodule ownerModule) {
+    KernelMain(String name, CUmodule ownerModule) {
         super(name, ownerModule);
 
         //initialize params[] :
-        PARAM_IDX_SUPER_SAMPLING_LEVEL = addParam(null);
-        PARAM_IDX_ADAPTIVE_SS = addParam(null);
-        PARAM_IDX_VISUALISE_ADAPTIVE_SS = addParam(null);
-        PARAM_IDX_RANDOM_SAMPLES = addParam(null);
-        PARAM_IDX_RENDER_RADIUS = addParam(null);
-        PARAM_IDX_FOCUS_X = addParam(null);
-        PARAM_IDX_FOCUS_Y = addParam(null);
+        PARAM_IDX_SUPER_SAMPLING_LEVEL = registerParam();
+        PARAM_IDX_ADAPTIVE_SS = registerParam();
+        PARAM_IDX_VISUALISE_ADAPTIVE_SS = registerParam();
+        PARAM_IDX_RANDOM_SAMPLES = registerParam();
+        PARAM_IDX_RENDER_RADIUS = registerParam();
+        PARAM_IDX_FOCUS_X = registerParam();
+        PARAM_IDX_FOCUS_Y = registerParam();
 
         setSuperSamplingLevel(1);
         setAdaptiveSS(true);
@@ -40,8 +34,8 @@ class KernelMain extends RenderingKernel {
     private boolean adaptiveSS;
     private boolean visualiseAdaptiveSS;
     private int renderRadius;
-    private int focusx;
-    private int focusy;
+    private int focus_x;
+    private int focus_y;
 
     boolean isVisualiseAdaptiveSS() {
         return visualiseAdaptiveSS;
@@ -49,7 +43,7 @@ class KernelMain extends RenderingKernel {
 
     void setVisualiseAdaptiveSS(boolean visualiseAdaptiveSS) {
         this.visualiseAdaptiveSS = visualiseAdaptiveSS;
-        params[PARAM_IDX_VISUALISE_ADAPTIVE_SS] = Pointer.to(new int[]{visualiseAdaptiveSS ? 1 : 0});
+        params[PARAM_IDX_VISUALISE_ADAPTIVE_SS] = pointerTo(visualiseAdaptiveSS);
     }
 
     boolean isAdaptiveSS() {
@@ -58,13 +52,13 @@ class KernelMain extends RenderingKernel {
 
     void setAdaptiveSS(boolean adaptiveSS) {
         this.adaptiveSS = adaptiveSS;
-        params[PARAM_IDX_ADAPTIVE_SS] = Pointer.to(new int[]{adaptiveSS ? 1 : 0});
+        params[PARAM_IDX_ADAPTIVE_SS] = pointerTo(adaptiveSS);
     }
 
 
     void setSuperSamplingLevel(int superSamplingLevel) {
         this.superSamplingLevel = superSamplingLevel;
-        params[PARAM_IDX_SUPER_SAMPLING_LEVEL] = Pointer.to(new int[]{superSamplingLevel});
+        params[PARAM_IDX_SUPER_SAMPLING_LEVEL] = pointerTo(superSamplingLevel);
     }
 
     int getSuperSamplingLevel() {
@@ -81,7 +75,7 @@ class KernelMain extends RenderingKernel {
 
     public void setRenderRadius(int renderRadius) {
         this.renderRadius = renderRadius;
-        params[PARAM_IDX_RENDER_RADIUS] = Pointer.to(new int[]{renderRadius});
+        params[PARAM_IDX_RENDER_RADIUS] = pointerTo(renderRadius);
     }
 
     public void setFocusDefault(){
@@ -89,17 +83,18 @@ class KernelMain extends RenderingKernel {
     }
 
     public void setFocus(int x, int y){
-        params[PARAM_IDX_FOCUS_X] = Pointer.to(new int[]{x});
-        params[PARAM_IDX_FOCUS_Y] = Pointer.to(new int[]{y});
-        this.focusx = x;
-        this.focusy = y;
+        params[PARAM_IDX_FOCUS_X] = pointerTo(x);
+        params[PARAM_IDX_FOCUS_Y] = pointerTo(y);
+        this.focus_x = x;
+        this.focus_y = y;
     }
 
-    public int getFocusx() {
-        return focusx;
+    public int getFocusX() {
+        return focus_x;
     }
 
-    public int getFocusy() {
-        return focusy;
+    public int getFocusY() {
+        return focus_y;
     }
+
 }

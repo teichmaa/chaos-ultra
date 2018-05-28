@@ -73,9 +73,9 @@ public class ControllerFX implements Initializable {
 
     private void render(){
         try {
-            float x = Float.parseFloat(center_x.getText());
-            float y = Float.parseFloat(center_y.getText());
-            float zoom = Float.parseFloat(this.zoom.getText());
+            double x = Double.parseDouble(center_x.getText());
+            double y = Double.parseDouble(center_y.getText());
+            double zoom = Double.parseDouble(this.zoom.getText());
             int dwell = Integer.parseInt(this.dwell.getText());
             int supsamp_tmp = Integer.parseInt(superSamplingLevel.getText());
             if (supsamp_tmp >= SUPER_SAMPLING_MAX_LEVEL) {
@@ -103,11 +103,11 @@ public class ControllerFX implements Initializable {
         }
     }
 
-    void setX(float x) {
+    void setX(double x) {
         center_x.setText("" + x);
     }
 
-    void setY(float y) {
+    void setY(double y) {
         center_y.setText("" + y);
     }
 
@@ -119,7 +119,7 @@ public class ControllerFX implements Initializable {
         this.dwell.setText("" + dwell);
     }
 
-    void setZoom(float zoom) {
+    void setZoom(double zoom) {
         this.zoom.setText("" + zoom);
     }
 

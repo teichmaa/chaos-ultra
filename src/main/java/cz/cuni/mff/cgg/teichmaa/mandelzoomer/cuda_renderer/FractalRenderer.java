@@ -10,6 +10,7 @@ import jcuda.runtime.*;
 import java.io.Closeable;
 import java.nio.Buffer;
 import java.security.InvalidParameterException;
+import java.util.function.Consumer;
 
 import static jcuda.driver.JCudaDriver.*;
 import static jcuda.runtime.cudaGraphicsRegisterFlags.cudaGraphicsRegisterFlagsReadOnly;
@@ -28,7 +29,8 @@ public class FractalRenderer implements Closeable {
     }
 
     private KernelUnderSampled kernelUndersampled;
-    private KernelMain kernelMain;
+    private KernelMainFloat kernelMainFloat;
+    private KernelMainDouble kernelMainDouble;
     //private KernelBlur kernelBlur;
     private KernelCompose kernelCompose;
 
@@ -56,12 +58,13 @@ public class FractalRenderer implements Closeable {
 
         kernelUndersampled = module.getKernel(KernelUnderSampled.class);
         kernelUndersampled.setUnderSamplingLevel(4);
-        kernelMain = module.getKernel(KernelMain.class);
+        kernelMainFloat = module.getKernel(KernelMainFloat.class);
+        kernelMainDouble = module.getKernel(KernelMainDouble.class);
         kernelCompose = module.getKernel(KernelCompose.class);
         //kernelBlur = module.getKernel(KernelBlur.class);
 
-        output2Darray1Pitch = allocateDevice2DBuffer(kernelMain.getWidth(), kernelMain.getHeight(), output2Darray1);
-        output2Darray2Pitch = allocateDevice2DBuffer(kernelMain.getWidth(), kernelMain.getHeight(), output2Darray2);
+        output2Darray1Pitch = allocateDevice2DBuffer(getWidth(), getHeight(), output2Darray1);
+        output2Darray2Pitch = allocateDevice2DBuffer(getWidth(), getHeight(), output2Darray2);
 
         //moduleInit();
         randomSamplesInit();
@@ -185,10 +188,8 @@ public class FractalRenderer implements Closeable {
 
     public void resize(int width, int height, int outputTextureGLhandle, int GLtarget) {
         //System.out.println("resize: " +width + " x " + height);
-        kernelMain.setWidth(width);
-        kernelUndersampled.setWidth(width);
-        kernelMain.setHeight(height);
-        kernelUndersampled.setHeight(height);
+        onAllRenderingKernels(k -> k.setWidth(width));
+        onAllRenderingKernels(k -> k.setHeight(height));
         randomSamplesInit();
         registerOutputTexture(outputTextureGLhandle, GLtarget);
         output2Darray1Pitch = allocateDevice2DBuffer(width, height, output2Darray1);
@@ -196,35 +197,39 @@ public class FractalRenderer implements Closeable {
     }
 
     public int getWidth() {
-        return kernelMain.getWidth();
+        return kernelMainFloat.getWidth();
     }
 
     public int getHeight() {
-        return kernelMain.getHeight();
+        return kernelMainFloat.getHeight();
     }
 
     /**
      *
      */
     public void launchFastKernel(int focusx, int focusy) {
+        KernelMain kernelMain = kernelMainFloat.isBoundsAtFloatLimit() ? kernelMainDouble : kernelMainFloat;
         kernelMain.setFocus(focusx, focusy);
         kernelMain.setRenderRadius(FOVEATION_CENTER_RADIUS);
         //todo nejak spustit ty prvni dva najednou a pak pockat?
         launchRenderingKernel(false, kernelMain, output2Darray1, output2Darray1Pitch);
         launchRenderingKernel(false, kernelUndersampled, output2Darray2, output2Darray2Pitch);
-        launchDrawingKernel(false, kernelCompose);
+        launchDrawingKernel(false, kernelCompose, kernelMain);
     }
 
     public void launchQualityKernel(){
+        KernelMain kernelMain = kernelMainFloat.isBoundsAtFloatLimit() ? kernelMainDouble : kernelMainFloat;
         kernelMain.setRenderRadiusToMax();
         kernelMain.setFocusDefault();
         launchRenderingKernel(false, kernelMain, output2Darray1, output2Darray1Pitch);
-        launchDrawingKernel(false, kernelCompose);
+        launchDrawingKernel(false, kernelCompose, kernelMain);
     }
 
     private void launchRenderingKernel(boolean async, RenderingKernel kernel, CUdeviceptr output, long outputPitch){
         int width = kernel.getWidth();
         int height = kernel.getHeight();
+
+        System.out.println("launching " + kernel.getClass().getSimpleName());
 
         // Set up the kernel parameters: A pointer to an array
         // of pointers which point to the actual values.
@@ -261,7 +266,13 @@ public class FractalRenderer implements Closeable {
         }
     }
 
-    private void launchDrawingKernel(boolean async, KernelCompose kernel) {
+    /**
+     *
+     * @param async
+     * @param kernel
+     * @param kernelMain kernel that was used before to render. Will not be launched.
+     */
+    private void launchDrawingKernel(boolean async, KernelCompose kernel, KernelMain kernelMain) {
         long start = System.currentTimeMillis();
 
         try {
@@ -309,8 +320,8 @@ public class FractalRenderer implements Closeable {
                         composeParamsArr[kernel.PARAM_IDX_PALETTE_LENGTH] = Pointer.to(new int[]{paletteLength});
                         composeParamsArr[kernel.PARAM_IDX_DWELL] = Pointer.to(new int[]{getDwell()});
                         composeParamsArr[kernel.PARAM_IDX_MAIN_RADIUS] = Pointer.to(new int[]{kernelMain.getRenderRadius()});
-                        composeParamsArr[kernel.PARAM_IDX_FOCUS_X] = Pointer.to(new int[]{kernelMain.getFocusx()});
-                        composeParamsArr[kernel.PARAM_IDX_FOCUS_Y] = Pointer.to(new int[]{kernelMain.getFocusy()});
+                        composeParamsArr[kernel.PARAM_IDX_FOCUS_X] = Pointer.to(new int[]{kernelMain.getFocusX()});
+                        composeParamsArr[kernel.PARAM_IDX_FOCUS_Y] = Pointer.to(new int[]{kernelMain.getFocusY()});
                     }
 
                     if (gridDimX <= 0 || gridDimY <= 0) return;
@@ -367,34 +378,42 @@ public class FractalRenderer implements Closeable {
     }
 
     public void setAdaptiveSS(boolean adaptiveSS) {
-        kernelMain.setAdaptiveSS(adaptiveSS);
+        kernelMainFloat.setAdaptiveSS(adaptiveSS);
+        kernelMainDouble.setAdaptiveSS(adaptiveSS);
     }
 
     public void setVisualiseAdaptiveSS(boolean visualiseAdaptiveSS) {
-        kernelMain.setVisualiseAdaptiveSS(visualiseAdaptiveSS);
+        kernelMainFloat.setVisualiseAdaptiveSS(visualiseAdaptiveSS);
+        kernelMainDouble.setVisualiseAdaptiveSS(visualiseAdaptiveSS);
     }
 
     public void setSuperSamplingLevel(int supSampLvl) {
-        kernelMain.setSuperSamplingLevel(supSampLvl);
+        kernelMainFloat.setSuperSamplingLevel(supSampLvl);
+        kernelMainDouble.setSuperSamplingLevel(supSampLvl);
         //randomSamplesInit();
     }
 
     public void setDwell(int dwell) {
-        kernelMain.setDwell(dwell);
-        kernelUndersampled.setDwell(dwell);
+        onAllRenderingKernels(k -> k.setDwell(dwell));
+
     }
 
     public int getSuperSamplingLevel() {
-        return kernelMain.getSuperSamplingLevel();
+        return kernelMainFloat.getSuperSamplingLevel();
     }
 
     public int getDwell() {
-        return kernelMain.getDwell();
+        return kernelMainFloat.getDwell();
     }
 
-    public void setBounds(float left_bottom_x, float left_bottom_y, float right_top_x, float right_top_y) {
-        kernelMain.setBounds(left_bottom_x, left_bottom_y, right_top_x, right_top_y);
-        kernelUndersampled.setBounds(left_bottom_x, left_bottom_y, right_top_x, right_top_y);
+    public void setBounds(double left_bottom_x, double left_bottom_y, double right_top_x, double right_top_y) {
+        onAllRenderingKernels(k -> k.setBounds(left_bottom_x, left_bottom_y, right_top_x, right_top_y));
+    }
+
+    void onAllRenderingKernels(Consumer<RenderingKernel> c){
+        c.accept(kernelMainFloat);
+        c.accept(kernelMainDouble);
+        c.accept(kernelUndersampled);
     }
 
 }

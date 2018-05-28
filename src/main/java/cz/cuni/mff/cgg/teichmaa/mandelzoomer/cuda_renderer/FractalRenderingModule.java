@@ -15,7 +15,8 @@ import static jcuda.driver.JCudaDriver.cuModuleLoad;
 abstract class FractalRenderingModule {
 
     static final String kernelInit = KernelInit.name;
-    static final String kernelMain = KernelMain.name;
+    static final String kernelMainFloat = KernelMainFloat.name;
+    static final String kernelMainDouble = KernelMainDouble.name;
     static final String kernelUnderSampled = KernelUnderSampled.name;
     static final String kernelCompose = KernelCompose.name;
     static final String kernelBlur = KernelBlur.name;
@@ -43,7 +44,8 @@ abstract class FractalRenderingModule {
         }
 
         //add known kernels:
-        kernels.put(KernelMain.class, new KernelMain(module));
+        kernels.put(KernelMainFloat.class, new KernelMainFloat(module));
+        kernels.put(KernelMainDouble.class, new KernelMainDouble(module));
         kernels.put(KernelInit.class, new KernelInit(module));
         kernels.put(KernelUnderSampled.class, new KernelUnderSampled(module));
         kernels.put(KernelCompose.class, new KernelCompose(module));

@@ -7,25 +7,26 @@ public class ModuleJulia extends FractalRenderingModule {
     public final short PARAM_IDX_C_X;
     public final short PARAM_IDX_C_Y;
 
-    public ModuleJulia(float cx, float cy) {
+    public ModuleJulia(double cx, double cy) {
         super("E:\\Tonda\\Desktop\\Mandelzoomer\\src\\main\\cuda\\julia.ptx", "julia");
         this.cx = cx;
         this.cy = cy;
 
         KernelMain main = super.getKernel(KernelMain.class);
 
-        PARAM_IDX_C_X = main.addParam(Pointer.to(new float[]{cy}));
-        PARAM_IDX_C_Y = main.addParam(Pointer.to(new float[]{cx}));
+        PARAM_IDX_C_X = main.registerParam((float)cx);
+        PARAM_IDX_C_Y = main.registerParam((float)cy);
+
     }
 
-    private final float cx;
-    private final float cy;
+    private final double cx;
+    private final double cy;
 
-    public float getCx() {
+    public double getCx() {
         return cx;
     }
 
-    public float getCy() {
+    public double getCy() {
         return cy;
     }
 

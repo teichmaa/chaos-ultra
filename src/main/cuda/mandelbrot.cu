@@ -58,14 +58,29 @@ typedef struct color{
 //    x ... for real part (corresponding to geometric x-axis)
 //    y ... for imag part (corresponding to geometric y-axis)
 
-__device__ __forceinline__ uint escape(uint dwell, Pointf c){
+/*
+template <class Real> __device__ __forceinline__ uint escape(uint dwell, Pointf c){
   Pointf z(0,0);
-  float zx_new;
+  Real zx_new;
   uint i = 0;
   while(i < dwell && z.x*z.x+z.y*z.y < 4){
       zx_new = z.x*z.x-z.y*z.y + c.x;
       z.y = 2*z.x*z.y + c.y; 
       z.x = zx_new;
+      ++i;
+  }
+  return i;
+}*/
+
+template <class Real> __device__ __forceinline__ uint escape(uint dwell, Real cx, Real cy){
+  Real zx = 0;
+  Real zy = 0;
+  Real zx_new;
+  uint i = 0;
+  while(i < dwell && zx*zx+zy*zy < 4){
+      zx_new = zx*zx-zy*zy + cx;
+      zy = 2*zx*zy + cy; 
+      zx = zx_new;
       ++i;
   }
   return i;
@@ -136,7 +151,7 @@ __device__ const Point2D<uint> getImageIndexes(){
   return Point2D<uint>(idx_x, idx_y);
 }
 
-template <class Real> __device__ __forceinline__ void fractalRenderMainReal(uint** output, long outputPitch, uint width, uint height, Real left_bottom_x, Real left_bottom_y, Real right_top_x, Real right_top_y, uint dwell, uint superSamplingLevel, bool adaptiveSS, bool visualiseSS, Real* randomSamples, uint renderRadius, uint focus_x, uint focus_y)
+template <class Real> __device__ __forceinline__ void fractalRenderMain(uint** output, long outputPitch, uint width, uint height, Real left_bottom_x, Real left_bottom_y, Real right_top_x, Real right_top_y, uint dwell, uint superSamplingLevel, bool adaptiveSS, bool visualiseSS, float* randomSamples, uint renderRadius, uint focus_x, uint focus_y, bool isDoublePrecision)
 // todo: usporadat poradi paramateru, cudaXXObjects predavat pointrem, ne kopirovanim (tohle rozmyslet, mozna je to takhle dobre)
 //  todo ma to fakt hodne pointeru, mnoho z nich je pritom pro vsechny launche stejny - nezdrzuje tohle? omezene registry a tak
 {
@@ -146,8 +161,6 @@ template <class Real> __device__ __forceinline__ void fractalRenderMainReal(uint
   //   printf();
   // }
   if(!isWithinRadius(idx.x, idx.y, width, height, renderRadius, focus_x, focus_y)) return;
-
-  //printParams_debug( surfaceOutput,  outputDataPitch_debug,  width,  height,  left_bottom_x,  left_bottom_y, right_top_x,  right_top_y, dwell, outputData_debug,  colorPalette, paletteLength, randomSamples,  superSamplingLevel,  adaptiveSS,  visualiseSS);
 
   //We are in a complex plane from (left_bottom) to (right_top), so we scale the pixels to it
   Real pixelWidth = (right_top_x - left_bottom_x) / (Real) width;
@@ -169,7 +182,7 @@ template <class Real> __device__ __forceinline__ void fractalRenderMainReal(uint
     Real cx = left_bottom_x + (idx.x + random_xd)  * pixelWidth;
     Real cy = right_top_y - (idx.y + random_yd) * pixelHeight;
 
-    uint escapeTime = escape(dwell, Pointf(cx, cy));
+    uint escapeTime = escape(dwell, cx, cy);
     escapeTimeSum += escapeTime;
     if(i < adaptiveTreshold){
       r[i] = escapeTime;
@@ -204,13 +217,14 @@ template <class Real> __device__ __forceinline__ void fractalRenderMainReal(uint
 
 
 extern "C"
-__global__ void fractalRenderMain(uint** output, long outputPitch, uint width, uint height, float left_bottom_x, float left_bottom_y, float right_top_x, float right_top_y, uint dwell, uint superSamplingLevel, bool adaptiveSS, bool visualiseSS, float* randomSamples, uint renderRadius, uint focus_x, uint focus_y){
-  fractalRenderMainReal<float>(output, outputPitch, width, height, left_bottom_x, left_bottom_y, right_top_x, right_top_y, dwell, superSamplingLevel, adaptiveSS, visualiseSS, randomSamples,  renderRadius, focus_x, focus_y);
+__global__ void fractalRenderMainFloat(uint** output, long outputPitch, uint width, uint height, float left_bottom_x, float left_bottom_y, float right_top_x, float right_top_y, uint dwell, uint superSamplingLevel, bool adaptiveSS, bool visualiseSS, float* randomSamples, uint renderRadius, uint focus_x, uint focus_y){
+  fractalRenderMain<float>(output, outputPitch, width, height, left_bottom_x, left_bottom_y, right_top_x, right_top_y, dwell, superSamplingLevel, adaptiveSS, visualiseSS, randomSamples,  renderRadius, focus_x, focus_y, false);
 }
 
 extern "C"
-__global__ void fractalRenderMainDouble(uint** output, long outputPitch, uint width, uint height, double left_bottom_x, double left_bottom_y, double right_top_x, double right_top_y, uint dwell, uint superSamplingLevel, bool adaptiveSS, bool visualiseSS, double* randomSamples, uint renderRadius, uint focus_x, uint focus_y){
-  fractalRenderMainReal<double>(output, outputPitch, width, height, left_bottom_x, left_bottom_y, right_top_x, right_top_y, dwell, superSamplingLevel, adaptiveSS, visualiseSS, randomSamples,  renderRadius, focus_x, focus_y);
+__global__ void fractalRenderMainDouble(uint** output, long outputPitch, uint width, uint height, double left_bottom_x, double left_bottom_y, double right_top_x, double right_top_y, uint dwell, uint superSamplingLevel, bool adaptiveSS, bool visualiseSS, float* randomSamples, uint renderRadius, uint focus_x, uint focus_y){
+  fractalRenderMain<double>(output, outputPitch, width, height, left_bottom_x, left_bottom_y, right_top_x, right_top_y, dwell, superSamplingLevel, adaptiveSS, visualiseSS, randomSamples,  renderRadius, focus_x, focus_y, true);
+
 }
 
 extern "C"
@@ -285,7 +299,7 @@ __global__ void fractalRenderUnderSampled(uint** output, long outputPitch, uint 
   float cx = left_bottom_x + (idx_x)  * pixelWidth;
   float cy = right_top_y - (idx_y) * pixelHeight;
 
-  uint escapeTime = escape(dwell, Pointf(cx, cy));
+  uint escapeTime = escape<float>(dwell, cx, cy);
 
   for(uint x = 0; x < underSamplingLevel; x++){
     for(uint y = 0; y < underSamplingLevel; y++){
