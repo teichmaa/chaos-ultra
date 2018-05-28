@@ -43,6 +43,13 @@ public:
   static constexpr const uint GOLD  = 0xff00d7ff;
 }; 
 
+typedef struct color{
+  char r;
+  char g;
+  char b;
+  char a;
+} color_t;
+
 //Mandelbrot content, using standard mathematical terminology for Mandelbrot set definition, i.e.
 //  f_n = f_{n-1}^2 + c
 //  f_0 = 0
@@ -129,8 +136,7 @@ __device__ const Point2D<uint> getImageIndexes(){
   return Point2D<uint>(idx_x, idx_y);
 }
 
-extern "C"
-__global__ void fractalRenderMain(uint** output, long outputPitch, uint width, uint height, float left_bottom_x, float left_bottom_y, float right_top_x, float right_top_y, uint dwell, uint superSamplingLevel, bool adaptiveSS, bool visualiseSS, float* randomSamples, uint renderRadius, uint focus_x, uint focus_y)
+template <class Real> __device__ __forceinline__ void fractalRenderMainReal(uint** output, long outputPitch, uint width, uint height, Real left_bottom_x, Real left_bottom_y, Real right_top_x, Real right_top_y, uint dwell, uint superSamplingLevel, bool adaptiveSS, bool visualiseSS, Real* randomSamples, uint renderRadius, uint focus_x, uint focus_y)
 // todo: usporadat poradi paramateru, cudaXXObjects predavat pointrem, ne kopirovanim (tohle rozmyslet, mozna je to takhle dobre)
 //  todo ma to fakt hodne pointeru, mnoho z nich je pritom pro vsechny launche stejny - nezdrzuje tohle? omezene registry a tak
 {
@@ -144,8 +150,8 @@ __global__ void fractalRenderMain(uint** output, long outputPitch, uint width, u
   //printParams_debug( surfaceOutput,  outputDataPitch_debug,  width,  height,  left_bottom_x,  left_bottom_y, right_top_x,  right_top_y, dwell, outputData_debug,  colorPalette, paletteLength, randomSamples,  superSamplingLevel,  adaptiveSS,  visualiseSS);
 
   //We are in a complex plane from (left_bottom) to (right_top), so we scale the pixels to it
-  float pixelWidth = (right_top_x - left_bottom_x) / (float) width;
-  float pixelHeight = (right_top_y - left_bottom_y) / (float) height;
+  Real pixelWidth = (right_top_x - left_bottom_x) / (Real) width;
+  Real pixelHeight = (right_top_y - left_bottom_y) / (Real) height;
 
   const uint adaptiveTreshold = 10;
   uint r[adaptiveTreshold];
@@ -156,12 +162,12 @@ __global__ void fractalRenderMain(uint** output, long outputPitch, uint width, u
   //superSamplingLevel = 1;
   ASSERT (superSamplingLevel <= MAX_SS_LEVEL);
   for(uint i = 0; i < superSamplingLevel; i++){
-    float random_xd = i / (float) superSamplingLevel; //not really random, just uniform
-    float random_yd = random_xd;
-    //float random_xd = randomSamples[randomSamplePixelsIdx + i];
-    //float random_yd = randomSamples[randomSamplePixelsIdx + i + superSamplingLevel/2];
-    float cx = left_bottom_x + (idx.x + random_xd)  * pixelWidth;
-    float cy = right_top_y - (idx.y + random_yd) * pixelHeight;
+    Real random_xd = i / (Real) superSamplingLevel; //not really random, just uniform
+    Real random_yd = random_xd;
+    //Real random_xd = randomSamples[randomSamplePixelsIdx + i];
+    //Real random_yd = randomSamples[randomSamplePixelsIdx + i + superSamplingLevel/2];
+    Real cx = left_bottom_x + (idx.x + random_xd)  * pixelWidth;
+    Real cy = right_top_y - (idx.y + random_yd) * pixelHeight;
 
     uint escapeTime = escape(dwell, Pointf(cx, cy));
     escapeTimeSum += escapeTime;
@@ -170,8 +176,8 @@ __global__ void fractalRenderMain(uint** output, long outputPitch, uint width, u
     }
 
     if(i == adaptiveTreshold && adaptiveSS){ //decide whether to continue with supersampling or not
-      float mean = escapeTimeSum / (i+1);
-      float dispersion = computeDispersion(r, i, mean);
+      Real mean = escapeTimeSum / (i+1);
+      Real dispersion = computeDispersion(r, i, mean);
       __ALL(dispersion <= 0.01);
       superSamplingLevel = i+1; //effectively disabling high SS and storing info about actual number of samples taken
       adaptivnessUsed = ColorsARGB::WHITE; 
@@ -196,13 +202,16 @@ __global__ void fractalRenderMain(uint** output, long outputPitch, uint width, u
   *pOutput = mean;
 }
 
-typedef struct color{
-  char r;
-  char g;
-  char b;
-  char a;
 
-} color_t;
+extern "C"
+__global__ void fractalRenderMain(uint** output, long outputPitch, uint width, uint height, float left_bottom_x, float left_bottom_y, float right_top_x, float right_top_y, uint dwell, uint superSamplingLevel, bool adaptiveSS, bool visualiseSS, float* randomSamples, uint renderRadius, uint focus_x, uint focus_y){
+  fractalRenderMainReal<float>(output, outputPitch, width, height, left_bottom_x, left_bottom_y, right_top_x, right_top_y, dwell, superSamplingLevel, adaptiveSS, visualiseSS, randomSamples,  renderRadius, focus_x, focus_y);
+}
+
+extern "C"
+__global__ void fractalRenderMainDouble(uint** output, long outputPitch, uint width, uint height, double left_bottom_x, double left_bottom_y, double right_top_x, double right_top_y, uint dwell, uint superSamplingLevel, bool adaptiveSS, bool visualiseSS, double* randomSamples, uint renderRadius, uint focus_x, uint focus_y){
+  fractalRenderMainReal<double>(output, outputPitch, width, height, left_bottom_x, left_bottom_y, right_top_x, right_top_y, dwell, superSamplingLevel, adaptiveSS, visualiseSS, randomSamples,  renderRadius, focus_x, focus_y);
+}
 
 extern "C"
 __global__ void compose(uint** inputMain, long inputMainPitch, uint** inputBcg, long inputBcgPitch, cudaSurfaceObject_t surfaceOutput, uint width, uint height, cudaSurfaceObject_t colorPalette, uint paletteLength, uint dwell, uint mainRenderRadius, uint focus_x, uint focus_y){
