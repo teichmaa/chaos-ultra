@@ -15,6 +15,20 @@ const int MAX_SS_LEVEL = 256;
   printf("Mandelbrot: Error at %s:%d\n",__FILE__,__LINE__); \
   return EXIT_FAILURE;}} while(0)
 
+struct Point2D {
+  int x;
+  int y;
+  __device__ Point2D(int x, int y) : x(x), y(y){}
+ 
+} typedef Point2D;  
+
+struct Point2Df {
+  float x;
+  float y;
+  __device__ Point2Df(float x, float y) : x(x), y(y){}
+ 
+} typedef Point2Df;  
+
 //Mandelbrot content, using standard mathematical terminology for Mandelbrot set definition, i.e.
 //  f_n = f_{n-1}^2 + c
 //  f_0 = 0
@@ -71,11 +85,35 @@ __device__ __forceinline__ bool isWithinRadius(int idx_x, int idx_y, int width, 
   // else return true;
 }
 
-__device__ __forceinline__ int simpleRandom(int seed){
+__device__  long long seed;
+/// Intended for debugging only
+__device__ __forceinline__ int simpleRandom(int val){
     long long a = 1103515245;
     long long c = 12345;
     long long m = 4294967295l; //2**32 - 1
-    return (a *  seed + c) % m;
+    seed = (a * (val+seed) + c) % m;
+    return seed;
+}
+
+  /// Computes indexes to acces 2D array, based on threadIdx and blockIdx.
+  /// Morover, threads in a warp will be arranged in a rectangle (rather than in single line as with the naive implementation).
+__device__ Point2D getImageIndexes(){
+  const int threadID = threadIdx.x + threadIdx.y * blockDim.x;
+  const int warpWidth = 4; //user defined constant, representing desired width of the recatangular warp (2,4,8 are only reasonable values for the following formula)
+  const int blockWidth = blockDim.x * warpWidth;
+  assert (blockDim.x == 32); //following formula works only when blockDim.x is 32 
+  const int inblock_idx_x = (-threadID % (warpWidth * warpWidth) + threadID % blockWidth) / warpWidth + threadID % warpWidth;
+  const int inblock_idx_y = (threadID / blockWidth) * warpWidth + (threadID / warpWidth) % warpWidth;
+  const int idx_x = blockDim.x * blockIdx.x + inblock_idx_x;
+  const int idx_y = blockDim.y * blockIdx.y + inblock_idx_y;
+  // { //debug
+  //   int warpid = threadID / warpSize;
+  //   if(idx_x < 8 && idx_y < 8){
+  //     printf("bw:%d\n", blockWidth);
+  //     printf("%d\t%d\t%d\t%d\t%d\n", threadIdx.x, threadIdx.y, threadID ,dx, dy);
+  //   }
+  // }
+  return Point2D(idx_x, idx_y);
 }
 
 extern "C"
@@ -83,11 +121,10 @@ __global__ void fractalRenderMain(int** output, long outputPitch, int width, int
 // todo: usporadat poradi paramateru, cudaXXObjects predavat pointrem, ne kopirovanim (tohle rozmyslet, mozna je to takhle dobre)
 //  todo ma to fakt hodne pointeru, mnoho z nich je pritom pro vsechny launche stejny - nezdrzuje tohle? omezene registry a tak
 {
-  const int idx_x = blockDim.x * blockIdx.x + threadIdx.x;
-  const int idx_y = blockDim.y * blockIdx.y + threadIdx.y;
-  if(idx_x >= width || idx_y >= height) return;
-  
-  if(!isWithinRadius(idx_x, idx_y, width, height, renderRadius, focus_x, focus_y)) return;
+  Point2D idx = getImageIndexes();
+  if(idx.x >= width || idx.y >= height) return;
+
+  if(!isWithinRadius(idx.x, idx.y, width, height, renderRadius, focus_x, focus_y)) return;
 
   //printParams_debug( surfaceOutput,  outputDataPitch_debug,  width,  height,  left_bottom_x,  left_bottom_y, right_top_x,  right_top_y, dwell, outputData_debug,  colorPalette, paletteLength, randomSamples,  superSamplingLevel,  adaptiveSS,  visualiseSS);
 
@@ -100,7 +137,7 @@ __global__ void fractalRenderMain(int** output, long outputPitch, int width, int
   int adaptivnessUsed = 0;
 
   int escapeTimeSum = 0;
-  int randomSamplePixelsIdx = (idx_y * width + idx_x)*MAX_SS_LEVEL;
+  int randomSamplePixelsIdx = (idx.y * width + idx.x)*MAX_SS_LEVEL;
   //superSamplingLevel = 1;
   //assert superSamplingLevel <= MAX_SS_LEVEL
   for(int i = 0; i < superSamplingLevel; i++){
@@ -108,8 +145,8 @@ __global__ void fractalRenderMain(int** output, long outputPitch, int width, int
     float random_yd = random_xd;
     //float random_xd = randomSamples[randomSamplePixelsIdx + i];
     //float random_yd = randomSamples[randomSamplePixelsIdx + i + superSamplingLevel/2];
-    float cx = left_bottom_x + (idx_x + random_xd)  * pixelWidth;
-    float cy = right_top_y - (idx_y + random_yd) * pixelHeight;
+    float cx = left_bottom_x + (idx.x + random_xd)  * pixelWidth;
+    float cy = right_top_y - (idx.y + random_yd) * pixelHeight;
 
     int escapeTime = escape(dwell, cx, cy);
     escapeTimeSum += escapeTime;
@@ -148,7 +185,7 @@ __global__ void fractalRenderMain(int** output, long outputPitch, int width, int
       printf("\n");
   }*/
 
-  int* pOutput = ((int*)((char*)output + idx_y * outputPitch)) + idx_x;
+  int* pOutput = ((int*)((char*)output + idx.y * outputPitch)) + idx.x;
   *pOutput = mean;
 }
 
