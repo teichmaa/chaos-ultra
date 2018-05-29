@@ -204,10 +204,10 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         gl.glLoadIdentity();
         gl.glEnable(GL_TEXTURE_2D);
 
-        int[] GLhandles = new int[2];
-        gl.glGenTextures(GLhandles.length, GLhandles, 0);
-        outputTextureGLhandle = GLhandles[0];
-        paletteTextureGLhandle = GLhandles[1];
+        int[] GLHandles = new int[2];
+        gl.glGenTextures(GLHandles.length, GLHandles, 0);
+        outputTextureGLhandle = GLHandles[0];
+        paletteTextureGLhandle = GLHandles[1];
         registerOutputTexture(gl);
         Buffer colorPalette = IntBuffer.wrap(ImageHelpers.createColorPalette());
         gl.glBindTexture(GL_TEXTURE_2D, paletteTextureGLhandle);
@@ -222,6 +222,8 @@ public class RenderingController extends MouseAdapter implements GLEventListener
                 outputTextureGLhandle, GL_TEXTURE_2D, paletteTextureGLhandle, GL_TEXTURE_2D, colorPalette.limit());
 
         Platform.runLater(controllerFX::showDefaultView);
+
+        fractalRenderer.launchDebugKernel();
     }
 
     private void registerOutputTexture(GL gl) {

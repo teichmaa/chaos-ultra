@@ -229,6 +229,19 @@ __global__ void fractalRenderMainDouble(uint** output, long outputPitch, uint wi
 }
 
 extern "C"
+__global__ void debug(uint a, uint b, uint c){
+  const uint idx_x = blockDim.x * blockIdx.x + threadIdx.x;
+  const uint idx_y = blockDim.y * blockIdx.y + threadIdx.y;
+  if(idx_x == 0 && idx_y == 0){
+    printf("a:\t%d\n",a);
+    printf("b:\t%d\n",b);
+    printf("c:\t%d\n",c);
+  }
+  
+
+}
+
+extern "C"
 __global__ void compose(uint** inputMain, long inputMainPitch, uint** inputBcg, long inputBcgPitch, cudaSurfaceObject_t surfaceOutput, uint width, uint height, cudaSurfaceObject_t colorPalette, uint paletteLength, uint dwell, uint mainRenderRadius, uint focus_x, uint focus_y){
   const uint idx_x = blockDim.x * blockIdx.x + threadIdx.x;
   const uint idx_y = blockDim.y * blockIdx.y + threadIdx.y;

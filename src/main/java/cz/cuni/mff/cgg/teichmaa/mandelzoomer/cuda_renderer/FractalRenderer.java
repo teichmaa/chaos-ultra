@@ -204,6 +204,15 @@ public class FractalRenderer implements Closeable {
         return kernelMainFloat.getHeight();
     }
 
+    public void launchDebugKernel(){
+
+        CudaKernel k = module.getKernel(KernelDebug.class);
+        cuLaunchKernel(k.getFunction(),
+                1, 1,
+                Pointer.to(k.getKernelParams())
+        );
+    }
+
     /**
      *
      */
