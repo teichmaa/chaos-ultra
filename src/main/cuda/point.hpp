@@ -3,8 +3,11 @@ template <class T> struct Point2D {
   T y;
   __device__ Point2D(const T x,const T y) : x(x), y(y){} 
   __device__ ~Point2D(){}
-  template <class T> friend __device__ Point2D operator+ (const Point2D<T>& a,const Point2D<T>& b);
+  //template <class T> friend __device__ Point2D operator+ (const Point2D<T>& a,const Point2D<T>& b);
 }; 
+
+//todo s temi operatory to tady mam nejake divne
+
 __device__ Point2D<int> operator+(const Point2D<int>& a,const Point2D<int>& b) {
   return Point2D<int>(a.x + b.x, a.y + b.y);
 } 

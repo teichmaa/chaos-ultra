@@ -155,6 +155,7 @@ template <class Real> __device__ __forceinline__ void fractalRenderMain(uint** o
 // todo: usporadat poradi paramateru, cudaXXObjects predavat pointrem, ne kopirovanim (tohle rozmyslet, mozna je to takhle dobre)
 //  todo ma to fakt hodne pointeru, mnoho z nich je pritom pro vsechny launche stejny - nezdrzuje tohle? omezene registry a tak
 {
+  //TODO vypada to, ze tenhle kernel dela neco spatne v levem krajnim sloupci (asi v nultem warpu?)
   const Point idx = getImageIndexes();
   if(idx.x >= width || idx.y >= height) return;
   // if(idx.x == 0 && idx.y == 0){

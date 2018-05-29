@@ -229,8 +229,6 @@ public class FractalRenderer implements Closeable {
         int width = kernel.getWidth();
         int height = kernel.getHeight();
 
-        System.out.println("launching " + kernel.getClass().getSimpleName());
-
         // Set up the kernel parameters: A pointer to an array
         // of pointers which point to the actual values.
         NativePointerObject[] kernelParamsArr = kernel.getKernelParams();

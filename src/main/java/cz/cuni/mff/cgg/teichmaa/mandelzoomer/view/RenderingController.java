@@ -122,6 +122,9 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         } else if (SwingUtilities.isLeftMouseButton(e)) {
             //currentMode.startMoving();
             //animator.start();
+        } else if (SwingUtilities.isMiddleMouseButton(e)){
+            currentMode.startZooming(false);
+            animator.start();
         }
     }
 
@@ -135,7 +138,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
             currentMode.stopMoving();
             renderInFuture.start();
         }
-        if (SwingUtilities.isRightMouseButton(e) && currentMode.isZooming()) {
+        if ((SwingUtilities.isRightMouseButton(e) || SwingUtilities.isMiddleMouseButton(e) ) && currentMode.isZooming()) {
             currentMode.stopZooming();
             renderInFuture.start();
         }
@@ -253,8 +256,9 @@ public class RenderingController extends MouseAdapter implements GLEventListener
             return;
         }
 
-        if (currentMode.isZooming())
+        if (currentMode.isZooming()){
             zoomAt(lastMousePosition, currentMode.getZoomingDirection());
+        }
 
         updateQuality();
         updateKernelParams();
