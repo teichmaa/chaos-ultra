@@ -1,4 +1,4 @@
-package cz.cuni.mff.cgg.teichmaa.mandelzoomer.view;
+package cz.cuni.mff.cgg.teichmaa.chaos_ultra.view;
 
 public class CyclicBuffer {
 

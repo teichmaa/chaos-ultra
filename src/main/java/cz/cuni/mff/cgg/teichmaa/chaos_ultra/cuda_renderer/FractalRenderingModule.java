@@ -1,4 +1,4 @@
-package cz.cuni.mff.cgg.teichmaa.mandelzoomer.cuda_renderer;
+package cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer;
 
 import jcuda.CudaException;
 import jcuda.driver.CUmodule;

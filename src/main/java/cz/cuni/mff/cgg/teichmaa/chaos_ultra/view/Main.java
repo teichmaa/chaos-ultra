@@ -1,16 +1,14 @@
-package cz.cuni.mff.cgg.teichmaa.mandelzoomer.view;
+package cz.cuni.mff.cgg.teichmaa.chaos_ultra.view;
 
 
 import com.jogamp.opengl.*;
 
 import com.jogamp.opengl.awt.GLCanvas;
-import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.embed.swing.JFXPanel;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.stage.Stage;
 import jcuda.driver.CUcontext;
 import jcuda.driver.CUdevice;
 import jcuda.driver.JCudaDriver;

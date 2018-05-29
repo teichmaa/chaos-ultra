@@ -1,21 +1,21 @@
-package cz.cuni.mff.cgg.teichmaa.mandelzoomer.cuda_renderer;
+package cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer;
 
 import jcuda.Pointer;
 import jcuda.driver.CUmodule;
 
-public class KernelMainFloat extends KernelMain {
+public class KernelMainDouble extends KernelMain {
 
     /**
      * Exact (mangled, case sensitive) name of the __device__ function as defined in the .ptx file.
      */
-    public static final String name = "fractalRenderMainFloat";
+    public static final String name = "fractalRenderMainDouble";
 
     @Override
     Pointer pointerToAbstractReal(double value) {
-        return pointerTo((float) value);
+        return pointerTo(value);
     }
 
-    public KernelMainFloat(CUmodule ownerModule) {
+    public KernelMainDouble(CUmodule ownerModule) {
         super(name, ownerModule);
     }
 }

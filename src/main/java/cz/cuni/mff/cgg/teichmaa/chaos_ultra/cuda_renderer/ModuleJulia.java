@@ -1,6 +1,4 @@
-package cz.cuni.mff.cgg.teichmaa.mandelzoomer.cuda_renderer;
-
-import jcuda.Pointer;
+package cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer;
 
 public class ModuleJulia extends FractalRenderingModule {
 

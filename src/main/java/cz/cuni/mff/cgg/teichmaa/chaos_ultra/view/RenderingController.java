@@ -1,11 +1,11 @@
-package cz.cuni.mff.cgg.teichmaa.mandelzoomer.view;
+package cz.cuni.mff.cgg.teichmaa.chaos_ultra.view;
 
 import com.jogamp.opengl.*;
 
 import com.jogamp.opengl.awt.GLCanvas;
 import com.jogamp.opengl.util.Animator;
-import cz.cuni.mff.cgg.teichmaa.mandelzoomer.cuda_renderer.FractalRenderer;
-import cz.cuni.mff.cgg.teichmaa.mandelzoomer.cuda_renderer.ModuleMandelbrot;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.FractalRenderer;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.ModuleMandelbrot;
 
 import javafx.application.Platform;
 

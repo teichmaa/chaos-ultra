@@ -1,4 +1,4 @@
-package cz.cuni.mff.cgg.teichmaa.mandelzoomer.view;
+package cz.cuni.mff.cgg.teichmaa.chaos_ultra.view;
 
 import com.jogamp.opengl.awt.GLJPanel;
 import javafx.embed.swing.SwingNode;
