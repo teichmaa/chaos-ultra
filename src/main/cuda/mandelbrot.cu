@@ -104,10 +104,10 @@ __device__ void printParams_debug(cudaSurfaceObject_t surfaceOutput, long output
   if(idx_x != 0 || idx_y != 0)
     return;
   printf("\n");
-  printf("width:\t%d\n",width);
-  printf("height:\t%d\n",height);
-  printf("dwell:\t%d\n",dwell);
-  printf("SS lvl:\t%d\n",superSamplingLevel);
+  printf("width:\t%u\n",width);
+  printf("height:\t%u\n",height);
+  printf("dwell:\t%u\n",dwell);
+  printf("SS lvl:\t%u\n",superSamplingLevel);
 }
 
 __device__ __forceinline__ bool isWithinRadius(uint idx_x, uint idx_y, uint width, uint height, uint radius, uint focus_x, uint focus_y){
@@ -144,8 +144,8 @@ __device__ const Point2D<uint> getImageIndexes(){
   // { //debug
   //   uint warpid = threadID / warpSize;
   //   if(idx.x < 8 && idx.y < 8){
-  //     printf("bw:%d\n", blockWidth);
-  //     printf("%d\t%d\t%d\t%d\t%d\n", threadIdx.x, threadIdx.y, threadID ,dx, dy);
+  //     printf("bw:%u\n", blockWidth);
+  //     printf("%u\t%u\t%u\t%u\t%u\n", threadIdx.x, threadIdx.y, threadID ,dx, dy);
   //   }
   // }
   return Point2D<uint>(idx_x, idx_y);
@@ -225,19 +225,6 @@ __global__ void fractalRenderMainFloat(uint** output, long outputPitch, uint wid
 extern "C"
 __global__ void fractalRenderMainDouble(uint** output, long outputPitch, uint width, uint height, double left_bottom_x, double left_bottom_y, double right_top_x, double right_top_y, uint dwell, uint superSamplingLevel, bool adaptiveSS, bool visualiseSS, float* randomSamples, uint renderRadius, uint focus_x, uint focus_y){
   fractalRenderMain<double>(output, outputPitch, width, height, left_bottom_x, left_bottom_y, right_top_x, right_top_y, dwell, superSamplingLevel, adaptiveSS, visualiseSS, randomSamples,  renderRadius, focus_x, focus_y, true);
-
-}
-
-extern "C"
-__global__ void debug(uint a, uint b, uint c){
-  const uint idx_x = blockDim.x * blockIdx.x + threadIdx.x;
-  const uint idx_y = blockDim.y * blockIdx.y + threadIdx.y;
-  if(idx_x == 0 && idx_y == 0){
-    printf("a:\t%d\n",a);
-    printf("b:\t%d\n",b);
-    printf("c:\t%d\n",c);
-  }
-  
 
 }
 
@@ -325,6 +312,29 @@ __global__ void fractalRenderUnderSampled(uint** output, long outputPitch, uint 
 
 }
 
+struct big{
+  uint a;
+  uint b;
+  uint c;
+  uint d;
+  uint e;
+  uint f;
+};
+
+extern "C"
+__global__ void debug(big a, uint c){
+  const uint idx_x = blockDim.x * blockIdx.x + threadIdx.x;
+  const uint idx_y = blockDim.y * blockIdx.y + threadIdx.y;
+  if(idx_x == 0 && idx_y == 0){
+    printf("aa:\t%u\n",a.a);
+    printf("ab:\t%u\n",a.b);
+    printf("ac:\t%u\n",a.c);
+    printf("ad:\t%u\n",a.d);
+    printf("ae:\t%u\n",a.e);
+    printf("af:\t%u\n",a.f);
+    printf("c:\t%u\n",c);
+  }
+}
 
 extern "C"
 __global__ void init(){
