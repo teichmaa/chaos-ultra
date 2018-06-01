@@ -5,8 +5,9 @@ public class ModuleJulia extends FractalRenderingModule {
     public final short PARAM_IDX_C_X;
     public final short PARAM_IDX_C_Y;
 
+
     public ModuleJulia(double cx, double cy) {
-        super("E:\\Tonda\\Desktop\\Mandelzoomer\\src\\main\\cuda\\julia.ptx", "julia");
+        super("julia", "julia");
         this.cx = cx;
         this.cy = cy;
 

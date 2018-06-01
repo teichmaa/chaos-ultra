@@ -21,12 +21,24 @@ abstract class FractalRenderingModule {
     static final String kernelCompose = KernelCompose.name;
     static final String kernelBlur = KernelBlur.name;
 
+    /**
+     * using an absolute path is a temporary workaround and should be fixed
+     */
+    private static final String pathAbsolutePrefix = "E:\\Tonda\\Desktop\\chaos-ultra\\";
+    private static final String pathLocalPrefix = "src\\main\\cuda\\";
+    private static final String pathSuffix = ".ptx";
+
     static {
         CudaHelpers.cudaInit();
     }
 
-    FractalRenderingModule(String ptxFileFullPath, String fractalName) {
-        this.ptxFileFullPath = ptxFileFullPath;
+    /**
+     *
+     * @param ptxFileName name of the cuda-compiled file containing the module, without '.ptx'
+     * @param fractalName name of the fractal that this module represents
+     */
+    FractalRenderingModule(String ptxFileName, String fractalName) {
+        this.ptxFileFullPath = pathAbsolutePrefix + pathLocalPrefix + ptxFileName + pathSuffix;
         this.fractalName = fractalName;
 
         //module load:
@@ -51,6 +63,7 @@ abstract class FractalRenderingModule {
         kernels.put(KernelCompose.class, new KernelCompose(module));
         kernels.put(KernelBlur.class, new KernelBlur(module));
         kernels.put(KernelDebug.class, new KernelDebug(module));
+
     }
 
     private final String ptxFileFullPath;
