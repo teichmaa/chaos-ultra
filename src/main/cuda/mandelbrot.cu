@@ -101,15 +101,15 @@ __device__ const Point<uint> getImageIndexes(){
   const uint warpWidth = 4; //user defined constant, representing desired width of the recatangular warp (2,4,8 are only reasonable values for the following formula)
   const uint blockWidth = blockDim.x * warpWidth;
   ASSERT (blockDim.x == 32); //following formula works only when blockDim.x is 32 
-  const uint inblock_idx_x = (-threadID % (warpWidth * warpWidth) + threadID % blockWidth) / warpWidth + threadID % warpWidth;
+  const uint inblock_idx_x = (-(threadID % (warpWidth * warpWidth)) + threadID % blockWidth) / warpWidth + threadID % warpWidth;
   const uint inblock_idx_y = (threadID / blockWidth) * warpWidth + (threadID / warpWidth) % warpWidth;
   const uint idx_x = blockDim.x * blockIdx.x + inblock_idx_x;
   const uint idx_y = blockDim.y * blockIdx.y + inblock_idx_y;
   // { //debug
   //   uint warpid = threadID / warpSize;
-  //   if(idx.x < 8 && idx.y < 8){
-  //     printf("bw:%u\n", blockWidth);
-  //     printf("%u\t%u\t%u\t%u\t%u\n", threadIdx.x, threadIdx.y, threadID ,dx, dy);
+  //   if(idx_x < 20 && idx_y < 20){
+  //     //printf("bw:%u\n", blockWidth);
+  //     printf("%u\t%u\t%u\t%u\t%u\n", threadIdx.x, threadIdx.y, threadID ,inblock_idx_x, inblock_idx_y);
   //   }
   // }
   return Point<uint>(idx_x, idx_y);
@@ -125,7 +125,6 @@ void fractalRenderMain(uint** output, long outputPitch, uint width, uint height,
 // todo: usporadat poradi paramateru, cudaXXObjects predavat pointrem, ne kopirovanim (tohle rozmyslet, mozna je to takhle dobre)
 //  todo ma to fakt hodne pointeru, mnoho z nich je pritom pro vsechny launche stejny - nezdrzuje tohle? omezene registry a tak
 {
-  //TODO vypada to, ze tenhle kernel dela neco spatne v levem krajnim sloupci (asi v nultem warpu?)
   const Pointi idx = getImageIndexes();
   if(idx.x >= width || idx.y >= height) return;
   // if(idx.x == 0 && idx.y == 0){
