@@ -16,7 +16,7 @@ class RenderingModeFSM {
         ProgressiveRendering;
     }
 
-    static final int MAX_PROGRESSIVE_RENDERING_LEVEL = 0;//6
+    static final int MAX_PROGRESSIVE_RENDERING_LEVEL = 6;//6
 
     @Override
     public String toString() {

@@ -43,7 +43,7 @@ abstract class KernelMain extends RenderingKernel {
 
     void setVisualiseAdaptiveSS(boolean visualiseAdaptiveSS) {
         this.visualiseAdaptiveSS = visualiseAdaptiveSS;
-        params[PARAM_IDX_VISUALISE_ADAPTIVE_SS] = pointerTo(visualiseAdaptiveSS);
+        params[PARAM_IDX_VISUALISE_ADAPTIVE_SS] = CudaHelpers.pointerTo(visualiseAdaptiveSS);
     }
 
     boolean isAdaptiveSS() {
@@ -52,13 +52,13 @@ abstract class KernelMain extends RenderingKernel {
 
     void setAdaptiveSS(boolean adaptiveSS) {
         this.adaptiveSS = adaptiveSS;
-        params[PARAM_IDX_ADAPTIVE_SS] = pointerTo(adaptiveSS);
+        params[PARAM_IDX_ADAPTIVE_SS] = CudaHelpers.pointerTo(adaptiveSS);
     }
 
 
     void setSuperSamplingLevel(int superSamplingLevel) {
         this.superSamplingLevel = superSamplingLevel;
-        params[PARAM_IDX_SUPER_SAMPLING_LEVEL] = pointerTo(superSamplingLevel);
+        params[PARAM_IDX_SUPER_SAMPLING_LEVEL] = CudaHelpers.pointerTo(superSamplingLevel);
     }
 
     int getSuperSamplingLevel() {
@@ -75,7 +75,7 @@ abstract class KernelMain extends RenderingKernel {
 
     public void setRenderRadius(int renderRadius) {
         this.renderRadius = renderRadius;
-        params[PARAM_IDX_RENDER_RADIUS] = pointerTo(renderRadius);
+        params[PARAM_IDX_RENDER_RADIUS] = CudaHelpers.pointerTo(renderRadius);
     }
 
     public void setFocusDefault(){
@@ -83,8 +83,8 @@ abstract class KernelMain extends RenderingKernel {
     }
 
     public void setFocus(int x, int y){
-        params[PARAM_IDX_FOCUS_X] = pointerTo(x);
-        params[PARAM_IDX_FOCUS_Y] = pointerTo(y);
+        params[PARAM_IDX_FOCUS_X] = CudaHelpers.pointerTo(x);
+        params[PARAM_IDX_FOCUS_Y] = CudaHelpers.pointerTo(y);
         this.focus_x = x;
         this.focus_y = y;
     }

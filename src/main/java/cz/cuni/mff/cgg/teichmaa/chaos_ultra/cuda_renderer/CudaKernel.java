@@ -65,7 +65,7 @@ public abstract class CudaKernel {
      */
     protected short registerParam(double value){
         short i = registerParam();
-        params[i] = pointerTo(value);
+        params[i] = CudaHelpers.pointerTo(value);
         return i;
     }
 
@@ -76,7 +76,7 @@ public abstract class CudaKernel {
      */
     protected short registerParam(float value){
         short i = registerParam();
-        params[i] = pointerTo(value);
+        params[i] = CudaHelpers.pointerTo(value);
         return i;
     }
 
@@ -87,7 +87,7 @@ public abstract class CudaKernel {
      */
     protected short registerParam(int value){
         short i = registerParam();
-        params[i] = pointerTo(value);
+        params[i] = CudaHelpers.pointerTo(value);
         return i;
     }
 
@@ -98,7 +98,7 @@ public abstract class CudaKernel {
      */
     protected short registerParam(long value){
         short i = registerParam();
-        params[i] = pointerTo(value);
+        params[i] = CudaHelpers.pointerTo(value);
         return i;
     }
 
@@ -108,19 +108,4 @@ public abstract class CudaKernel {
      */
     public final NativePointerObject[] getKernelParams(){return params;}
 
-    Pointer pointerTo(int value){
-        return Pointer.to(new int[]{value});
-    }
-    Pointer pointerTo(long value){
-        return Pointer.to(new long[]{value});
-    }
-    Pointer pointerTo(float value){
-        return Pointer.to(new float[]{value});
-    }
-    Pointer pointerTo(double value){
-        return Pointer.to(new double[]{value});
-    }
-    Pointer pointerTo(boolean value){
-        return Pointer.to(new int[]{value ? 1 : 0});
-    }
 }

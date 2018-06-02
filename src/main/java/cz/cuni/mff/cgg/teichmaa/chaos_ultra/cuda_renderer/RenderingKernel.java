@@ -57,7 +57,7 @@ public abstract class RenderingKernel extends CudaKernel {
 
     void setDwell(int dwell) {
         this.dwell = dwell;
-        params[PARAM_IDX_DWELL] = pointerTo(dwell);
+        params[PARAM_IDX_DWELL] = CudaHelpers.pointerTo(dwell);
     }
 
     int getWidth() {
@@ -70,12 +70,12 @@ public abstract class RenderingKernel extends CudaKernel {
 
     void setWidth(int width) {
         this.width = width;
-        params[PARAM_IDX_WIDTH] = pointerTo(width);
+        params[PARAM_IDX_WIDTH] = CudaHelpers.pointerTo(width);
     }
 
     void setHeight(int height) {
         this.height = height;
-        params[PARAM_IDX_HEIGHT] = pointerTo(height);
+        params[PARAM_IDX_HEIGHT] = CudaHelpers.pointerTo(height);
     }
 
     double getLeft_bottom_x() {

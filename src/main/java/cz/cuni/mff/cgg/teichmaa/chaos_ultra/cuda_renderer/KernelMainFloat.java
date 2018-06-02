@@ -12,7 +12,7 @@ public class KernelMainFloat extends KernelMain {
 
     @Override
     Pointer pointerToAbstractReal(double value) {
-        return pointerTo((float) value);
+        return CudaHelpers.pointerTo((float) value);
     }
 
     public KernelMainFloat(CUmodule ownerModule) {

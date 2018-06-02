@@ -22,7 +22,7 @@ public class FractalRenderer implements Closeable {
     public static final int CUDA_MAX_GRID_DIM = 65536 - 1;
     public static final int SUPER_SAMPLING_MAX_LEVEL = 256;
     public static final int FOVEATION_CENTER_RADIUS = 600;//todo zjistit vypoctem
-    private static final Pointer NULLPTR = Pointer.to(new byte[0]);
+    private static final Pointer NULLPTR = CudaHelpers.pointerTo(0);
 
     static {
         CudaHelpers.cudaInit();
@@ -35,17 +35,12 @@ public class FractalRenderer implements Closeable {
     //private KernelBlur kernelBlur;
     private KernelCompose kernelCompose;
 
+    private DeviceMemory memory = new DeviceMemory();
     private FractalRenderingModule module;
 
     private int blockDimX = 32;
     private int blockDimY = 32;
     private int paletteLength;
-
-    private CUdeviceptr output2DArray1 = new CUdeviceptr();
-    private CUdeviceptr output2DArray2 = new CUdeviceptr();
-    private long output2DArray1Pitch;
-    private long output2DArray2Pitch;
-    private CUdeviceptr randomValues;
 
     private cudaGraphicsResource outputTextureResource = new cudaGraphicsResource();
     private cudaGraphicsResource paletteTextureResource = new cudaGraphicsResource();
@@ -65,8 +60,9 @@ public class FractalRenderer implements Closeable {
         kernelReuseSamples = module.getKernel(KernelReuseSamples.class);
         //kernelBlur = module.getKernel(KernelBlur.class);
 
-        output2DArray1Pitch = allocateDevice2DBuffer(getWidth(), getHeight(), output2DArray1);
-        output2DArray2Pitch = allocateDevice2DBuffer(getWidth(), getHeight(), output2DArray2);
+        memory.reallocatePrimary2DBuffer(getWidth(), getHeight());
+        memory.reallocateSecondary2DBuffer(getWidth(), getHeight());
+
 
         //moduleInit();
         randomSamplesInit();
@@ -131,45 +127,6 @@ public class FractalRenderer implements Closeable {
         jcuda.runtime.JCuda.cudaGraphicsUnregisterResource(outputTextureResource);
     }
 
-    /**
-     * Allocate 2D array on device
-     * Keep in mind that cuMemAllocPitch allocates pitch x height array, i.e. the rows may be longer than width
-     *
-     * @param width
-     * @param height
-     * @param target output parameter, will contain pointer to allocated memory
-     * @return pitch (actual row length (in bytes) as aligned by CUDA. pitch >= width * sizeof element.)
-     */
-    private long allocateDevice2DBuffer(int width, int height, CUdeviceptr target) {
-
-        /**
-         * Pitch = actual row length (in bytes) as aligned by CUDA. pitch >= width * sizeof element.
-         */
-        long pitch;
-        long[] pitchptr = new long[1];
-
-        if (target != null) {
-            cuMemFree(target);
-        } else {
-            target = new CUdeviceptr();
-        }
-
-        if (width * height == 0)
-            return 0;
-
-        cuMemAllocPitch(target, pitchptr, (long) width * (long) Sizeof.INT, (long) height, Sizeof.INT);
-
-        pitch = pitchptr[0];
-        if (pitch <= 0) {
-            throw new CudaException("cuMemAllocPitch returned pitch with value 0 (or less)");
-        }
-
-        if (pitch > Integer.MAX_VALUE) {
-            //this would mean an array with length bigger that Integer.MAX_VALUE and this is not supported by Java
-            System.err.println("Warning: allocateDevice2DBuffer: pitch > Integer.MAX_VALUE");
-        }
-        return pitch;
-    }
 
     private void copy2DFromDevToHost(Buffer hostOut, int width, int height, long pitch, CUdeviceptr deviceOut) {
         if (hostOut.capacity() < width * height * 4)
@@ -194,8 +151,8 @@ public class FractalRenderer implements Closeable {
         onAllRenderingKernels(k -> k.setHeight(height));
         randomSamplesInit();
         registerOutputTexture(outputTextureGLhandle, GLtarget);
-        output2DArray1Pitch = allocateDevice2DBuffer(width, height, output2DArray1);
-        output2DArray2Pitch = allocateDevice2DBuffer(width, height, output2DArray2);
+        memory.reallocatePrimary2DBuffer(width, height);
+        memory.reallocateSecondary2DBuffer(width, height);
     }
 
     public int getWidth() {
@@ -218,23 +175,23 @@ public class FractalRenderer implements Closeable {
 
     RenderingKernelParamsInfo lastRendering = new RenderingKernelParamsInfo();
     public void launchReuseSamplesKernel() {
+        if(memory.isPrimary2DBufferEmpty()){
+            //if there is nothing to reuse, then create it
+            launchQualityKernel();
+            return;
+        }
 
         KernelReuseSamples k = kernelReuseSamples;
 
         k.setOriginBounds(lastRendering.left_bottom_x, lastRendering.left_bottom_y, lastRendering.right_top_x, lastRendering.right_top_y);
 
         NativePointerObject[] params = k.getKernelParams();
-        params[k.PARAM_IDX_INPUT] = Pointer.to(output2DArray1);
-        params[k.PARAM_IDX_INPUT_PITCH] = k.pointerTo(output2DArray1Pitch);
-        params[k.PARAM_IDX_2DARR_OUT] = Pointer.to(output2DArray2);
-        params[k.PARAM_IDX_2DARR_OUT_PITCH] = k.pointerTo(output2DArray2Pitch);
+        params[k.PARAM_IDX_INPUT] = Pointer.to(memory.getPrimary2DBuffer());
+        params[k.PARAM_IDX_INPUT_PITCH] = CudaHelpers.pointerTo(memory.getPrimary2DBufferPitch());
+        params[k.PARAM_IDX_2DARR_OUT] = Pointer.to(memory.getSecondary2DBuffer());
+        params[k.PARAM_IDX_2DARR_OUT_PITCH] = CudaHelpers.pointerTo(memory.getSecondary2DBufferPitch());
 
-        CUdeviceptr switchPtr = output2DArray1;
-        output2DArray1 = output2DArray2;
-        output2DArray2 = switchPtr;
-        long switchPitch = output2DArray1Pitch;
-        output2DArray1Pitch = output2DArray2Pitch;
-        output2DArray2Pitch = switchPitch;
+        memory.switch2DBuffers();
 
         int gridDimX = getWidth() / blockDimX;
         int gridDimY = getHeight() / blockDimY;
@@ -257,8 +214,8 @@ public class FractalRenderer implements Closeable {
         kernelMain.setFocus(focusx, focusy);
         kernelMain.setRenderRadius(FOVEATION_CENTER_RADIUS);
         //todo nejak spustit ty prvni dva najednou a pak pockat?
-        launchRenderingKernel(false, kernelMain, output2DArray1, output2DArray1Pitch);
-        launchRenderingKernel(false, kernelUndersampled, output2DArray2, output2DArray2Pitch);
+        launchRenderingKernel(false, kernelMain, memory.getPrimary2DBuffer(), memory.getPrimary2DBufferPitch());
+        launchRenderingKernel(false, kernelUndersampled, memory.getSecondary2DBuffer(), memory.getSecondary2DBufferPitch());
         launchDrawingKernel(false, kernelCompose, kernelMain);
     }
 
@@ -266,10 +223,11 @@ public class FractalRenderer implements Closeable {
         KernelMain kernelMain = kernelMainFloat.isBoundsAtFloatLimit() ? kernelMainDouble : kernelMainFloat;
         kernelMain.setRenderRadiusToMax();
         kernelMain.setFocusDefault();
-        launchRenderingKernel(false, kernelMain, output2DArray1, output2DArray1Pitch);
-        launchRenderingKernel(false, kernelMain, output2DArray2, output2DArray2Pitch);
+        memory.resetBufferSwitch();
+        launchRenderingKernel(false, kernelMain, memory.getPrimary2DBuffer(), memory.getPrimary2DBufferPitch());
         launchDrawingKernel(false, kernelCompose, kernelMain);
         lastRendering.setFrom(kernelMain);
+        memory.setPrimary2DBufferEmpty(false);
     }
 
     private void launchRenderingKernel(boolean async, RenderingKernel kernel, CUdeviceptr output, long outputPitch) {
@@ -281,9 +239,9 @@ public class FractalRenderer implements Closeable {
         NativePointerObject[] kernelParamsArr = kernel.getKernelParams();
         {
             kernelParamsArr[kernel.PARAM_IDX_2DARR_OUT] = Pointer.to(output);
-            kernelParamsArr[kernel.PARAM_IDX_2DARR_OUT_PITCH] = Pointer.to(new long[]{outputPitch});
+            kernelParamsArr[kernel.PARAM_IDX_2DARR_OUT_PITCH] = CudaHelpers.pointerTo(outputPitch);
             if (kernel instanceof KernelMain)
-                kernelParamsArr[((KernelMain) kernel).PARAM_IDX_RANDOM_SAMPLES] = Pointer.to(randomValues);
+                kernelParamsArr[((KernelMain) kernel).PARAM_IDX_RANDOM_SAMPLES] = NULLPTR; //currently not being used
         }
         Pointer kernelParams = Pointer.to(kernelParamsArr);
         CUfunction kernelFunction = kernel.getFunction();
@@ -353,19 +311,19 @@ public class FractalRenderer implements Closeable {
 
                     NativePointerObject[] composeParamsArr = kernel.getKernelParams();
                     {
-                        composeParamsArr[kernel.PARAM_IDX_WIDTH] = Pointer.to(new int[]{getWidth()});
-                        composeParamsArr[kernel.PARAM_IDX_HEIGHT] = Pointer.to(new int[]{getHeight()});
+                        composeParamsArr[kernel.PARAM_IDX_WIDTH] = CudaHelpers.pointerTo(getWidth());
+                        composeParamsArr[kernel.PARAM_IDX_HEIGHT] = CudaHelpers.pointerTo(getHeight());
                         composeParamsArr[kernel.PARAM_IDX_SURFACE_OUT] = Pointer.to(surfaceOutput);
-                        composeParamsArr[kernel.PARAM_IDX_INPUT_MAIN] = Pointer.to(output2DArray1);
-                        composeParamsArr[kernel.PARAM_IDX_INPUT_BCG] = Pointer.to(output2DArray2);
-                        composeParamsArr[kernel.PARAM_IDX_INPUT_MAIN_PITCH] = Pointer.to(new long[]{output2DArray1Pitch});
-                        composeParamsArr[kernel.PARAM_IDX_INPUT_BCG_PITCH] = Pointer.to(new long[]{output2DArray2Pitch});
+                        composeParamsArr[kernel.PARAM_IDX_INPUT_MAIN] = Pointer.to(memory.getPrimary2DBuffer());
+                        composeParamsArr[kernel.PARAM_IDX_INPUT_BCG] = Pointer.to(memory.getSecondary2DBuffer());
+                        composeParamsArr[kernel.PARAM_IDX_INPUT_MAIN_PITCH] = CudaHelpers.pointerTo(memory.getPrimary2DBufferPitch());
+                        composeParamsArr[kernel.PARAM_IDX_INPUT_BCG_PITCH] = CudaHelpers.pointerTo(memory.getSecondary2DBufferPitch());
                         composeParamsArr[kernel.PARAM_IDX_SURFACE_PALETTE] = Pointer.to(surfacePalette);
-                        composeParamsArr[kernel.PARAM_IDX_PALETTE_LENGTH] = Pointer.to(new int[]{paletteLength});
-                        composeParamsArr[kernel.PARAM_IDX_DWELL] = Pointer.to(new int[]{getDwell()});
-                        composeParamsArr[kernel.PARAM_IDX_MAIN_RADIUS] = Pointer.to(new int[]{kernelMain.getRenderRadius()});
-                        composeParamsArr[kernel.PARAM_IDX_FOCUS_X] = Pointer.to(new int[]{kernelMain.getFocusX()});
-                        composeParamsArr[kernel.PARAM_IDX_FOCUS_Y] = Pointer.to(new int[]{kernelMain.getFocusY()});
+                        composeParamsArr[kernel.PARAM_IDX_PALETTE_LENGTH] = CudaHelpers.pointerTo(paletteLength);
+                        composeParamsArr[kernel.PARAM_IDX_DWELL] = CudaHelpers.pointerTo(getDwell());
+                        composeParamsArr[kernel.PARAM_IDX_MAIN_RADIUS] = CudaHelpers.pointerTo(kernelMain.getRenderRadius());
+                        composeParamsArr[kernel.PARAM_IDX_FOCUS_X] = CudaHelpers.pointerTo(kernelMain.getFocusX());
+                        composeParamsArr[kernel.PARAM_IDX_FOCUS_Y] = CudaHelpers.pointerTo(kernelMain.getFocusY());
                     }
 
                     if (gridDimX <= 0 || gridDimY <= 0) return;
@@ -415,12 +373,7 @@ public class FractalRenderer implements Closeable {
     @Override
     public void close() {
         unregisterOutputTexture();
-        if(output2DArray1 != null)
-            JCuda.cudaFree(output2DArray1);
-        if(output2DArray2 != null)
-            JCuda.cudaFree(output2DArray2);
-        if (randomValues != null)
-            JCuda.cudaFree(randomValues);
+        memory.close();
         module.close();
     }
 

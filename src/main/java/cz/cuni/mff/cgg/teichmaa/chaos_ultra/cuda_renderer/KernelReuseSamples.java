@@ -43,7 +43,7 @@ public class KernelReuseSamples extends RenderingKernel {
 
     @Override
     Pointer pointerToAbstractReal(double value) {
-        return pointerTo((float) value);
+        return CudaHelpers.pointerTo((float) value);
     }
 
     public void setOriginBounds(double p, double q, double r, double s){

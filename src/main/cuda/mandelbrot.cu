@@ -338,17 +338,34 @@ void fractalRenderReuseSamples(uint** output, long outputPitch, uint width, uint
   // if(idx.x == 0 && idx.y == 0){
   //   printf("fractalRenderReuseSamples:\n");
   // }
+
+  //sample reusal:
   const Pointf originf = getWarpingOrigin(Pointf(idx.x, idx.y),Pointf(width,height),Rectangle<float>(a,b,c,d), Rectangle<float>(p,q,r,s));
   const Point<int> origin = Point<int>((int)round(originf.x), (int)round(originf.y)); //it is important to convert to signed int, not uint (because the value may be negative)
-
   uint* pInput = getPtrToPixel(input, inputPitch, origin.x, origin.y);
-  uint* pOutput = getPtrToPixel(output, outputPitch, idx.x, idx.y);
-  uint result;
-  if(origin.x < 0 || origin.x >= width || origin.y < 0 || origin.y >= height)
-    result = 404;   //not-found error :)
-  else
-    result = *pInput;
+  bool sampleReused = false;
+  uint warpingResult;
+  if(origin.x < 0 || origin.x >= width || origin.y < 0 || origin.y >= height){
+    warpingResult = 404;   //not-found error :)
+    sampleReused = false;
+  }
+  else{
+    warpingResult = *pInput;
+    sampleReused = true;
+  }
+
+  //sample generation:
+  float pixelWidth = (c - a) / (float) width;
+  float pixelHeight = (d - b) / (float) height;
+  float cx = a + (idx.x)  * pixelWidth;
+  float cy = d - (idx.y) * pixelHeight;
+  uint renderResult = escape(dwell, Pointf(cx, cy));
+
+  uint result = renderResult;
+  if(sampleReused)
+    result = (renderResult + warpingResult) / 2;
   
+  uint* pOutput = getPtrToPixel(output, outputPitch, idx.x, idx.y);
   *pOutput = result;
 }
 

@@ -25,7 +25,7 @@ class KernelUnderSampled extends RenderingKernel {
         if(underSamplingLevel < 1)
             throw new IllegalArgumentException("underSamplingLevel must be at least 1: " + underSamplingLevel);
         this.underSamplingLevel = underSamplingLevel;
-        params[PARAM_IDX_UNDER_SAMPLING_LEVEL] = pointerTo(underSamplingLevel);
+        params[PARAM_IDX_UNDER_SAMPLING_LEVEL] = CudaHelpers.pointerTo(underSamplingLevel);
     }
 
     int getUnderSamplingLevel() {
@@ -34,7 +34,7 @@ class KernelUnderSampled extends RenderingKernel {
 
     @Override
     Pointer pointerToAbstractReal(double value) {
-        return pointerTo((float)value);
+        return CudaHelpers.pointerTo((float)value);
     }
 
 }

@@ -332,7 +332,10 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     }
 
     private void render(final GL2 gl) {
-        if (currentMode.wasProgressiveRendering())
+        if (reuseSamples) {
+            fractalRenderer.launchReuseSamplesKernel();
+        }
+        else if (currentMode.wasProgressiveRendering())
             fractalRenderer.launchQualityKernel();
         else
             if(lastMousePosition != null && currentMode.isZooming())
@@ -340,11 +343,6 @@ public class RenderingController extends MouseAdapter implements GLEventListener
             else if(lastMousePressedPosition != null)
                 fractalRenderer.launchFastKernel(lastMousePressedPosition.getX(), lastMousePressedPosition.getY());
         //fractalRenderer.launchQualityKernel();
-//        if (reuseSamples) {
-//            fractalRenderer.launchReuseSamplesKernel();
-//        } else {
-//            fractalRenderer.launchQualityKernel();
-//        }
 
         gl.glMatrixMode(GL_MODELVIEW);
         //gl.glPushMatrix();
