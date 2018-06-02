@@ -1,6 +1,6 @@
 #include <cuda_runtime_api.h>
 #include "math.h"
-#include "point.hpp"
+#include "helpers.hpp"
 #include "float.h"
 
 typedef unsigned int uint;
@@ -35,21 +35,6 @@ const uint MAX_SS_LEVEL = 256;
 #endif
 
 
-class ColorsARGB{
-public:
-  static constexpr const uint BLACK = 0xff000000;
-  static constexpr const uint WHITE = 0xffffffff;
-  static constexpr const uint PINK  = 0xffb469ff;
-  static constexpr const uint YELLOW= 0xff00ffff;
-  static constexpr const uint GOLD  = 0xff00d7ff;
-}; 
-
-typedef struct color{
-  char r;
-  char g;
-  char b;
-  char a;
-} color_t;
 
 //Mandelbrot content, using standard mathematical terminology for Mandelbrot set definition, i.e.
 //  f_n = f_{n-1}^2 + c
@@ -74,9 +59,10 @@ template <class Real> __device__ __forceinline__ uint escape(uint dwell, Point<R
 
 
 /// Dispersion in this context is "Index of dispersion", aka variance-to-mean ratio. See https://en.wikipedia.org/wiki/Index_of_dispersion for more details
-__device__  __forceinline__ float computeDispersion(uint* data, uint dataLength, float mean){
+template <class Real> __device__ __forceinline__
+Real computeDispersion(uint* data, uint dataLength, Real mean){
   uint n = dataLength;
-  float variance = 0;
+  Real variance = 0;
   for(uint i = 0; i < dataLength; i++){
     //using numerically stable Two-Pass algorithm, https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Two-pass_algorithm
     variance += (data[i]-mean)*(data[i]-mean);
@@ -86,7 +72,8 @@ __device__  __forceinline__ float computeDispersion(uint* data, uint dataLength,
 }
 
 
-__device__ __forceinline__ bool isWithinRadius(uint idx_x, uint idx_y, uint width, uint height, uint radius, uint focus_x, uint focus_y){
+__device__ __forceinline__
+bool isWithinRadius(uint idx_x, uint idx_y, uint width, uint height, uint radius, uint focus_x, uint focus_y){
   if(__sad(idx_x, focus_x, 0) > radius / 2) return false;
   if(__sad(idx_y, focus_y, 0) > radius / 2) return false;
   else return true;
@@ -96,7 +83,7 @@ __device__ __forceinline__ bool isWithinRadius(uint idx_x, uint idx_y, uint widt
   // else return true;
 }
 
-__device__  long long seed;
+__device__ long seed;
 /// Intended for debugging only
 __device__ __forceinline__ uint simpleRandom(uint val){
     long long a = 1103515245;
@@ -128,11 +115,13 @@ __device__ const Point<uint> getImageIndexes(){
   return Point<uint>(idx_x, idx_y);
 }
 
-__device__ __forceinline__  uint* getPtrToPixel(uint** array2D, long pitch, uint x, uint y){
+__device__ __forceinline__
+uint* getPtrToPixel(uint** array2D, long pitch, uint x, uint y){
   return (((uint*)((char*)array2D + y * pitch)) + x);
 }
 
-template <class Real> __device__ __forceinline__ void fractalRenderMain(uint** output, long outputPitch, uint width, uint height, Real left_bottom_x, Real left_bottom_y, Real right_top_x, Real right_top_y, uint dwell, uint superSamplingLevel, bool adaptiveSS, bool visualiseSS, float* randomSamples, uint renderRadius, uint focus_x, uint focus_y, bool isDoublePrecision)
+template <class Real> __device__ __forceinline__
+void fractalRenderMain(uint** output, long outputPitch, uint width, uint height, Rectangle<Real> image, uint dwell, uint superSamplingLevel, bool adaptiveSS, bool visualiseSS, float* randomSamples, uint renderRadius, uint focus_x, uint focus_y, bool isDoublePrecision)
 // todo: usporadat poradi paramateru, cudaXXObjects predavat pointrem, ne kopirovanim (tohle rozmyslet, mozna je to takhle dobre)
 //  todo ma to fakt hodne pointeru, mnoho z nich je pritom pro vsechny launche stejny - nezdrzuje tohle? omezene registry a tak
 {
@@ -145,26 +134,22 @@ template <class Real> __device__ __forceinline__ void fractalRenderMain(uint** o
   if(!isWithinRadius(idx.x, idx.y, width, height, renderRadius, focus_x, focus_y)) return;
 
   //We are in a complex plane from (left_bottom) to (right_top), so we scale the pixels to it
-  Real pixelWidth = (right_top_x - left_bottom_x) / (Real) width;
-  Real pixelHeight = (right_top_y - left_bottom_y) / (Real) height;
+  Point<Real> pixelSize = image.size() / Point<Real>(width, height);
 
   const uint adaptiveTreshold = 10;
   uint r[adaptiveTreshold];
-  uint adaptivnessUsed = 0;
+//  uint adaptivnessUsed = 0;
 
   uint escapeTimeSum = 0;
-  //uint randomSamplePixelsIdx = (idx.y * width + idx.x)*MAX_SS_LEVEL;
-  //superSamplingLevel = 1;
   ASSERT (superSamplingLevel <= MAX_SS_LEVEL);
   for(uint i = 0; i < superSamplingLevel; i++){
-    Real random_xd = i / (Real) superSamplingLevel; //not really random, just uniform
-    Real random_yd = random_xd;
-    //Real random_xd = randomSamples[randomSamplePixelsIdx + i];
-    //Real random_yd = randomSamples[randomSamplePixelsIdx + i + superSamplingLevel/2];
-    Real cx = left_bottom_x + (idx.x + random_xd)  * pixelWidth;
-    Real cy = right_top_y - (idx.y + random_yd) * pixelHeight;
+    Point<Real> delta = Point<Real>(i / (Real) superSamplingLevel);
+    
+    // c = {LBx, RTy} {+,-} ((idx+delta) * pixelSize)
+    const Point<Real> c = Point<Real>(image.left_bottom.x, image.right_top.y) +
+      Point<Real>(1,-1) * (idx.cast<Real>() + delta) * pixelSize;
 
-    uint escapeTime = escape(dwell, Point<Real>(cx, cy));
+    uint escapeTime = escape(dwell, c);
     escapeTimeSum += escapeTime;
     if(i < adaptiveTreshold){
       r[i] = escapeTime;
@@ -175,9 +160,9 @@ template <class Real> __device__ __forceinline__ void fractalRenderMain(uint** o
       Real dispersion = computeDispersion(r, i, mean);
       __ALL(dispersion <= 0.01);
       superSamplingLevel = i+1; //effectively disabling high SS and storing info about actual number of samples taken
-      adaptivnessUsed = ColorsARGB::WHITE; 
+      //adaptivnessUsed = ColorsARGB::WHITE; 
     }else{ //else we are on an chaotic edge, thus as many samples as possible are needed
-        adaptivnessUsed = ColorsARGB::BLACK;
+        //adaptivnessUsed = ColorsARGB::BLACK;
     }
   }
   uint mean = escapeTimeSum / superSamplingLevel;  
@@ -197,20 +182,21 @@ template <class Real> __device__ __forceinline__ void fractalRenderMain(uint** o
   *pOutput = mean;
 }
 
+//section exported global kernels:
 
-extern "C"
-__global__ void fractalRenderMainFloat(uint** output, long outputPitch, uint width, uint height, float left_bottom_x, float left_bottom_y, float right_top_x, float right_top_y, uint dwell, uint superSamplingLevel, bool adaptiveSS, bool visualiseSS, float* randomSamples, uint renderRadius, uint focus_x, uint focus_y){
-  fractalRenderMain<float>(output, outputPitch, width, height, left_bottom_x, left_bottom_y, right_top_x, right_top_y, dwell, superSamplingLevel, adaptiveSS, visualiseSS, randomSamples,  renderRadius, focus_x, focus_y, false);
+extern "C" __global__
+void fractalRenderMainFloat(uint** output, long outputPitch, uint width, uint height, float left_bottom_x, float left_bottom_y, float right_top_x, float right_top_y, uint dwell, uint superSamplingLevel, bool adaptiveSS, bool visualiseSS, float* randomSamples, uint renderRadius, uint focus_x, uint focus_y){
+  fractalRenderMain<float>(output, outputPitch, width, height, Rectangle<float>(left_bottom_x, left_bottom_y, right_top_x, right_top_y), dwell, superSamplingLevel, adaptiveSS, visualiseSS, randomSamples,  renderRadius, focus_x, focus_y, false);
 }
 
-extern "C"
-__global__ void fractalRenderMainDouble(uint** output, long outputPitch, uint width, uint height, double left_bottom_x, double left_bottom_y, double right_top_x, double right_top_y, uint dwell, uint superSamplingLevel, bool adaptiveSS, bool visualiseSS, float* randomSamples, uint renderRadius, uint focus_x, uint focus_y){
-  fractalRenderMain<double>(output, outputPitch, width, height, left_bottom_x, left_bottom_y, right_top_x, right_top_y, dwell, superSamplingLevel, adaptiveSS, visualiseSS, randomSamples,  renderRadius, focus_x, focus_y, true);
+extern "C" __global__
+void fractalRenderMainDouble(uint** output, long outputPitch, uint width, uint height, double left_bottom_x, double left_bottom_y, double right_top_x, double right_top_y, uint dwell, uint superSamplingLevel, bool adaptiveSS, bool visualiseSS, float* randomSamples, uint renderRadius, uint focus_x, uint focus_y){
+  fractalRenderMain<double>(output, outputPitch, width, height, Rectangle<double>(left_bottom_x, left_bottom_y, right_top_x, right_top_y), dwell, superSamplingLevel, adaptiveSS, visualiseSS, randomSamples,  renderRadius, focus_x, focus_y, true);
 
 }
 
-extern "C"
-__global__ void compose(uint** inputMain, long inputMainPitch, uint** inputBcg, long inputBcgPitch, cudaSurfaceObject_t surfaceOutput, uint width, uint height, cudaSurfaceObject_t colorPalette, uint paletteLength, uint dwell, uint mainRenderRadius, uint focus_x, uint focus_y){
+extern "C" __global__
+void compose(uint** inputMain, long inputMainPitch, uint** inputBcg, long inputBcgPitch, cudaSurfaceObject_t surfaceOutput, uint width, uint height, cudaSurfaceObject_t colorPalette, uint paletteLength, uint dwell, uint mainRenderRadius, uint focus_x, uint focus_y){
   const uint idx_x = blockDim.x * blockIdx.x + threadIdx.x;
   const uint idx_y = blockDim.y * blockIdx.y + threadIdx.y;
   if(idx_x >= width || idx_y >= height) return;
@@ -253,7 +239,7 @@ __global__ void compose(uint** inputMain, long inputMainPitch, uint** inputBcg, 
   uint result = *pResult;
 
   uint paletteIdx = paletteLength - (result % paletteLength) - 1;
-  ASSERT(paletteIdx >=0);
+//  ASSERT(paletteIdx >=0);
   ASSERT(paletteIdx < paletteLength);
   uint resultColor;
   surf2Dread(&resultColor, colorPalette, paletteIdx * sizeof(uint), 0);
@@ -263,11 +249,11 @@ __global__ void compose(uint** inputMain, long inputMainPitch, uint** inputBcg, 
   surf2Dwrite(resultColor, surfaceOutput, idx_x * sizeof(uint), idx_y);
 }
 
-extern "C"
-__global__ void blur(){}
+extern "C" __global__
+void blur(){}
 
-extern "C"
-__global__ void fractalRenderUnderSampled(uint** output, long outputPitch, uint width, uint height, float left_bottom_x, float left_bottom_y, float right_top_x, float right_top_y, uint dwell, uint underSamplingLevel)
+extern "C" __global__
+void fractalRenderUnderSampled(uint** output, long outputPitch, uint width, uint height, float left_bottom_x, float left_bottom_y, float right_top_x, float right_top_y, uint dwell, uint underSamplingLevel)
 {
   //work only at every Nth pixel:
   const uint idx_x = (blockDim.x * blockIdx.x + threadIdx.x) * underSamplingLevel;
@@ -302,8 +288,8 @@ struct big{
   uint f;
 };
 
-extern "C"
-__global__ void debug(big a, uint c){
+extern "C" __global__
+void debug(big a, uint c){
   const uint idx_x = blockDim.x * blockIdx.x + threadIdx.x;
   const uint idx_y = blockDim.y * blockIdx.y + threadIdx.y;
   if(idx_x == 0 && idx_y == 0){
@@ -317,44 +303,43 @@ __global__ void debug(big a, uint c){
   }
 }
 
-extern "C"
-__global__ void init(){
+extern "C" __global__
+void init(){
 
 }
 
 /// for given point <code>p</code> in the current image and given warping information, find cooridnates of the same point (=representing the same point in the fractal's complex plane) in the image being warped
 /// @param p: the point whose warping origin is being returned
 /// @param imageSize: width and height (in pixels) of current image
-/// @param left_btm_new, right_top_new: rectangle representing the part of the complex plane that is being rendered
-/// @param left_btm_orig, right_top_orig: rectangle representing the part of the complex plane that is being reused
+/// @param currentImage: rectangle representing the part of the complex plane that is being rendered
+/// @param oldImage: rectangle representing the part of the complex plane that is being reused
 
-__device__ __forceinline__ Pointf getWarpingOrigin(Pointf p, Pointf imageSize, Pointf left_btm_new, Pointf right_top_new, Pointf left_btm_orig, Pointf right_top_orig){
+template <class Real> __device__ __forceinline__
+Point<Real> getWarpingOrigin(Point<Real> p, Point<Real> imageSize, Rectangle<Real> currentImage, Rectangle<Real> oldImage){
 
-      Pointf size_new = right_top_new - left_btm_new;
-      Pointf size_orig = right_top_orig - left_btm_orig;
-      Pointf coeff = size_new / size_orig;
+      Point<Real> size_current = currentImage.size();
+      Point<Real> size_reused = oldImage.size();
+      Point<Real> coeff = size_current / size_reused;
 
-      Pointf deltaReal;    
-      deltaReal.x = left_btm_new.x - left_btm_orig.x;
-      deltaReal.y = right_top_orig.y - right_top_new.y;
-      Pointf delta = deltaReal / size_new * imageSize;
+      Point<Real> deltaReal;    
+      deltaReal.x = currentImage.left_bottom.x - oldImage.left_bottom.x;
+      deltaReal.y = oldImage.right_top.y - currentImage.right_top.y;
+      Point<Real> delta = deltaReal / size_current * imageSize;
 
-      Pointf result = (p * coeff) + delta;
+      Point<Real> result = (p * coeff) + delta;
       return result;
 }
 
-extern "C"
-__global__ void fractalRenderReuseSamples(uint** output, long outputPitch, uint width, uint height, float a, float b, float c, float d, uint dwell, float p, float q, float r, float s, uint** input, long inputPitch){
+extern "C" __global__
+void fractalRenderReuseSamples(uint** output, long outputPitch, uint width, uint height, float a, float b, float c, float d, uint dwell, float p, float q, float r, float s, uint** input, long inputPitch){
 
   const Pointi idx = getImageIndexes();
   if(idx.x >= width || idx.y >= height) return;
   // if(idx.x == 0 && idx.y == 0){
   //   printf("fractalRenderReuseSamples:\n");
   // }
-  const Pointf lb_orig = Pointf(p,q);
-  const Pointf rt_orig = Pointf(r,s);
-  const Pointf originf = getWarpingOrigin(Pointf(idx.x, idx.y),Pointf(width,height),Pointf(a,b), Pointf(c, d), lb_orig, rt_orig);
-  const Pointi origin = Pointi((int)round(originf.x), (int)round(originf.y)); //it is important to convert to int, not uint (because the value may be negative)
+  const Pointf originf = getWarpingOrigin(Pointf(idx.x, idx.y),Pointf(width,height),Rectangle<float>(a,b,c,d), Rectangle<float>(p,q,r,s));
+  const Point<int> origin = Point<int>((int)round(originf.x), (int)round(originf.y)); //it is important to convert to signed int, not uint (because the value may be negative)
 
   uint* pInput = getPtrToPixel(input, inputPitch, origin.x, origin.y);
   uint* pOutput = getPtrToPixel(output, outputPitch, idx.x, idx.y);
