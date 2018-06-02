@@ -20,24 +20,11 @@
 	.param .b64 __assertfail_param_4
 )
 ;
-.extern .func  (.param .b32 func_retval0) vprintf
-(
-	.param .b64 vprintf_param_0,
-	.param .b64 vprintf_param_1
-)
-;
 .global .align 8 .u64 seed;
 .global .align 2 .b8 $str[34] = {98, 0, 108, 0, 111, 0, 99, 0, 107, 0, 68, 0, 105, 0, 109, 0, 46, 0, 120, 0, 32, 0, 61, 0, 61, 0, 32, 0, 51, 0, 50, 0, 0, 0};
 .global .align 2 .b8 $str1[28] = {109, 0, 97, 0, 110, 0, 100, 0, 101, 0, 108, 0, 98, 0, 114, 0, 111, 0, 116, 0, 46, 0, 99, 0, 117, 0, 0, 0};
 .global .align 2 .b8 $str2[70] = {115, 0, 117, 0, 112, 0, 101, 0, 114, 0, 83, 0, 97, 0, 109, 0, 112, 0, 108, 0, 105, 0, 110, 0, 103, 0, 76, 0, 101, 0, 118, 0, 101, 0, 108, 0, 32, 0, 60, 0, 61, 0, 32, 0, 77, 0, 65, 0, 88, 0, 95, 0, 83, 0, 83, 0, 95, 0, 76, 0, 69, 0, 86, 0, 69, 0, 76, 0, 0, 0};
 .global .align 2 .b8 $str4[54] = {112, 0, 97, 0, 108, 0, 101, 0, 116, 0, 116, 0, 101, 0, 73, 0, 100, 0, 120, 0, 32, 0, 60, 0, 32, 0, 112, 0, 97, 0, 108, 0, 101, 0, 116, 0, 116, 0, 101, 0, 76, 0, 101, 0, 110, 0, 103, 0, 116, 0, 104, 0, 0, 0};
-.global .align 1 .b8 $str5[8] = {97, 97, 58, 9, 37, 117, 10, 0};
-.global .align 1 .b8 $str6[8] = {97, 98, 58, 9, 37, 117, 10, 0};
-.global .align 1 .b8 $str7[8] = {97, 99, 58, 9, 37, 117, 10, 0};
-.global .align 1 .b8 $str8[8] = {97, 100, 58, 9, 37, 117, 10, 0};
-.global .align 1 .b8 $str9[8] = {97, 101, 58, 9, 37, 117, 10, 0};
-.global .align 1 .b8 $str10[8] = {97, 102, 58, 9, 37, 117, 10, 0};
-.global .align 1 .b8 $str11[7] = {99, 58, 9, 37, 117, 10, 0};
 
 .visible .entry fractalRenderMainFloat(
 	.param .u64 fractalRenderMainFloat_param_0,
@@ -93,7 +80,7 @@
 	cvta.global.u64 	%rd3, %rd2;
 	mov.u64 	%rd4, $str1;
 	cvta.global.u64 	%rd5, %rd4;
-	mov.u32 	%r24, 139;
+	mov.u32 	%r24, 116;
 	mov.u64 	%rd6, 0;
 	mov.u64 	%rd7, 2;
 	// Callseq Start 0
@@ -166,7 +153,7 @@ BB0_2:
 	cvta.global.u64 	%rd9, %rd8;
 	mov.u64 	%rd10, $str1;
 	cvta.global.u64 	%rd11, %rd10;
-	mov.u32 	%r47, 177;
+	mov.u32 	%r47, 158;
 	mov.u64 	%rd12, 0;
 	mov.u64 	%rd13, 2;
 	// Callseq Start 1
@@ -238,14 +225,14 @@ BB0_10:
 	mov.f32 	%f8, %f66;
 	mul.f32 	%f9, %f65, %f65;
 	mul.f32 	%f10, %f8, %f8;
-	add.f32 	%f29, %f9, %f10;
+	add.f32 	%f29, %f10, %f9;
 	setp.geu.f32	%p10, %f29, 0f40800000;
 	@%p10 bra 	BB0_12;
 
 	sub.f32 	%f30, %f10, %f9;
 	add.f32 	%f66, %f5, %f30;
 	add.f32 	%f31, %f8, %f8;
-	fma.rn.f32 	%f65, %f65, %f31, %f6;
+	fma.rn.f32 	%f65, %f31, %f65, %f6;
 	add.s32 	%r9, %r76, 1;
 	setp.lt.u32	%p11, %r9, %r19;
 	mov.u32 	%r76, %r9;
@@ -410,7 +397,7 @@ BB0_18:
 	cvta.global.u64 	%rd3, %rd2;
 	mov.u64 	%rd4, $str1;
 	cvta.global.u64 	%rd5, %rd4;
-	mov.u32 	%r24, 139;
+	mov.u32 	%r24, 116;
 	mov.u64 	%rd6, 0;
 	mov.u64 	%rd7, 2;
 	// Callseq Start 2
@@ -483,7 +470,7 @@ BB1_2:
 	cvta.global.u64 	%rd9, %rd8;
 	mov.u64 	%rd10, $str1;
 	cvta.global.u64 	%rd11, %rd10;
-	mov.u32 	%r47, 177;
+	mov.u32 	%r47, 158;
 	mov.u64 	%rd12, 0;
 	mov.u64 	%rd13, 2;
 	// Callseq Start 3
@@ -555,14 +542,14 @@ BB1_10:
 	mov.f64 	%fd8, %fd35;
 	mul.f64 	%fd9, %fd34, %fd34;
 	mul.f64 	%fd10, %fd8, %fd8;
-	add.f64 	%fd29, %fd9, %fd10;
+	add.f64 	%fd29, %fd10, %fd9;
 	setp.geu.f64	%p10, %fd29, 0d4010000000000000;
 	@%p10 bra 	BB1_12;
 
 	sub.f64 	%fd30, %fd10, %fd9;
 	add.f64 	%fd35, %fd5, %fd30;
 	add.f64 	%fd31, %fd8, %fd8;
-	fma.rn.f64 	%fd34, %fd34, %fd31, %fd6;
+	fma.rn.f64 	%fd34, %fd31, %fd34, %fd6;
 	add.s32 	%r9, %r76, 1;
 	setp.lt.u32	%p11, %r9, %r19;
 	mov.u32 	%r76, %r9;
@@ -762,7 +749,7 @@ BB2_6:
 	cvta.global.u64 	%rd15, %rd14;
 	mov.u64 	%rd16, $str1;
 	cvta.global.u64 	%rd17, %rd16;
-	mov.u32 	%r29, 276;
+	mov.u32 	%r29, 257;
 	mov.u64 	%rd18, 0;
 	mov.u64 	%rd19, 2;
 	// Callseq Start 4
@@ -832,7 +819,7 @@ BB2_9:
 	.reg .pred 	%p<10>;
 	.reg .f32 	%f<29>;
 	.reg .b32 	%r<44>;
-	.reg .b64 	%rd<8>;
+	.reg .b64 	%rd<7>;
 
 
 	ld.param.u64 	%rd3, [fractalRenderUnderSampled_param_0];
@@ -883,17 +870,17 @@ BB2_9:
 BB4_2:
 	mov.u32 	%r37, %r39;
 	mov.u32 	%r38, %r37;
-	mov.f32 	%f4, %f28;
-	mul.f32 	%f5, %f27, %f27;
-	mul.f32 	%f6, %f4, %f4;
+	mov.f32 	%f3, %f27;
+	mul.f32 	%f5, %f28, %f28;
+	mul.f32 	%f6, %f3, %f3;
 	add.f32 	%f24, %f5, %f6;
 	setp.geu.f32	%p5, %f24, 0f40800000;
 	@%p5 bra 	BB4_4;
 
 	sub.f32 	%f25, %f6, %f5;
-	add.f32 	%f28, %f1, %f25;
-	add.f32 	%f26, %f4, %f4;
-	fma.rn.f32 	%f27, %f27, %f26, %f2;
+	add.f32 	%f27, %f1, %f25;
+	add.f32 	%f26, %f3, %f3;
+	fma.rn.f32 	%f28, %f28, %f26, %f2;
 	add.s32 	%r39, %r38, 1;
 	setp.lt.u32	%p6, %r39, %r18;
 	mov.u32 	%r38, %r39;
@@ -904,26 +891,25 @@ BB4_4:
 	@%p7 bra 	BB4_9;
 
 	cvta.to.global.u64 	%rd1, %rd3;
-	mul.lo.s32 	%r33, %r19, %r15;
-	mul.lo.s32 	%r8, %r33, %r25;
+	mul.lo.s32 	%r8, %r19, %r25;
 	mov.u32 	%r30, 0;
 	mov.u32 	%r43, %r30;
 
 BB4_6:
-	add.s32 	%r35, %r43, %r1;
-	cvt.u64.u32	%rd2, %r35;
+	add.s32 	%r34, %r43, %r1;
+	mul.lo.s32 	%r35, %r34, %r15;
+	cvt.u64.u32	%rd4, %r35;
+	add.s64 	%rd2, %rd1, %rd4;
 	mov.u32 	%r40, %r8;
 	mov.u32 	%r42, %r30;
 
 BB4_7:
 	mov.u32 	%r11, %r42;
 	mov.u32 	%r10, %r40;
-	cvt.u64.u32	%rd4, %r10;
-	add.s64 	%rd5, %rd1, %rd4;
-	shl.b64 	%rd6, %rd2, 2;
-	add.s64 	%rd7, %rd5, %rd6;
-	st.global.u32 	[%rd7], %r38;
-	add.s32 	%r12, %r10, %r15;
+	mul.wide.u32 	%rd5, %r10, 4;
+	add.s64 	%rd6, %rd2, %rd5;
+	st.global.u32 	[%rd6], %r38;
+	add.s32 	%r12, %r10, 1;
 	add.s32 	%r13, %r11, 1;
 	setp.lt.u32	%p8, %r13, %r19;
 	mov.u32 	%r40, %r12;
@@ -944,198 +930,9 @@ BB4_9:
 	.param .u32 debug_param_1
 )
 {
-	.local .align 8 .b8 	__local_depot5[8];
-	.reg .b64 	%SP;
-	.reg .b64 	%SPL;
-	.reg .pred 	%p<4>;
-	.reg .b32 	%r<25>;
-	.reg .b64 	%rd<18>;
 
 
-	mov.u64 	%rd17, __local_depot5;
-	cvta.local.u64 	%SP, %rd17;
-	ld.param.u32 	%r6, [debug_param_0+20];
-	ld.param.u32 	%r5, [debug_param_0+16];
-	ld.param.u32 	%r4, [debug_param_0+12];
-	ld.param.u32 	%r3, [debug_param_0+8];
-	ld.param.u32 	%r2, [debug_param_0+4];
-	ld.param.u32 	%r1, [debug_param_0];
-	ld.param.u32 	%r7, [debug_param_1];
-	mov.u32 	%r8, %ctaid.x;
-	mov.u32 	%r9, %ntid.x;
-	mul.lo.s32 	%r10, %r8, %r9;
-	mov.u32 	%r11, %ctaid.y;
-	mov.u32 	%r12, %ntid.y;
-	mul.lo.s32 	%r13, %r11, %r12;
-	mov.u32 	%r14, %tid.x;
-	neg.s32 	%r15, %r14;
-	setp.eq.s32	%p1, %r10, %r15;
-	mov.u32 	%r16, %tid.y;
-	neg.s32 	%r17, %r16;
-	setp.eq.s32	%p2, %r13, %r17;
-	and.pred  	%p3, %p1, %p2;
-	@!%p3 bra 	BB5_2;
-	bra.uni 	BB5_1;
 
-BB5_1:
-	add.u64 	%rd1, %SP, 0;
-	cvta.to.local.u64 	%rd2, %rd1;
-	st.local.u32 	[%rd2], %r1;
-	mov.u64 	%rd3, $str5;
-	cvta.global.u64 	%rd4, %rd3;
-	// Callseq Start 5
-	{
-	.reg .b32 temp_param_reg;
-	// <end>}
-	.param .b64 param0;
-	st.param.b64	[param0+0], %rd4;
-	.param .b64 param1;
-	st.param.b64	[param1+0], %rd1;
-	.param .b32 retval0;
-	call.uni (retval0), 
-	vprintf, 
-	(
-	param0, 
-	param1
-	);
-	ld.param.b32	%r18, [retval0+0];
-	
-	//{
-	}// Callseq End 5
-	st.local.u32 	[%rd2], %r2;
-	mov.u64 	%rd5, $str6;
-	cvta.global.u64 	%rd6, %rd5;
-	// Callseq Start 6
-	{
-	.reg .b32 temp_param_reg;
-	// <end>}
-	.param .b64 param0;
-	st.param.b64	[param0+0], %rd6;
-	.param .b64 param1;
-	st.param.b64	[param1+0], %rd1;
-	.param .b32 retval0;
-	call.uni (retval0), 
-	vprintf, 
-	(
-	param0, 
-	param1
-	);
-	ld.param.b32	%r19, [retval0+0];
-	
-	//{
-	}// Callseq End 6
-	st.local.u32 	[%rd2], %r3;
-	mov.u64 	%rd7, $str7;
-	cvta.global.u64 	%rd8, %rd7;
-	// Callseq Start 7
-	{
-	.reg .b32 temp_param_reg;
-	// <end>}
-	.param .b64 param0;
-	st.param.b64	[param0+0], %rd8;
-	.param .b64 param1;
-	st.param.b64	[param1+0], %rd1;
-	.param .b32 retval0;
-	call.uni (retval0), 
-	vprintf, 
-	(
-	param0, 
-	param1
-	);
-	ld.param.b32	%r20, [retval0+0];
-	
-	//{
-	}// Callseq End 7
-	st.local.u32 	[%rd2], %r4;
-	mov.u64 	%rd9, $str8;
-	cvta.global.u64 	%rd10, %rd9;
-	// Callseq Start 8
-	{
-	.reg .b32 temp_param_reg;
-	// <end>}
-	.param .b64 param0;
-	st.param.b64	[param0+0], %rd10;
-	.param .b64 param1;
-	st.param.b64	[param1+0], %rd1;
-	.param .b32 retval0;
-	call.uni (retval0), 
-	vprintf, 
-	(
-	param0, 
-	param1
-	);
-	ld.param.b32	%r21, [retval0+0];
-	
-	//{
-	}// Callseq End 8
-	st.local.u32 	[%rd2], %r5;
-	mov.u64 	%rd11, $str9;
-	cvta.global.u64 	%rd12, %rd11;
-	// Callseq Start 9
-	{
-	.reg .b32 temp_param_reg;
-	// <end>}
-	.param .b64 param0;
-	st.param.b64	[param0+0], %rd12;
-	.param .b64 param1;
-	st.param.b64	[param1+0], %rd1;
-	.param .b32 retval0;
-	call.uni (retval0), 
-	vprintf, 
-	(
-	param0, 
-	param1
-	);
-	ld.param.b32	%r22, [retval0+0];
-	
-	//{
-	}// Callseq End 9
-	st.local.u32 	[%rd2], %r6;
-	mov.u64 	%rd13, $str10;
-	cvta.global.u64 	%rd14, %rd13;
-	// Callseq Start 10
-	{
-	.reg .b32 temp_param_reg;
-	// <end>}
-	.param .b64 param0;
-	st.param.b64	[param0+0], %rd14;
-	.param .b64 param1;
-	st.param.b64	[param1+0], %rd1;
-	.param .b32 retval0;
-	call.uni (retval0), 
-	vprintf, 
-	(
-	param0, 
-	param1
-	);
-	ld.param.b32	%r23, [retval0+0];
-	
-	//{
-	}// Callseq End 10
-	st.local.u32 	[%rd2], %r7;
-	mov.u64 	%rd15, $str11;
-	cvta.global.u64 	%rd16, %rd15;
-	// Callseq Start 11
-	{
-	.reg .b32 temp_param_reg;
-	// <end>}
-	.param .b64 param0;
-	st.param.b64	[param0+0], %rd16;
-	.param .b64 param1;
-	st.param.b64	[param1+0], %rd1;
-	.param .b32 retval0;
-	call.uni (retval0), 
-	vprintf, 
-	(
-	param0, 
-	param1
-	);
-	ld.param.b32	%r24, [retval0+0];
-	
-	//{
-	}// Callseq End 11
-
-BB5_2:
 	ret;
 }
 
@@ -1147,6 +944,190 @@ BB5_2:
 
 
 
+	ret;
+}
+
+	// .globl	fractalRenderReuseSamples
+.visible .entry fractalRenderReuseSamples(
+	.param .u64 fractalRenderReuseSamples_param_0,
+	.param .u32 fractalRenderReuseSamples_param_1,
+	.param .u32 fractalRenderReuseSamples_param_2,
+	.param .u32 fractalRenderReuseSamples_param_3,
+	.param .f32 fractalRenderReuseSamples_param_4,
+	.param .f32 fractalRenderReuseSamples_param_5,
+	.param .f32 fractalRenderReuseSamples_param_6,
+	.param .f32 fractalRenderReuseSamples_param_7,
+	.param .u32 fractalRenderReuseSamples_param_8,
+	.param .f32 fractalRenderReuseSamples_param_9,
+	.param .f32 fractalRenderReuseSamples_param_10,
+	.param .f32 fractalRenderReuseSamples_param_11,
+	.param .f32 fractalRenderReuseSamples_param_12,
+	.param .u64 fractalRenderReuseSamples_param_13,
+	.param .u32 fractalRenderReuseSamples_param_14
+)
+{
+	.reg .pred 	%p<12>;
+	.reg .f32 	%f<43>;
+	.reg .b32 	%r<41>;
+	.reg .b64 	%rd<19>;
+
+
+	ld.param.u64 	%rd3, [fractalRenderReuseSamples_param_0];
+	ld.param.u32 	%r7, [fractalRenderReuseSamples_param_1];
+	ld.param.u32 	%r8, [fractalRenderReuseSamples_param_2];
+	ld.param.u32 	%r9, [fractalRenderReuseSamples_param_3];
+	ld.param.f32 	%f9, [fractalRenderReuseSamples_param_4];
+	ld.param.f32 	%f10, [fractalRenderReuseSamples_param_5];
+	ld.param.f32 	%f11, [fractalRenderReuseSamples_param_6];
+	ld.param.f32 	%f12, [fractalRenderReuseSamples_param_7];
+	ld.param.f32 	%f13, [fractalRenderReuseSamples_param_9];
+	ld.param.f32 	%f14, [fractalRenderReuseSamples_param_10];
+	ld.param.f32 	%f15, [fractalRenderReuseSamples_param_11];
+	ld.param.f32 	%f16, [fractalRenderReuseSamples_param_12];
+	ld.param.u64 	%rd4, [fractalRenderReuseSamples_param_13];
+	ld.param.u32 	%r10, [fractalRenderReuseSamples_param_14];
+	mov.u32 	%r1, %ntid.x;
+	setp.eq.s32	%p1, %r1, 32;
+	@%p1 bra 	BB7_2;
+
+	mov.u64 	%rd5, $str;
+	cvta.global.u64 	%rd6, %rd5;
+	mov.u64 	%rd7, $str1;
+	cvta.global.u64 	%rd8, %rd7;
+	mov.u32 	%r11, 116;
+	mov.u64 	%rd9, 0;
+	mov.u64 	%rd10, 2;
+	// Callseq Start 5
+	{
+	.reg .b32 temp_param_reg;
+	// <end>}
+	.param .b64 param0;
+	st.param.b64	[param0+0], %rd6;
+	.param .b64 param1;
+	st.param.b64	[param1+0], %rd8;
+	.param .b32 param2;
+	st.param.b32	[param2+0], %r11;
+	.param .b64 param3;
+	st.param.b64	[param3+0], %rd9;
+	.param .b64 param4;
+	st.param.b64	[param4+0], %rd10;
+	call.uni 
+	__assertfail, 
+	(
+	param0, 
+	param1, 
+	param2, 
+	param3, 
+	param4
+	);
+	
+	//{
+	}// Callseq End 5
+
+BB7_2:
+	mov.u32 	%r12, %tid.x;
+	mov.u32 	%r13, %tid.y;
+	mad.lo.s32 	%r14, %r1, %r13, %r12;
+	shl.b32 	%r15, %r1, 2;
+	neg.s32 	%r16, %r14;
+	and.b32  	%r17, %r16, 15;
+	rem.u32 	%r18, %r14, %r15;
+	add.s32 	%r19, %r18, %r17;
+	shr.u32 	%r20, %r19, 2;
+	and.b32  	%r21, %r14, 3;
+	add.s32 	%r22, %r20, %r21;
+	div.u32 	%r23, %r14, %r15;
+	shl.b32 	%r24, %r23, 2;
+	bfe.u32 	%r25, %r14, 2, 2;
+	add.s32 	%r26, %r24, %r25;
+	mov.u32 	%r27, %ctaid.x;
+	mad.lo.s32 	%r2, %r27, %r1, %r22;
+	mov.u32 	%r28, %ctaid.y;
+	mov.u32 	%r29, %ntid.y;
+	mad.lo.s32 	%r3, %r28, %r29, %r26;
+	setp.lt.u32	%p2, %r2, %r8;
+	setp.lt.u32	%p3, %r3, %r9;
+	and.pred  	%p4, %p2, %p3;
+	@!%p4 bra 	BB7_10;
+	bra.uni 	BB7_3;
+
+BB7_3:
+	cvt.rn.f32.u32	%f17, %r2;
+	sub.f32 	%f18, %f15, %f13;
+	sub.f32 	%f19, %f11, %f9;
+	div.rn.f32 	%f20, %f19, %f18;
+	sub.f32 	%f21, %f16, %f14;
+	sub.f32 	%f22, %f12, %f10;
+	div.rn.f32 	%f23, %f22, %f21;
+	sub.f32 	%f24, %f9, %f13;
+	div.rn.f32 	%f25, %f24, %f19;
+	sub.f32 	%f26, %f16, %f12;
+	div.rn.f32 	%f27, %f26, %f22;
+	cvt.rn.f32.u32	%f28, %r8;
+	mul.f32 	%f29, %f28, %f25;
+	cvt.rn.f32.u32	%f30, %r9;
+	mul.f32 	%f31, %f30, %f27;
+	cvt.rn.f32.u32	%f32, %r3;
+	fma.rn.f32 	%f1, %f17, %f20, %f29;
+	fma.rn.f32 	%f2, %f32, %f23, %f31;
+	abs.f32 	%f33, %f1;
+	mov.b32 	 %r30, %f1;
+	and.b32  	%r31, %r30, -2147483648;
+	or.b32  	%r32, %r31, 1056964608;
+	mov.b32 	 %f34, %r32;
+	add.f32 	%f35, %f1, %f34;
+	cvt.rzi.f32.f32	%f36, %f35;
+	setp.gt.f32	%p5, %f33, 0f4B000000;
+	selp.f32	%f41, %f1, %f36, %p5;
+	setp.geu.f32	%p6, %f33, 0f3F000000;
+	@%p6 bra 	BB7_5;
+
+	cvt.rzi.f32.f32	%f41, %f1;
+
+BB7_5:
+	cvt.rzi.s32.f32	%r4, %f41;
+	mov.b32 	 %r33, %f2;
+	and.b32  	%r34, %r33, -2147483648;
+	or.b32  	%r35, %r34, 1056964608;
+	mov.b32 	 %f37, %r35;
+	add.f32 	%f38, %f2, %f37;
+	cvt.rzi.f32.f32	%f39, %f38;
+	abs.f32 	%f40, %f2;
+	setp.gt.f32	%p7, %f40, 0f4B000000;
+	selp.f32	%f42, %f2, %f39, %p7;
+	setp.geu.f32	%p8, %f40, 0f3F000000;
+	@%p8 bra 	BB7_7;
+
+	cvt.rzi.f32.f32	%f42, %f2;
+
+BB7_7:
+	cvt.rzi.s32.f32	%r37, %f42;
+	mul.lo.s32 	%r38, %r37, %r10;
+	cvt.u64.u32	%rd11, %r38;
+	cvta.to.global.u64 	%rd12, %rd4;
+	add.s64 	%rd13, %rd12, %rd11;
+	mul.wide.u32 	%rd14, %r4, 4;
+	add.s64 	%rd1, %rd13, %rd14;
+	mul.lo.s32 	%r39, %r3, %r7;
+	cvt.u64.u32	%rd15, %r39;
+	cvta.to.global.u64 	%rd16, %rd3;
+	add.s64 	%rd17, %rd16, %rd15;
+	mul.wide.u32 	%rd18, %r2, 4;
+	add.s64 	%rd2, %rd17, %rd18;
+	setp.lt.u32	%p9, %r37, %r9;
+	setp.lt.u32	%p10, %r4, %r8;
+	and.pred  	%p11, %p10, %p9;
+	mov.u32 	%r40, 404;
+	@!%p11 bra 	BB7_9;
+	bra.uni 	BB7_8;
+
+BB7_8:
+	ld.global.u32 	%r40, [%rd1];
+
+BB7_9:
+	st.global.u32 	[%rd2], %r40;
+
+BB7_10:
 	ret;
 }
 

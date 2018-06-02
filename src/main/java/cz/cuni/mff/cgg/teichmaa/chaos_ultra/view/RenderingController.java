@@ -49,6 +49,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
 
     private int outputTextureGLhandle;
     private int paletteTextureGLhandle;
+    private int paletteTextureLength;
     private FractalRenderer fractalRenderer;
     private GLCanvas target;
     private ControllerFX controllerFX;
@@ -122,7 +123,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         } else if (SwingUtilities.isLeftMouseButton(e)) {
             //currentMode.startMoving();
             //animator.start();
-        } else if (SwingUtilities.isMiddleMouseButton(e)){
+        } else if (SwingUtilities.isMiddleMouseButton(e)) {
             currentMode.startZooming(false);
             animator.start();
         }
@@ -138,7 +139,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
             currentMode.stopMoving();
             renderInFuture.start();
         }
-        if ((SwingUtilities.isRightMouseButton(e) || SwingUtilities.isMiddleMouseButton(e) ) && currentMode.isZooming()) {
+        if ((SwingUtilities.isRightMouseButton(e) || SwingUtilities.isMiddleMouseButton(e)) && currentMode.isZooming()) {
             currentMode.stopZooming();
             renderInFuture.start();
         }
@@ -207,20 +208,22 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         int[] GLHandles = new int[2];
         gl.glGenTextures(GLHandles.length, GLHandles, 0);
         outputTextureGLhandle = GLHandles[0];
-        paletteTextureGLhandle = GLHandles[1];
         registerOutputTexture(gl);
-        Buffer colorPalette = IntBuffer.wrap(ImageHelpers.createColorPalette());
-        gl.glBindTexture(GL_TEXTURE_2D, paletteTextureGLhandle);
+        paletteTextureGLhandle = GLHandles[1];
         {
-            gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            gl.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, colorPalette.limit(), 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, colorPalette);
+            Buffer colorPalette = IntBuffer.wrap(ImageHelpers.createColorPalette());
+            paletteTextureLength = colorPalette.limit();
+            gl.glBindTexture(GL_TEXTURE_2D, paletteTextureGLhandle);
+            {
+                gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                gl.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, colorPalette.limit(), 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, colorPalette);
+            }
+            gl.glBindTexture(GL_TEXTURE_2D, 0);
         }
-        gl.glBindTexture(GL_TEXTURE_2D, 0);
 
         fractalRenderer = new FractalRenderer(new ModuleMandelbrot(),
-                outputTextureGLhandle, GL_TEXTURE_2D, paletteTextureGLhandle, GL_TEXTURE_2D, colorPalette.limit());
-
+                outputTextureGLhandle, GL_TEXTURE_2D, paletteTextureGLhandle, GL_TEXTURE_2D, paletteTextureLength);
         Platform.runLater(controllerFX::showDefaultView);
 
         fractalRenderer.launchDebugKernel();
@@ -258,7 +261,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
             return;
         }
 
-        if (currentMode.isZooming()){
+        if (currentMode.isZooming()) {
             zoomAt(lastMousePosition, currentMode.getZoomingDirection());
         }
 
@@ -286,7 +289,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
 
     private void updateQuality() {
         if (!useAutomaticQuality) return;
-        if(currentMode.isWaiting() && currentMode.wasProgressiveRendering()){
+        if (currentMode.isWaiting() && currentMode.wasProgressiveRendering()) {
             fractalRenderer.setSuperSamplingLevel(10);
             return;
         }
@@ -327,12 +330,17 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     }
 
     private void render(final GL2 gl) {
-        if (currentMode.wasProgressiveRendering())
-            fractalRenderer.launchQualityKernel();
-        else
-            if(lastMousePosition != null)
-                fractalRenderer.launchFastKernel(lastMousePosition.getX(), lastMousePosition.getY());
+//        if (currentMode.wasProgressiveRendering())
+//            fractalRenderer.launchQualityKernel();
+//        else
+//            if(lastMousePosition != null)
+//                fractalRenderer.launchFastKernel(lastMousePosition.getX(), lastMousePosition.getY());
         //fractalRenderer.launchQualityKernel();
+        if (reuseSamples) {
+            fractalRenderer.launchReuseSamplesKernel();
+        } else {
+            fractalRenderer.launchQualityKernel();
+        }
 
         gl.glMatrixMode(GL_MODELVIEW);
         //gl.glPushMatrix();
@@ -448,4 +456,12 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         ImageHelpers.createImage(data, width_t, height_t, saveImageFileName, saveImageFormat);
         System.out.println("Image saved to " + saveImageFileName);
     }
+
+    private boolean reuseSamples = false;
+
+    public void switchReuseMode() {
+        reuseSamples = !reuseSamples;
+        this.repaint();
+    }
+
 }

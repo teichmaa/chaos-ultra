@@ -130,40 +130,49 @@ public class ControllerFX implements Initializable {
         dwell.setText("1400");
         useAdaptiveSS.setSelected(false);
         superSamplingLevel.setText("5");
-        useAutomaticQuality.setSelected(true);
+        useAutomaticQuality.setSelected(false);
         render();
     }
 
-    public void sample0Clicked(ActionEvent actionEvent) {
+    public void example0Clicked(ActionEvent actionEvent) {
         showDefaultView();
     }
 
-    public void sample1Clicked(ActionEvent actionEvent) {
+    public void example1Clicked(ActionEvent actionEvent) {
         center_x.setText("-0.748");
         center_y.setText("0.1");
         zoom.setText("0.0014");
         renderClicked(actionEvent);
     }
 
-    public void sample2Clicked(ActionEvent actionEvent) {
+    public void example2Clicked(ActionEvent actionEvent) {
         center_x.setText("-0.235125");
         center_y.setText("0.827215");
         zoom.setText("4.0E-5");
         renderClicked(actionEvent);
     }
 
-    public void sample3Clicked(ActionEvent actionEvent) {
+    public void example3Clicked(ActionEvent actionEvent) {
         center_x.setText("-0.925");
         center_y.setText("0.266");
         zoom.setText("0.032");
         renderClicked(actionEvent);
     }
-    public void sample4Clicked(ActionEvent actionEvent) {
+    public void example4Clicked(ActionEvent actionEvent) {
         center_x.setText("-0.57675236");
         center_y.setText("0.4625193");
         zoom.setText("0.029995363");
         superSamplingLevel.setText("32");
         useAdaptiveSS.setSelected(false);
+        renderClicked(actionEvent);
+    }
+    public void example5Clicked(ActionEvent actionEvent) {
+        center_x.setText("-0.551042868375875");
+        center_y.setText("0.62714332109057");
+        zoom.setText("8.00592947491907E-09");
+        superSamplingLevel.setText("8");
+        useAdaptiveSS.setSelected(false);
+        setDwell(3000);
         renderClicked(actionEvent);
     }
 
@@ -207,5 +216,13 @@ public class ControllerFX implements Initializable {
 
     public void setDimensions(int width, int height) {
         dimensions.setText("" + width + " x " + height);
+    }
+
+    public void debugButton1Clicked(ActionEvent actionEvent) {
+        renderingController.switchReuseMode();
+    }
+
+    public void debugButton2Clicked(ActionEvent actionEvent) {
+
     }
 }

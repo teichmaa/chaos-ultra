@@ -16,7 +16,7 @@ class RenderingModeFSM {
         ProgressiveRendering;
     }
 
-    static final int MAX_PROGRESSIVE_RENDERING_LEVEL = 6;
+    static final int MAX_PROGRESSIVE_RENDERING_LEVEL = 0;//6
 
     @Override
     public String toString() {
@@ -45,7 +45,7 @@ class RenderingModeFSM {
                 ) {
             newValue = ProgressiveRendering;
             PRlvl = 0;
-        } else if (current == ProgressiveRendering && PRlvl == MAX_PROGRESSIVE_RENDERING_LEVEL)
+        } else if (current == ProgressiveRendering && PRlvl >= MAX_PROGRESSIVE_RENDERING_LEVEL)
             newValue = Waiting;
         //default: do nothing
         last = current;

@@ -1,5 +1,4 @@
 <?import javafx.geometry.Insets?>
-<?import javafx.scene.layout.GridPane?>
 
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
@@ -8,7 +7,6 @@
 <?import javafx.scene.control.TextField?>
 <?import javafx.embed.swing.SwingNode?>
 <?import javafx.scene.control.CheckBox?>
-<?import javafx.scene.layout.Pane?>
 <HBox fx:controller="cz.cuni.mff.cgg.teichmaa.chaos_ultra.view.ControllerFX"
       xmlns:fx="http://javafx.com/fxml">
         <SwingNode fx:id="swingNode" HBox.hgrow="ALWAYS">
@@ -113,11 +111,12 @@
             Premade views:
         </Label>
 
-        <Button text="default view" onAction="#sample0Clicked"/>
-        <Button text="sample1" onAction="#sample1Clicked"/>
-        <Button text="sample2" onAction="#sample2Clicked"/>
-        <Button text="sample3" onAction="#sample3Clicked"/>
-        <Button text="sample4" onAction="#sample4Clicked"/>
+        <Button text="default view" onAction="#example0Clicked"/>
+        <Button text="example1" onAction="#example1Clicked"/>
+        <Button text="example2" onAction="#example2Clicked"/>
+        <Button text="example3" onAction="#example3Clicked"/>
+        <Button text="example4" onAction="#example4Clicked"/>
+        <Button text="example5" onAction="#example5Clicked"/>
         <Label>
             <padding>
                 <Insets top="25" right="5" bottom="5" left="5"/>
@@ -125,6 +124,8 @@
             Other functions:
         </Label>
         <Button text="save as image" onAction="#saveImageClicked"/>
+        <Button text="debugButton1: toggle sample reusal" onAction="#debugButton1Clicked"/>
+        <Button text="debugButton2: empty" onAction="#debugButton2Clicked"/>
 
     </VBox>
 

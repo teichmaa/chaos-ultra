@@ -1,10 +1,11 @@
 #include <cuda_runtime_api.h>
 #include "math.h"
 #include "point.hpp"
+#include "float.h"
 
 typedef unsigned int uint;
-using Pointf = Point2D<float>;
-using Point = Point2D<uint>;
+using Pointf = Point<float>;
+using Pointi = Point<uint>;
 
 const uint MAX_SS_LEVEL = 256;
 
@@ -58,9 +59,8 @@ typedef struct color{
 //    x ... for real part (corresponding to geometric x-axis)
 //    y ... for imag part (corresponding to geometric y-axis)
 
-/*
-template <class Real> __device__ __forceinline__ uint escape(uint dwell, Pointf c){
-  Pointf z(0,0);
+template <class Real> __device__ __forceinline__ uint escape(uint dwell, Point<Real> c){
+  Point<Real> z(0,0);
   Real zx_new;
   uint i = 0;
   while(i < dwell && z.x*z.x+z.y*z.y < 4){
@@ -70,21 +70,8 @@ template <class Real> __device__ __forceinline__ uint escape(uint dwell, Pointf 
       ++i;
   }
   return i;
-}*/
-
-template <class Real> __device__ __forceinline__ uint escape(uint dwell, Real cx, Real cy){
-  Real zx = 0;
-  Real zy = 0;
-  Real zx_new;
-  uint i = 0;
-  while(i < dwell && zx*zx+zy*zy < 4){
-      zx_new = zx*zx-zy*zy + cx;
-      zy = 2*zx*zy + cy; 
-      zx = zx_new;
-      ++i;
-  }
-  return i;
 }
+
 
 /// Dispersion in this context is "Index of dispersion", aka variance-to-mean ratio. See https://en.wikipedia.org/wiki/Index_of_dispersion for more details
 __device__  __forceinline__ float computeDispersion(uint* data, uint dataLength, float mean){
@@ -98,17 +85,6 @@ __device__  __forceinline__ float computeDispersion(uint* data, uint dataLength,
   return variance / mean;
 }
 
-__device__ void printParams_debug(cudaSurfaceObject_t surfaceOutput, long outputDataPitch_debug, uint width, uint height, float left_bottom_x, float left_bottom_y, float right_top_x, float right_top_y, uint dwell, uint** outputData_debug, cudaSurfaceObject_t colorPalette, uint paletteLength, float* randomSamples, uint superSamplingLevel, bool adaptiveSS, bool visualiseSS){
-  const uint idx_x = blockDim.x * blockIdx.x + threadIdx.x;
-  const uint idx_y = blockDim.y * blockIdx.y + threadIdx.y;
-  if(idx_x != 0 || idx_y != 0)
-    return;
-  printf("\n");
-  printf("width:\t%u\n",width);
-  printf("height:\t%u\n",height);
-  printf("dwell:\t%u\n",dwell);
-  printf("SS lvl:\t%u\n",superSamplingLevel);
-}
 
 __device__ __forceinline__ bool isWithinRadius(uint idx_x, uint idx_y, uint width, uint height, uint radius, uint focus_x, uint focus_y){
   if(__sad(idx_x, focus_x, 0) > radius / 2) return false;
@@ -130,9 +106,10 @@ __device__ __forceinline__ uint simpleRandom(uint val){
     return seed;
 }
 
-  /// Computes indexes to acces 2D array, based on threadIdx and blockIdx.
+  /// Computes indexes to a per-pixel acces of a 2D image, based on threadIdx and blockIdx.
   /// Morover, threads in a warp will be arranged in a rectangle (rather than in single line as with the naive implementation).
-__device__ const Point2D<uint> getImageIndexes(){
+  /// The caller should always check if the returned value exceeded image width and height.
+__device__ const Point<uint> getImageIndexes(){
   const uint threadID = threadIdx.x + threadIdx.y * blockDim.x;
   const uint warpWidth = 4; //user defined constant, representing desired width of the recatangular warp (2,4,8 are only reasonable values for the following formula)
   const uint blockWidth = blockDim.x * warpWidth;
@@ -148,7 +125,11 @@ __device__ const Point2D<uint> getImageIndexes(){
   //     printf("%u\t%u\t%u\t%u\t%u\n", threadIdx.x, threadIdx.y, threadID ,dx, dy);
   //   }
   // }
-  return Point2D<uint>(idx_x, idx_y);
+  return Point<uint>(idx_x, idx_y);
+}
+
+__device__ __forceinline__  uint* getPtrToPixel(uint** array2D, long pitch, uint x, uint y){
+  return (((uint*)((char*)array2D + y * pitch)) + x);
 }
 
 template <class Real> __device__ __forceinline__ void fractalRenderMain(uint** output, long outputPitch, uint width, uint height, Real left_bottom_x, Real left_bottom_y, Real right_top_x, Real right_top_y, uint dwell, uint superSamplingLevel, bool adaptiveSS, bool visualiseSS, float* randomSamples, uint renderRadius, uint focus_x, uint focus_y, bool isDoublePrecision)
@@ -156,7 +137,7 @@ template <class Real> __device__ __forceinline__ void fractalRenderMain(uint** o
 //  todo ma to fakt hodne pointeru, mnoho z nich je pritom pro vsechny launche stejny - nezdrzuje tohle? omezene registry a tak
 {
   //TODO vypada to, ze tenhle kernel dela neco spatne v levem krajnim sloupci (asi v nultem warpu?)
-  const Point idx = getImageIndexes();
+  const Pointi idx = getImageIndexes();
   if(idx.x >= width || idx.y >= height) return;
   // if(idx.x == 0 && idx.y == 0){
   //   printf();
@@ -183,7 +164,7 @@ template <class Real> __device__ __forceinline__ void fractalRenderMain(uint** o
     Real cx = left_bottom_x + (idx.x + random_xd)  * pixelWidth;
     Real cy = right_top_y - (idx.y + random_yd) * pixelHeight;
 
-    uint escapeTime = escape(dwell, cx, cy);
+    uint escapeTime = escape(dwell, Point<Real>(cx, cy));
     escapeTimeSum += escapeTime;
     if(i < adaptiveTreshold){
       r[i] = escapeTime;
@@ -212,7 +193,7 @@ template <class Real> __device__ __forceinline__ void fractalRenderMain(uint** o
       printf("\n");
   }*/
 
-  uint* pOutput = ((uint*)((char*)output + idx.y * outputPitch)) + idx.x;
+  uint* pOutput = getPtrToPixel(output, outputPitch, idx.x, idx.y);
   *pOutput = mean;
 }
 
@@ -300,12 +281,12 @@ __global__ void fractalRenderUnderSampled(uint** output, long outputPitch, uint 
   float cx = left_bottom_x + (idx_x)  * pixelWidth;
   float cy = right_top_y - (idx_y) * pixelHeight;
 
-  uint escapeTime = escape<float>(dwell, cx, cy);
+  uint escapeTime = escape(dwell, Pointf(cx, cy));
 
   for(uint x = 0; x < underSamplingLevel; x++){
     for(uint y = 0; y < underSamplingLevel; y++){
       //surf2Dwrite(resultColor, surfaceOutput, (idx_x + x) * sizeof(unsigned uint), (idx_y+y));
-      uint* pOutput = ((uint*)((char*)output + (idx_y+y) * outputPitch)) + (idx_x+x);
+      uint* pOutput = getPtrToPixel(output, outputPitch, idx_y+y, idx_x+x);
       *pOutput = escapeTime;
     }
   }
@@ -326,17 +307,75 @@ __global__ void debug(big a, uint c){
   const uint idx_x = blockDim.x * blockIdx.x + threadIdx.x;
   const uint idx_y = blockDim.y * blockIdx.y + threadIdx.y;
   if(idx_x == 0 && idx_y == 0){
-    printf("aa:\t%u\n",a.a);
-    printf("ab:\t%u\n",a.b);
-    printf("ac:\t%u\n",a.c);
-    printf("ad:\t%u\n",a.d);
-    printf("ae:\t%u\n",a.e);
-    printf("af:\t%u\n",a.f);
-    printf("c:\t%u\n",c);
+    // printf("aa:\t%u\n",a.a);
+    // printf("ab:\t%u\n",a.b);
+    // printf("ac:\t%u\n",a.c);
+    // printf("ad:\t%u\n",a.d);
+    // printf("ae:\t%u\n",a.e);
+    // printf("af:\t%u\n",a.f);
+    // printf("c:\t%u\n",c);
   }
 }
 
 extern "C"
 __global__ void init(){
 
+}
+
+/// for given point <code>p</code> in the current image and given warping information, find cooridnates of the same point (=representing the same point in the fractal's complex plane) in the image being warped
+/// @param p: the point whose warping origin is being returned
+/// @param imageSize: width and height (in pixels) of current image
+/// @param left_btm_new, right_top_new: rectangle representing the part of the complex plane that is being rendered
+/// @param left_btm_orig, right_top_orig: rectangle representing the part of the complex plane that is being reused
+
+__device__ __forceinline__ Pointf getWarpingOrigin(Pointf p, Pointf imageSize, Pointf left_btm_new, Pointf right_top_new, Pointf left_btm_orig, Pointf right_top_orig){
+
+      Pointf size_new = right_top_new - left_btm_new;
+      Pointf size_orig = right_top_orig - left_btm_orig;
+      Pointf coeff = size_new / size_orig;
+
+      Pointf deltaReal;    
+      deltaReal.x = left_btm_new.x - left_btm_orig.x;
+      deltaReal.y = right_top_orig.y - right_top_new.y;
+      Pointf delta = deltaReal / size_new * imageSize;
+
+      Pointf result = (p * coeff) + delta;
+      return result;
+}
+
+extern "C"
+__global__ void fractalRenderReuseSamples(uint** output, long outputPitch, uint width, uint height, float a, float b, float c, float d, uint dwell, float p, float q, float r, float s, uint** input, long inputPitch){
+
+  const Pointi idx = getImageIndexes();
+  if(idx.x >= width || idx.y >= height) return;
+  // if(idx.x == 0 && idx.y == 0){
+  //   printf("fractalRenderReuseSamples:\n");
+  // }
+  const Pointf lb_orig = Pointf(p,q);
+  const Pointf rt_orig = Pointf(r,s);
+  const Pointf originf = getWarpingOrigin(Pointf(idx.x, idx.y),Pointf(width,height),Pointf(a,b), Pointf(c, d), lb_orig, rt_orig);
+  const Pointi origin = Pointi((int)round(originf.x), (int)round(originf.y)); //it is important to convert to int, not uint (because the value may be negative)
+
+  uint* pInput = getPtrToPixel(input, inputPitch, origin.x, origin.y);
+  uint* pOutput = getPtrToPixel(output, outputPitch, idx.x, idx.y);
+  uint result;
+  if(origin.x < 0 || origin.x >= width || origin.y < 0 || origin.y >= height)
+    result = 404;   //not-found error :)
+  else
+    result = *pInput;
+  
+  *pOutput = result;
+}
+
+
+__device__ void printParams_debug(cudaSurfaceObject_t surfaceOutput, long outputDataPitch_debug, uint width, uint height, float left_bottom_x, float left_bottom_y, float right_top_x, float right_top_y, uint dwell, uint** outputData_debug, cudaSurfaceObject_t colorPalette, uint paletteLength, float* randomSamples, uint superSamplingLevel, bool adaptiveSS, bool visualiseSS){
+  const uint idx_x = blockDim.x * blockIdx.x + threadIdx.x;
+  const uint idx_y = blockDim.y * blockIdx.y + threadIdx.y;
+  if(idx_x != 0 || idx_y != 0)
+    return;
+  printf("\n");
+  printf("width:\t%u\n",width);
+  printf("height:\t%u\n",height);
+  printf("dwell:\t%u\n",dwell);
+  printf("SS lvl:\t%u\n",superSamplingLevel);
 }

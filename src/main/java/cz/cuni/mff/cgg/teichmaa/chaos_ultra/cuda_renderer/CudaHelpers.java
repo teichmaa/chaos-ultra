@@ -4,17 +4,17 @@ import jcuda.driver.CUcontext;
 import jcuda.driver.CUdevice;
 import jcuda.driver.JCudaDriver;
 
-import static jcuda.driver.JCudaDriver.cuCtxCreate;
-import static jcuda.driver.JCudaDriver.cuDeviceGet;
-import static jcuda.driver.JCudaDriver.cuInit;
-
 public class CudaHelpers {
     private static boolean already = false;
 
     private static CUdevice dev;
+    private static CUcontext ctx;
 
-    public CUdevice getDevice() {
+    public static CUdevice getDevice() {
         return dev;
+    }
+    public static CUcontext getContext() {
+        return ctx;
     }
 
     /**
@@ -28,13 +28,15 @@ public class CudaHelpers {
         // Enable exceptions and omit all subsequent error checks:
         JCudaDriver.setExceptionsEnabled(true);
 
-        cuInit(0);
+        JCudaDriver.cuInit(0);
 
         CUdevice dev = new CUdevice();
         CUcontext ctx = new CUcontext();
-        cuDeviceGet(dev, 0);
-        cuCtxCreate(ctx, 0, dev);
+        JCudaDriver.cuDeviceGet(dev, 0);
+        JCudaDriver.cuCtxCreate(ctx, 0, dev);
 
         CudaHelpers.dev = dev;
+        CudaHelpers.ctx = ctx;
     }
+
 }
