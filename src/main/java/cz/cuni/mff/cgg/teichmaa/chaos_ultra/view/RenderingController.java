@@ -84,6 +84,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     }
 
     private MouseEvent lastMousePosition;
+    private MouseEvent lastMousePressedPosition;
 
     @Override
     public void mouseWheelMoved(MouseWheelEvent e) {
@@ -114,6 +115,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     @Override
     public void mousePressed(MouseEvent e) {
         lastMousePosition = e;
+        lastMousePressedPosition = e;
         if (SwingUtilities.isRightMouseButton(e) && SwingUtilities.isLeftMouseButton(e)) {
             currentMode.startZoomingAndMoving(true);
             animator.start();
@@ -330,17 +332,19 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     }
 
     private void render(final GL2 gl) {
-//        if (currentMode.wasProgressiveRendering())
-//            fractalRenderer.launchQualityKernel();
-//        else
-//            if(lastMousePosition != null)
-//                fractalRenderer.launchFastKernel(lastMousePosition.getX(), lastMousePosition.getY());
-        //fractalRenderer.launchQualityKernel();
-        if (reuseSamples) {
-            fractalRenderer.launchReuseSamplesKernel();
-        } else {
+        if (currentMode.wasProgressiveRendering())
             fractalRenderer.launchQualityKernel();
-        }
+        else
+            if(lastMousePosition != null && currentMode.isZooming())
+                fractalRenderer.launchFastKernel(lastMousePosition.getX(), lastMousePosition.getY());
+            else if(lastMousePressedPosition != null)
+                fractalRenderer.launchFastKernel(lastMousePressedPosition.getX(), lastMousePressedPosition.getY());
+        //fractalRenderer.launchQualityKernel();
+//        if (reuseSamples) {
+//            fractalRenderer.launchReuseSamplesKernel();
+//        } else {
+//            fractalRenderer.launchQualityKernel();
+//        }
 
         gl.glMatrixMode(GL_MODELVIEW);
         //gl.glPushMatrix();

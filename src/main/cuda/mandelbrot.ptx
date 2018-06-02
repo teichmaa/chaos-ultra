@@ -816,7 +816,7 @@ BB2_9:
 	.reg .pred 	%p<10>;
 	.reg .f32 	%f<29>;
 	.reg .b32 	%r<44>;
-	.reg .b64 	%rd<7>;
+	.reg .b64 	%rd<8>;
 
 
 	ld.param.u64 	%rd3, [fractalRenderUnderSampled_param_0];
@@ -888,25 +888,26 @@ BB4_4:
 	@%p7 bra 	BB4_9;
 
 	cvta.to.global.u64 	%rd1, %rd3;
-	mul.lo.s32 	%r8, %r19, %r25;
+	mul.lo.s32 	%r33, %r19, %r15;
+	mul.lo.s32 	%r8, %r33, %r25;
 	mov.u32 	%r30, 0;
 	mov.u32 	%r43, %r30;
 
 BB4_6:
-	add.s32 	%r34, %r43, %r1;
-	mul.lo.s32 	%r35, %r34, %r15;
-	cvt.u64.u32	%rd4, %r35;
-	add.s64 	%rd2, %rd1, %rd4;
+	add.s32 	%r35, %r43, %r1;
+	cvt.u64.u32	%rd2, %r35;
 	mov.u32 	%r40, %r8;
 	mov.u32 	%r42, %r30;
 
 BB4_7:
 	mov.u32 	%r11, %r42;
 	mov.u32 	%r10, %r40;
-	mul.wide.u32 	%rd5, %r10, 4;
-	add.s64 	%rd6, %rd2, %rd5;
-	st.global.u32 	[%rd6], %r38;
-	add.s32 	%r12, %r10, 1;
+	cvt.u64.u32	%rd4, %r10;
+	add.s64 	%rd5, %rd1, %rd4;
+	shl.b64 	%rd6, %rd2, 2;
+	add.s64 	%rd7, %rd5, %rd6;
+	st.global.u32 	[%rd7], %r38;
+	add.s32 	%r12, %r10, %r15;
 	add.s32 	%r13, %r11, 1;
 	setp.lt.u32	%p8, %r13, %r19;
 	mov.u32 	%r40, %r12;

@@ -272,7 +272,7 @@ void fractalRenderUnderSampled(uint** output, long outputPitch, uint width, uint
   for(uint x = 0; x < underSamplingLevel; x++){
     for(uint y = 0; y < underSamplingLevel; y++){
       //surf2Dwrite(resultColor, surfaceOutput, (idx_x + x) * sizeof(unsigned uint), (idx_y+y));
-      uint* pOutput = getPtrToPixel(output, outputPitch, idx_y+y, idx_x+x);
+      uint* pOutput = getPtrToPixel(output, outputPitch, idx_x+x, idx_y+y);
       *pOutput = escapeTime;
     }
   }
