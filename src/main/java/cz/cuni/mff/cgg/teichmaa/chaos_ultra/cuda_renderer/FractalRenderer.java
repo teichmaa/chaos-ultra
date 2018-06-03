@@ -8,7 +8,6 @@ import jcuda.driver.*;
 import jcuda.runtime.*;
 
 import java.io.Closeable;
-import java.nio.Buffer;
 import java.nio.IntBuffer;
 import java.security.InvalidParameterException;
 import java.util.function.Consumer;
@@ -175,8 +174,8 @@ public class FractalRenderer implements Closeable {
     }
 
     RenderingKernelParamsInfo lastRendering = new RenderingKernelParamsInfo();
-    public void launchReuseSamplesKernel() {
-        if(memory.isPrimary2DBufferEmpty()){
+    public void launchReuseSamplesKernel(int focusx, int focusy) {
+        if(memory.isPrimary2DBufferUnusable()){
             //if there is nothing to reuse, then create it
             launchQualityKernel();
             return;
@@ -185,6 +184,7 @@ public class FractalRenderer implements Closeable {
         KernelReuseSamples k = kernelReuseSamples;
 
         k.setOriginBounds(lastRendering.left_bottom_x, lastRendering.left_bottom_y, lastRendering.right_top_x, lastRendering.right_top_y);
+        k.setFocus(focusx, focusy);
 
         NativePointerObject[] params = k.getKernelParams();
         params[k.PARAM_IDX_INPUT] = Pointer.to(memory.getPrimary2DBuffer());
@@ -211,13 +211,7 @@ public class FractalRenderer implements Closeable {
      *
      */
     public void launchFastKernel(int focusx, int focusy) {
-        KernelMain kernelMain = kernelMainFloat.isBoundsAtFloatLimit() ? kernelMainDouble : kernelMainFloat;
-        kernelMain.setFocus(focusx, focusy);
-        kernelMain.setRenderRadius(FOVEATION_CENTER_RADIUS);
-        //todo nejak spustit ty prvni dva najednou a pak pockat?
-        launchRenderingKernel(false, kernelMain, memory.getPrimary2DBuffer(), memory.getPrimary2DBufferPitch());
-        launchRenderingKernel(false, kernelUndersampled, memory.getSecondary2DBuffer(), memory.getSecondary2DBufferPitch());
-        launchDrawingKernel(false, kernelCompose, kernelMain);
+        launchReuseSamplesKernel(focusx, focusy);
     }
 
     public void launchQualityKernel() {
@@ -228,7 +222,7 @@ public class FractalRenderer implements Closeable {
         launchRenderingKernel(false, kernelMain, memory.getPrimary2DBuffer(), memory.getPrimary2DBufferPitch());
         launchDrawingKernel(false, kernelCompose, kernelMain);
         lastRendering.setFrom(kernelMain);
-        memory.setPrimary2DBufferEmpty(false);
+        memory.setPrimary2DBufferUnusable(false);
     }
 
     private void launchRenderingKernel(boolean async, RenderingKernel kernel, CUdeviceptr output, long outputPitch) {
@@ -381,16 +375,22 @@ public class FractalRenderer implements Closeable {
     public void setAdaptiveSS(boolean adaptiveSS) {
         kernelMainFloat.setAdaptiveSS(adaptiveSS);
         kernelMainDouble.setAdaptiveSS(adaptiveSS);
+        kernelReuseSamples.setAdaptiveSS(adaptiveSS);
     }
 
     public void setVisualiseAdaptiveSS(boolean visualiseAdaptiveSS) {
+        if(kernelMainFloat.getVisualiseAdaptiveSS() == true &&
+                visualiseAdaptiveSS == false)
+            memory.setPrimary2DBufferUnusable(true);
         kernelMainFloat.setVisualiseAdaptiveSS(visualiseAdaptiveSS);
         kernelMainDouble.setVisualiseAdaptiveSS(visualiseAdaptiveSS);
+        kernelReuseSamples.setVisualiseAdaptiveSS(visualiseAdaptiveSS);
     }
 
     public void setSuperSamplingLevel(int supSampLvl) {
         kernelMainFloat.setSuperSamplingLevel(supSampLvl);
         kernelMainDouble.setSuperSamplingLevel(supSampLvl);
+        kernelReuseSamples.setSuperSamplingLevel(supSampLvl);
         //randomSamplesInit();
     }
 
@@ -418,7 +418,7 @@ public class FractalRenderer implements Closeable {
         c.accept(kernelReuseSamples);
     }
 
-    public void debug1() {
+    public void debugRightBottomPixel() {
         int w = getWidth();
         int h = getHeight();
         memory.resetBufferSwitch();

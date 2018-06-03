@@ -23,7 +23,7 @@ class DeviceMemory implements Closeable {
      */
     void reallocatePrimary2DBuffer(int w, int h){
         output2DArray1Pitch = allocateDevice2DBuffer(w, h, output2DArray1);
-        setPrimary2DBufferEmpty(true);
+        setPrimary2DBufferUnusable(true);
     }
     void reallocateSecondary2DBuffer(int w, int h){
         output2DArray2Pitch = allocateDevice2DBuffer(w, h, output2DArray2);
@@ -58,14 +58,14 @@ class DeviceMemory implements Closeable {
             switch2DBuffers();
     }
 
-    private boolean primary2DBufferEmpty = true;
+    private boolean primary2DBufferUnusable = true;
 
-    public boolean isPrimary2DBufferEmpty() {
-        return primary2DBufferEmpty;
+    public boolean isPrimary2DBufferUnusable() {
+        return primary2DBufferUnusable;
     }
 
-    public void setPrimary2DBufferEmpty(boolean primary2DBufferEmpty) {
-        this.primary2DBufferEmpty = primary2DBufferEmpty;
+    public void setPrimary2DBufferUnusable(boolean primary2DBufferUnusable) {
+        this.primary2DBufferUnusable = primary2DBufferUnusable;
     }
 
     /**

@@ -16,13 +16,13 @@ abstract class KernelMain extends RenderingKernel {
         super(name, ownerModule);
 
         //initialize params[] :
-        PARAM_IDX_SUPER_SAMPLING_LEVEL = registerParam();
-        PARAM_IDX_ADAPTIVE_SS = registerParam();
-        PARAM_IDX_VISUALISE_ADAPTIVE_SS = registerParam();
-        PARAM_IDX_RANDOM_SAMPLES = registerParam();
-        PARAM_IDX_RENDER_RADIUS = registerParam();
-        PARAM_IDX_FOCUS_X = registerParam();
-        PARAM_IDX_FOCUS_Y = registerParam();
+        PARAM_IDX_SUPER_SAMPLING_LEVEL = registerParam(1);
+        PARAM_IDX_ADAPTIVE_SS = registerParam(1);
+        PARAM_IDX_VISUALISE_ADAPTIVE_SS = registerParam(0);
+        PARAM_IDX_RANDOM_SAMPLES = registerParam(0);
+        PARAM_IDX_RENDER_RADIUS = registerParam(0);
+        PARAM_IDX_FOCUS_X = registerParam(0);
+        PARAM_IDX_FOCUS_Y = registerParam(0);
 
         setSuperSamplingLevel(1);
         setAdaptiveSS(true);
@@ -37,7 +37,7 @@ abstract class KernelMain extends RenderingKernel {
     private int focus_x;
     private int focus_y;
 
-    boolean isVisualiseAdaptiveSS() {
+    boolean getVisualiseAdaptiveSS() {
         return visualiseAdaptiveSS;
     }
 
@@ -46,7 +46,7 @@ abstract class KernelMain extends RenderingKernel {
         params[PARAM_IDX_VISUALISE_ADAPTIVE_SS] = CudaHelpers.pointerTo(visualiseAdaptiveSS);
     }
 
-    boolean isAdaptiveSS() {
+    boolean getAdaptiveSS() {
         return adaptiveSS;
     }
 

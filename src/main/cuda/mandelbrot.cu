@@ -7,7 +7,8 @@ typedef unsigned int uint;
 using Pointf = Point<float>;
 using Pointi = Point<uint>;
 
-const uint MAX_SS_LEVEL = 256;
+__device__ const float PI_F = 3.14159265358979f;
+__device__ const uint MAX_SS_LEVEL = 256;
 
 #define CUDA_CALL(x) do { if((x) != cudaSuccess) { \
   printf("Mandelbrot: Error at %s:%d\n",__FILE__,__LINE__); \
@@ -44,7 +45,8 @@ const uint MAX_SS_LEVEL = 256;
 //    x ... for real part (corresponding to geometric x-axis)
 //    y ... for imag part (corresponding to geometric y-axis)
 
-template <class Real> __device__ __forceinline__ uint escape(uint dwell, Point<Real> c){
+template <class Real> __device__ __forceinline__
+uint escape(uint dwell, Point<Real> c){
   Point<Real> z(0,0);
   Real zx_new;
   uint i = 0;
@@ -93,20 +95,22 @@ __device__ __forceinline__ uint simpleRandom(uint val){
     return seed;
 }
 
+__device__ const uint WARP_SIZE_X = 8; //represents desired size of the recatangular warp (with respect to threadIdx). WARP_SIZE.x * WARP_SIZE.y should always be warpSize (32 for CUDA 9 and lower)
+__device__ const uint WARP_SIZE_Y = 4;
   /// Computes indexes to a per-pixel acces of a 2D image, based on threadIdx and blockIdx.
   /// Morover, threads in a warp will be arranged in a rectangle (rather than in single line as with the naive implementation).
   /// The caller should always check if the returned value exceeded image width and height.
 __device__ const Point<uint> getImageIndexes(){
   const uint threadID = threadIdx.x + threadIdx.y * blockDim.x;
-  const uint warpWidth = 4; //user defined constant, representing desired width of the recatangular warp (2,4,8 are only reasonable values for the following formula)
-  const uint blockWidth = blockDim.x * warpWidth;
+  const uint warpH = WARP_SIZE_Y; // 2,4,8 are only reasonable values of warpH for the following formula
+  const uint blockWidth = blockDim.x * warpH;
   ASSERT (blockDim.x == 32); //following formula works only when blockDim.x is 32 
-  const uint inblock_idx_x = (-(threadID % (warpWidth * warpWidth)) + threadID % blockWidth) / warpWidth + threadID % warpWidth;
-  const uint inblock_idx_y = (threadID / blockWidth) * warpWidth + (threadID / warpWidth) % warpWidth;
+  const uint inblock_idx_x = (-(threadID % (warpH * warpH)) + threadID % blockWidth) / warpH + threadID % warpH;
+  const uint inblock_idx_y = (threadID / blockWidth) * warpH + (threadID / warpH) % warpH;
   const uint idx_x = blockDim.x * blockIdx.x + inblock_idx_x;
   const uint idx_y = blockDim.y * blockIdx.y + inblock_idx_y;
   // { //debug
-  //   uint warpid = threadID / warpSize;
+  //   uint warpid = threadID / warpH;
   //   if(idx_x < 20 && idx_y < 20){
   //     //printf("bw:%u\n", blockWidth);
   //     printf("%u\t%u\t%u\t%u\t%u\n", threadIdx.x, threadIdx.y, threadID ,inblock_idx_x, inblock_idx_y);
@@ -120,6 +124,54 @@ uint* getPtrToPixel(uint** array2D, long pitch, uint x, uint y){
   return (((uint*)((char*)array2D + y * pitch)) + x);
 }
 
+/// param sampleCount: Maximum number of samples to take. Actual number of samples taken will be stored here before returning. If adaptiveSS==false, the value will not change.
+template <class Real> __device__
+uint sampleTheFractal(Pointi pixel, uint width, uint height, Rectangle<Real> image, uint dwell,uint & sampleCount, bool adaptiveSS, bool visualiseSS){
+  const uint adaptiveTreshold = 10;
+  uint r[adaptiveTreshold];
+
+  //We are in a complex plane from (left_bottom) to (right_top), so we scale the pixels to it
+  Point<Real> pixelSize = image.size() / Point<Real>(width, height);
+  
+  uint escapeTimeSum = 0;
+  ASSERT (sampleCount <= MAX_SS_LEVEL);
+  for(uint i = 0; i < sampleCount; i++){
+    Point<Real> delta = Point<Real>(i / (Real) sampleCount);
+    
+    // c = {LBx, RTy} {+,-} ((pixel+delta) * pixelSize)
+    const Point<Real> c = Point<Real>(image.left_bottom.x, image.right_top.y) +
+      Point<Real>(1,-1) * (pixel.cast<Real>() + delta) * pixelSize;
+
+    uint escapeTime = escape(dwell, c);
+    escapeTimeSum += escapeTime;
+    if(i < adaptiveTreshold){
+      r[i] = escapeTime;
+    }
+
+    //todo this process should ideally adaptive, at least dynamic. Not predefined like.
+    if(( i== 2 || i == adaptiveTreshold) && adaptiveSS){ //decide whether to continue with supersampling or not
+      Real mean = escapeTimeSum / (i+1);
+      Real dispersion = computeDispersion(r, i, mean);
+      float dispersionMax = (i==2) ? 0.01 : 0.1;
+      if(__ALL(dispersion <= dispersionMax )){
+        sampleCount = i+1; //effectively disabling high SS and storing info about actual number of samples taken
+      }
+      //else we are on an chaotic edge, thus as many samples as possible are needed
+    }
+  }
+  uint result = escapeTimeSum / sampleCount; 
+  return result;
+   
+
+  //debug:
+  // if(idx_x < 10 && idx_y < 10){
+  //   printf("%f\t", randomSample);
+  //   __syncthreads();
+  //   if(idx_x == 0 && idx_y == 0)
+  //     printf("\n");
+  // }
+} 
+
 template <class Real> __device__ __forceinline__
 void fractalRenderMain(uint** output, long outputPitch, uint width, uint height, Rectangle<Real> image, uint dwell, uint superSamplingLevel, bool adaptiveSS, bool visualiseSS, float* randomSamples, uint renderRadius, uint focus_x, uint focus_y, bool isDoublePrecision)
 // todo: usporadat poradi paramateru, cudaXXObjects predavat pointrem, ne kopirovanim (tohle rozmyslet, mozna je to takhle dobre)
@@ -131,54 +183,11 @@ void fractalRenderMain(uint** output, long outputPitch, uint width, uint height,
   //   printf();
   // }
   if(!isWithinRadius(idx.x, idx.y, width, height, renderRadius, focus_x, focus_y)) return;
-
-  //We are in a complex plane from (left_bottom) to (right_top), so we scale the pixels to it
-  Point<Real> pixelSize = image.size() / Point<Real>(width, height);
-
-  const uint adaptiveTreshold = 10;
-  uint r[adaptiveTreshold];
-//  uint adaptivnessUsed = 0;
-
-  uint escapeTimeSum = 0;
-  ASSERT (superSamplingLevel <= MAX_SS_LEVEL);
-  for(uint i = 0; i < superSamplingLevel; i++){
-    Point<Real> delta = Point<Real>(i / (Real) superSamplingLevel);
-    
-    // c = {LBx, RTy} {+,-} ((idx+delta) * pixelSize)
-    const Point<Real> c = Point<Real>(image.left_bottom.x, image.right_top.y) +
-      Point<Real>(1,-1) * (idx.cast<Real>() + delta) * pixelSize;
-
-    uint escapeTime = escape(dwell, c);
-    escapeTimeSum += escapeTime;
-    if(i < adaptiveTreshold){
-      r[i] = escapeTime;
-    }
-
-    if(i == adaptiveTreshold && adaptiveSS){ //decide whether to continue with supersampling or not
-      Real mean = escapeTimeSum / (i+1);
-      Real dispersion = computeDispersion(r, i, mean);
-      __ALL(dispersion <= 0.01);
-      superSamplingLevel = i+1; //effectively disabling high SS and storing info about actual number of samples taken
-      //adaptivnessUsed = ColorsARGB::WHITE; 
-    }else{ //else we are on an chaotic edge, thus as many samples as possible are needed
-        //adaptivnessUsed = ColorsARGB::BLACK;
-    }
-  }
-  uint mean = escapeTimeSum / superSamplingLevel;  
-
-  /*
-  if(adaptivnessUsed && visualiseSS){
-    resultColor = adaptivnessUsed;
-  }*/
-  /*if(idx_x < 10 && idx_y < 10){
-    printf("%f\t", randomSample);
-    __syncthreads();
-    if(idx_x == 0 && idx_y == 0)
-      printf("\n");
-  }*/
+  
+  uint result = sampleTheFractal(idx, width, height, image, dwell, superSamplingLevel, adaptiveSS, visualiseSS);
 
   uint* pOutput = getPtrToPixel(output, outputPitch, idx.x, idx.y);
-  *pOutput = mean;
+  *pOutput = result;
 }
 
 //section exported global kernels:
@@ -242,8 +251,8 @@ void compose(uint** inputMain, long inputMainPitch, uint** inputBcg, long inputB
   ASSERT(paletteIdx < paletteLength);
   uint resultColor;
   surf2Dread(&resultColor, colorPalette, paletteIdx * sizeof(uint), 0);
-  if(result == dwell)
-    resultColor = ColorsARGB::YELLOW;
+  // if(result == dwell || result == dwell-1)
+  //   resultColor = ColorsARGB::YELLOW;
 
   surf2Dwrite(resultColor, surfaceOutput, idx_x * sizeof(uint), idx_y);
 }
@@ -329,8 +338,35 @@ Point<Real> getWarpingOrigin(Point<Real> p, Point<Real> imageSize, Rectangle<Rea
       return result;
 }
 
+__device__ float screenDistance = 60; //in cm; better be set by the user
+__device__ __forceinline__
+/// Returns how many samples this pixel should take, based on foveation.
+/// Value is between 0 and maxSuperSamplingLevel.
+/// Value in the focus will always be maxSuperSamplingLevel, values in the non-peripheral view will always be non-zero.
+/// Returned value is the same for all pixels within a warp (the highest is taken).
+uint getAdvisedSampleCount(Pointi pixel, Pointi focus, uint maxSuperSamplingLevel){
+  //per-warp normalisation, i.e. set all pixels from a warp to same value
+  pixel = pixel - (pixel % Pointi(WARP_SIZE_X, WARP_SIZE_Y));
+
+  float pixelRealWidthInCm = 0.02652; //todo this value should probably be entered by the user. From http://www.prismo.ch/comparisons/desktop.php 
+  float focusDistance = focus.cast<float>().distanceTo(pixel.cast<float>()) * pixelRealWidthInCm; //distance to focus, translated to cm
+  float visualAngle = 2 * atan (focusDistance / screenDistance) * 180 / PI_F; //from https://en.wikipedia.org/wiki/Visual_angle
+  
+  //used model for (visualAngle -> relativeQuality): in (0,fovealViewLimit): a constant function that yields 1, in (fovealViewLimit, peripheralViewLimit): descenidng linear function from 1 to 0
+  ASSERT(visualAngle >= 0); //arctan is positive for positive input and distance is always non-negative
+  const float fovealViewLimit = 5.5; //in degrees, value from https://en.wikipedia.org/wiki/Peripheral_vision
+  const float peripheralViewLimit = 45;  //in degrees, value from https://en.wikipedia.org/wiki/Peripheral_vision
+  float relativeQuality = (1/(fovealViewLimit-peripheralViewLimit))*visualAngle+(-peripheralViewLimit/(fovealViewLimit-peripheralViewLimit)); 
+  if(visualAngle <= fovealViewLimit) relativeQuality = 1;
+
+  uint result = maxSuperSamplingLevel * relativeQuality;
+  if(visualAngle <= peripheralViewLimit)
+    result = max(1, result); //always return at least 1 for pixels within the field of view
+  return result;
+}
+
 extern "C" __global__
-void fractalRenderReuseSamples(uint** output, long outputPitch, uint width, uint height, float a, float b, float c, float d, uint dwell, float p, float q, float r, float s, uint** input, long inputPitch){
+void fractalRenderReuseSamples(uint** output, long outputPitch, uint width, uint height, float a, float b, float c, float d, uint dwell, uint superSamplingLevel, bool adaptiveSS, bool visualiseSS, float* randomSamples, uint renderRadius, uint focus_x, uint focus_y, float p, float q, float r, float s, uint** input, long inputPitch){
 
   const Pointi idx = getImageIndexes();
   if(idx.x >= width || idx.y >= height) return;
@@ -339,41 +375,51 @@ void fractalRenderReuseSamples(uint** output, long outputPitch, uint width, uint
   // }
   ASSERT(idx.x < width);
   ASSERT(idx.y < height);
+  Rectangle<float> image = Rectangle<float>(a,b,c,d);
 
   //sample reusal:
-  const Pointf originf = getWarpingOrigin(Pointf(idx.x, idx.y),Pointf(width,height),Rectangle<float>(a,b,c,d), Rectangle<float>(p,q,r,s));
+  const Pointf originf = getWarpingOrigin(Pointf(idx.x, idx.y),Pointf(width,height),image, Rectangle<float>(p,q,r,s));
   const Point<int> origin = Point<int>((int)round(originf.x), (int)round(originf.y)); //it is important to convert to signed int, not uint (because the value may be negative)
   uint* pInput = getPtrToPixel(input, inputPitch, origin.x, origin.y);
-  bool sampleReused = false;
-  uint warpingResult;
+  bool reusingSample = false;
+  uint reusalResult;
   if(origin.x < 0 || origin.x >= width || origin.y < 0 || origin.y >= height){
-    warpingResult = 404;   //not-found error :)
-    sampleReused = false;
+    reusalResult = 404;   //not-found error :)
+    reusingSample = false;
   }
   else{
-    warpingResult = *pInput;
-    sampleReused = true;
+    reusalResult = *pInput;
+    reusingSample = true;
   }
-
-  //todo neco jako 
-  //  uint sampleCount = getSampleCount(idx, imageSize, focus)
+  
   //sample generation:
-  float pixelWidth = (c - a) / (float) width;
-  float pixelHeight = (d - b) / (float) height;
-  float cx = a + (idx.x)  * pixelWidth;
-  float cy = d - (idx.y) * pixelHeight;
-  uint renderResult = escape(dwell, Pointf(cx, cy));
+  uint sampleCount = getAdvisedSampleCount(idx, Pointi(focus_x, focus_y), superSamplingLevel);
+  if(!reusingSample && sampleCount == 0) sampleCount = 1; //at least one sample has to be taken somewhere
+  uint renderResult = sampleTheFractal(idx, width, height, image, dwell, sampleCount, adaptiveSS, visualiseSS);
 
+  //combine reused and generated samples:
+  ASSERT(reusingSample || sampleCount > 0);
   uint result = renderResult;
-  if(sampleReused)
-    result = (renderResult + warpingResult) / 2;
+  if(reusingSample){
+    result = (renderResult * sampleCount + reusalResult) / (sampleCount+1);
     //todo tohle bohuzel absolutne nefunguje, je potreba prumerovat barvy :(
+  }
+  //debug fialova barva:
+  // if(reusingSample)
+  //   result = reusalResult;
+  // else
+  //   result = 404;
 
-// //debug:
+// //debug pravy dolni roh:
 //       uint qqq = 16;
 //   if(idx.x >= width-qqq || idx.y >= height-qqq)      
 //       result = dwell;
-  
+
+  if(visualiseSS){
+    if(reusingSample) ++sampleCount;
+    result = sampleCount / float (superSamplingLevel) * 255;
+  }
+
   uint* pOutput = getPtrToPixel(output, outputPitch, idx.x, idx.y);
   *pOutput = result;
 }

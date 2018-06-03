@@ -223,6 +223,6 @@ public class ControllerFX implements Initializable {
     }
 
     public void debugButton2Clicked(ActionEvent actionEvent) {
-        SwingUtilities.invokeLater(renderingController::debug1);
+        SwingUtilities.invokeLater(renderingController::debugRightBottomPixel);
     }
 }

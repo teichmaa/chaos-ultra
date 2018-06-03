@@ -17,6 +17,9 @@ template <class T> struct Point {
   __device__ Point<T> operator/ (const Point<T>& b){
     return Point<T>(x/b.x, y/b.y);
   }
+  __device__ Point<T> operator% (const Point<T>& b){
+    return Point<T>(x%b.x, y%b.y);
+  }
     __device__ const Point<T> operator+ (const Point<T>& b) const{
     return Point<T>(x+b.x, y+b.y);
   }
@@ -29,8 +32,14 @@ template <class T> struct Point {
   __device__ const Point<T> operator/ (const Point<T>& b) const{
     return Point<T>(x/b.x, y/b.y);
   }
-  __device__ unsigned int manhattanDistanceTo (const Point<T>& b){
-    return abs(x-b.x)+abs(y-b.y);
+  __device__ const Point<T> operator% (const Point<T>& b) const{
+    return Point<T>(x%b.x, y%b.y);
+  }
+  // __device__ unsigned int manhattanDistanceTo (const Point<T>& b){
+  //   return abs(x-b.x)+abs(y-b.y);
+  // }
+  __device__ float distanceTo (const Point<T>& b){
+  return sqrtf((x-b.x)*(x-b.x)+(y-b.y)*(y-b.y));
   }
   template <class S> __device__ Point<S> cast() {
     return Point<S>((S)x, (S)y);

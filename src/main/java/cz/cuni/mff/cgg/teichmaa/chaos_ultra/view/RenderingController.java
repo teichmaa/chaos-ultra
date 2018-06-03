@@ -144,6 +144,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         if ((SwingUtilities.isRightMouseButton(e) || SwingUtilities.isMiddleMouseButton(e)) && currentMode.isZooming()) {
             currentMode.stopZooming();
             renderInFuture.start();
+            lastMousePressedPosition = e;
         }
     }
 
@@ -332,16 +333,22 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     }
 
     private void render(final GL2 gl) {
+        int focus_x = width_t/2, focus_y = height_t/2;
+        if(lastMousePosition != null && currentMode.isZooming()){
+            focus_x = lastMousePosition.getX();
+            focus_y = lastMousePosition.getY();
+        } else if(lastMousePressedPosition != null){
+            focus_x = lastMousePressedPosition.getX();
+            focus_y = lastMousePressedPosition.getY();
+        }
+
         if (reuseSamples) {
-            fractalRenderer.launchReuseSamplesKernel();
+            fractalRenderer.launchFastKernel(focus_x, focus_y);
         }
         else if (currentMode.wasProgressiveRendering())
             fractalRenderer.launchQualityKernel();
         else
-            if(lastMousePosition != null && currentMode.isZooming())
-                fractalRenderer.launchFastKernel(lastMousePosition.getX(), lastMousePosition.getY());
-            else if(lastMousePressedPosition != null)
-                fractalRenderer.launchFastKernel(lastMousePressedPosition.getX(), lastMousePressedPosition.getY());
+            fractalRenderer.launchFastKernel(focus_x, focus_y);
         //fractalRenderer.launchQualityKernel();
 
         gl.glMatrixMode(GL_MODELVIEW);
@@ -466,7 +473,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         this.repaint();
     }
 
-    public void debug1() {
-        fractalRenderer.debug1();
+    public void debugRightBottomPixel() {
+        fractalRenderer.debugRightBottomPixel();
     }
 }

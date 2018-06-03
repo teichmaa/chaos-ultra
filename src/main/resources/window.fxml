@@ -124,8 +124,8 @@
             Other functions:
         </Label>
         <Button text="save as image" onAction="#saveImageClicked"/>
-        <Button text="debugButton1: toggle sample reusal" onAction="#debugButton1Clicked"/>
-        <Button text="debugButton2: empty" onAction="#debugButton2Clicked"/>
+        <Button text="dbg1: toggle sample reusal" onAction="#debugButton1Clicked"/>
+        <Button text="dbg2: right btm pixel" onAction="#debugButton2Clicked"/>
 
     </VBox>
 
