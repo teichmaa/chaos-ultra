@@ -10,9 +10,11 @@ import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.ModuleMandelbrot;
 import javafx.application.Platform;
 
 import javax.swing.*;
+import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
+import java.awt.geom.Point2D;
 import java.nio.Buffer;
 import java.nio.IntBuffer;
 
@@ -84,11 +86,12 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     }
 
     private MouseEvent lastMousePosition;
-    private MouseEvent lastMousePressedPosition;
+    private Point2DInt focus = new Point2DInt();
 
     @Override
     public void mouseWheelMoved(MouseWheelEvent e) {
         lastMousePosition = e;
+        focus.setXYFrom(e);
         currentMode.doZoomingManualOnce(e.getWheelRotation() < 0);
         target.repaint();
     }
@@ -109,13 +112,15 @@ public class RenderingController extends MouseAdapter implements GLEventListener
             currentMode.startMoving();
             target.repaint();
         }
+        if(!currentMode.isMoving())
+            focus.setXYFrom(e);
         lastMousePosition = e;
     }
 
     @Override
     public void mousePressed(MouseEvent e) {
         lastMousePosition = e;
-        lastMousePressedPosition = e;
+        focus.setXYFrom(e);
         if (SwingUtilities.isRightMouseButton(e) && SwingUtilities.isLeftMouseButton(e)) {
             currentMode.startZoomingAndMoving(true);
             animator.start();
@@ -144,7 +149,6 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         if ((SwingUtilities.isRightMouseButton(e) || SwingUtilities.isMiddleMouseButton(e)) && currentMode.isZooming()) {
             currentMode.stopZooming();
             renderInFuture.start();
-            lastMousePressedPosition = e;
         }
     }
 
@@ -333,22 +337,13 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     }
 
     private void render(final GL2 gl) {
-        int focus_x = width_t/2, focus_y = height_t/2;
-        if(lastMousePosition != null && currentMode.isZooming()){
-            focus_x = lastMousePosition.getX();
-            focus_y = lastMousePosition.getY();
-        } else if(lastMousePressedPosition != null){
-            focus_x = lastMousePressedPosition.getX();
-            focus_y = lastMousePressedPosition.getY();
-        }
-
         if (reuseSamples) {
-            fractalRenderer.launchFastKernel(focus_x, focus_y);
+            fractalRenderer.launchFastKernel(focus.getX(), focus.getY());
         }
         else if (currentMode.wasProgressiveRendering())
             fractalRenderer.launchQualityKernel();
         else
-            fractalRenderer.launchFastKernel(focus_x, focus_y);
+            fractalRenderer.launchFastKernel(focus.getX(), focus.getY());
         //fractalRenderer.launchQualityKernel();
 
         gl.glMatrixMode(GL_MODELVIEW);
