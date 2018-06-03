@@ -466,4 +466,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         this.repaint();
     }
 
+    public void debug1() {
+        fractalRenderer.debug1();
+    }
 }

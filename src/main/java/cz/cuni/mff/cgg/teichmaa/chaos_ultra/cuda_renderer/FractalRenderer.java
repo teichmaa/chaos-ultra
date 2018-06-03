@@ -9,6 +9,7 @@ import jcuda.runtime.*;
 
 import java.io.Closeable;
 import java.nio.Buffer;
+import java.nio.IntBuffer;
 import java.security.InvalidParameterException;
 import java.util.function.Consumer;
 
@@ -128,8 +129,8 @@ public class FractalRenderer implements Closeable {
     }
 
 
-    private void copy2DFromDevToHost(Buffer hostOut, int width, int height, long pitch, CUdeviceptr deviceOut) {
-        if (hostOut.capacity() < width * height * 4)
+    private void copy2DFromDevToHost(IntBuffer hostOut, int width, int height, long pitch, CUdeviceptr deviceOut) {
+        if (hostOut.capacity() < width * height)
             throw new InvalidParameterException("Output buffer must be at least width * height * 4 bytes long. Buffer capacity: " + hostOut.capacity());
         //copy kernel result to host memory:
         CUDA_MEMCPY2D copyInfo = new CUDA_MEMCPY2D();
@@ -197,7 +198,7 @@ public class FractalRenderer implements Closeable {
         int gridDimY = getHeight() / blockDimY;
 
         cuLaunchKernel(k.getFunction(),
-                gridDimX, gridDimY,
+                gridDimX+10, gridDimY+10,
                 Pointer.to(params)
         );
         JCudaDriver.cuCtxSynchronize();
@@ -417,4 +418,15 @@ public class FractalRenderer implements Closeable {
         c.accept(kernelReuseSamples);
     }
 
+    public void debug1() {
+        int w = getWidth();
+        int h = getHeight();
+        memory.resetBufferSwitch();
+        //launchReuseSamplesKernel();
+        memory.resetBufferSwitch();
+        IntBuffer b = IntBuffer.allocate(w*h);
+        copy2DFromDevToHost(b, w, h, memory.getPrimary2DBufferPitch(), memory.getPrimary2DBuffer());
+        System.out.println("b[w,h]:\t" + b.get(w*h-1));
+        int breakpoit = 0;
+    }
 }

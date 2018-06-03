@@ -337,6 +337,8 @@ void fractalRenderReuseSamples(uint** output, long outputPitch, uint width, uint
   // if(idx.x == 0 && idx.y == 0){
   //   printf("fractalRenderReuseSamples:\n");
   // }
+  ASSERT(idx.x < width);
+  ASSERT(idx.y < height);
 
   //sample reusal:
   const Pointf originf = getWarpingOrigin(Pointf(idx.x, idx.y),Pointf(width,height),Rectangle<float>(a,b,c,d), Rectangle<float>(p,q,r,s));
@@ -353,6 +355,8 @@ void fractalRenderReuseSamples(uint** output, long outputPitch, uint width, uint
     sampleReused = true;
   }
 
+  //todo neco jako 
+  //  uint sampleCount = getSampleCount(idx, imageSize, focus)
   //sample generation:
   float pixelWidth = (c - a) / (float) width;
   float pixelHeight = (d - b) / (float) height;
@@ -363,6 +367,12 @@ void fractalRenderReuseSamples(uint** output, long outputPitch, uint width, uint
   uint result = renderResult;
   if(sampleReused)
     result = (renderResult + warpingResult) / 2;
+    //todo tohle bohuzel absolutne nefunguje, je potreba prumerovat barvy :(
+
+// //debug:
+//       uint qqq = 16;
+//   if(idx.x >= width-qqq || idx.y >= height-qqq)      
+//       result = dwell;
   
   uint* pOutput = getPtrToPixel(output, outputPitch, idx.x, idx.y);
   *pOutput = result;
