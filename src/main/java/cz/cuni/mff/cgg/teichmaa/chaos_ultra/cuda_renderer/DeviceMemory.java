@@ -22,11 +22,11 @@ class DeviceMemory implements Closeable {
      * @param h
      */
     void reallocatePrimary2DBuffer(int w, int h){
-        output2DArray1Pitch = allocateDevice2DBuffer(w, h, output2DArray1);
+        output2DArray1Pitch = allocateDevice2DBuffer(w, h, 2, output2DArray1);
         setPrimary2DBufferUnusable(true);
     }
     void reallocateSecondary2DBuffer(int w, int h){
-        output2DArray2Pitch = allocateDevice2DBuffer(w, h, output2DArray2);
+        output2DArray2Pitch = allocateDevice2DBuffer(w, h, 2, output2DArray2);
     }
 
     CUdeviceptr getPrimary2DBuffer(){
@@ -75,9 +75,10 @@ class DeviceMemory implements Closeable {
      * @param width
      * @param height
      * @param target output parameter, will contain pointer to allocated memory
+     * @param elementSize how many 4-byte elements to allocate per one cell
      * @return pitch (actual row length (in bytes) as aligned by CUDA. pitch >= width * sizeof element.)
      */
-    private long allocateDevice2DBuffer(int width, int height, CUdeviceptr target) {
+    private long allocateDevice2DBuffer(int width, int height, int elementSize, CUdeviceptr target) {
 
         /**
          * Pitch = actual row length (in bytes) as aligned by CUDA. pitch >= width * sizeof element.
@@ -95,7 +96,7 @@ class DeviceMemory implements Closeable {
             return 0;
 
         //JCuda.cudaMallocPitch(target, pitchptr, (long) width * (long) Sizeof.INT, (long) height);
-        JCudaDriver.cuMemAllocPitch(target, pitchptr, (long) width * (long) Sizeof.INT, (long) height, Sizeof.INT);
+        JCudaDriver.cuMemAllocPitch(target, pitchptr, (long) width * (long) Sizeof.INT * elementSize, (long) height, Sizeof.INT * elementSize);
 
         pitch = pitchptr[0];
         if (pitch <= 0) {

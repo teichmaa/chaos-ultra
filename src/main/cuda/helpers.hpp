@@ -61,6 +61,11 @@ template <class T> struct Rectangle {
   __device__ Point<T> const size(){ return right_top - left_bottom;}
 };
 
+struct pixel_info_t{
+  unsigned int value;
+  float weight;
+};
+
 
 
 class ColorsARGB{

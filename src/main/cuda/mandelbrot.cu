@@ -120,8 +120,8 @@ __device__ const Point<uint> getImageIndexes(){
 }
 
 __device__ __forceinline__
-uint* getPtrToPixel(uint** array2D, long pitch, uint x, uint y){
-  return (((uint*)((char*)array2D + y * pitch)) + x);
+pixel_info_t* getPtrToPixel(uint** array2D, long pitch, uint x, uint y){
+  return (((pixel_info_t*)((char*)array2D + y * pitch)) + x);
 }
 
 /// param sampleCount: Maximum number of samples to take. Actual number of samples taken will be stored here before returning. If adaptiveSS==false, the value will not change.
@@ -182,12 +182,14 @@ void fractalRenderMain(uint** output, long outputPitch, uint width, uint height,
   // if(idx.x == 0 && idx.y == 0){
   //   printf();
   // }
-  if(!isWithinRadius(idx.x, idx.y, width, height, renderRadius, focus_x, focus_y)) return;
+  //if(!isWithinRadius(idx.x, idx.y, width, height, renderRadius, focus_x, focus_y)) return;
   
   uint result = sampleTheFractal(idx, width, height, image, dwell, superSamplingLevel, adaptiveSS, visualiseSS);
 
-  uint* pOutput = getPtrToPixel(output, outputPitch, idx.x, idx.y);
-  *pOutput = result;
+  pixel_info_t* pOutput = getPtrToPixel(output, outputPitch, idx.x, idx.y);
+  pOutput->value = result;
+  pOutput->weight = (float) superSamplingLevel;
+  ASSERT(pOutput->weight > 0);
 }
 
 //section exported global kernels:
@@ -238,13 +240,13 @@ void compose(uint** inputMain, long inputMainPitch, uint** inputBcg, long inputB
   */
   //choose result from one or two
 
-  uint* pResult;
+  pixel_info_t* pResult;
   if(isWithinRadius(idx_x, idx_y, width, height, mainRenderRadius, focus_x, focus_y)){
-    pResult = (uint*)((char*)inputMain + idx_y * inputMainPitch) + idx_x;
+    pResult = getPtrToPixel(inputMain, inputMainPitch, idx_x, idx_y);
   }else{
-    pResult = (uint*)((char*)inputBcg + idx_y * inputBcgPitch) + idx_x;
+    pResult = getPtrToPixel(inputBcg, inputBcgPitch, idx_x, idx_y);
   }
-  uint result = *pResult;
+  uint result = pResult->value;
 
   uint paletteIdx = paletteLength - (result % paletteLength) - 1;
 //  ASSERT(paletteIdx >=0);
@@ -280,8 +282,9 @@ void fractalRenderUnderSampled(uint** output, long outputPitch, uint width, uint
   for(uint x = 0; x < underSamplingLevel; x++){
     for(uint y = 0; y < underSamplingLevel; y++){
       //surf2Dwrite(resultColor, surfaceOutput, (idx_x + x) * sizeof(unsigned uint), (idx_y+y));
-      uint* pOutput = getPtrToPixel(output, outputPitch, idx_x+x, idx_y+y);
-      *pOutput = escapeTime;
+      pixel_info_t* pOutput = getPtrToPixel(output, outputPitch, idx_x+x, idx_y+y);
+      pOutput->value = escapeTime;
+      pOutput->weight = 1 / (float) underSamplingLevel;
     }
   }
 
@@ -350,65 +353,83 @@ uint getAdvisedSampleCount(Pointi pixel, Pointi focus, uint maxSuperSamplingLeve
 
   float pixelRealWidthInCm = 0.02652; //todo this value should probably be entered by the user. From http://www.prismo.ch/comparisons/desktop.php 
   float focusDistance = focus.cast<float>().distanceTo(pixel.cast<float>()) * pixelRealWidthInCm; //distance to focus, translated to cm
-  float visualAngle = 2 * atan (focusDistance / screenDistance) * 180 / PI_F; //from https://en.wikipedia.org/wiki/Visual_angle
+  /// visual angle for one eye, i.e possible values are from 0 to ~ 110
+  float visualAngle = atan (focusDistance / screenDistance) * 180 / PI_F; //from https://en.wikipedia.org/wiki/Visual_angle
   
   //used model for (visualAngle -> relativeQuality): in (0,fovealViewLimit): a constant function that yields 1, in (fovealViewLimit, peripheralViewLimit): descenidng linear function from 1 to 0
   ASSERT(visualAngle >= 0); //arctan is positive for positive input and distance is always non-negative
   const float fovealViewLimit = 5.5; //in degrees, value from https://en.wikipedia.org/wiki/Peripheral_vision
-  const float peripheralViewLimit = 45;  //in degrees, value from https://en.wikipedia.org/wiki/Peripheral_vision
-  float relativeQuality = (1/(fovealViewLimit-peripheralViewLimit))*visualAngle+(-peripheralViewLimit/(fovealViewLimit-peripheralViewLimit)); 
+  ///todo, this number is based on a paper. Based on my experience, it could be even smaller
+  const float peripheralViewTreshold = 60;  //in degrees, value from https://en.wikipedia.org/wiki/Peripheral_vision
+  float relativeQuality = (1/(fovealViewLimit-peripheralViewTreshold))*visualAngle+(-peripheralViewTreshold/(fovealViewLimit-peripheralViewTreshold)); 
   if(visualAngle <= fovealViewLimit) relativeQuality = 1;
 
   uint result = maxSuperSamplingLevel * relativeQuality;
-  if(visualAngle <= peripheralViewLimit)
+  if(visualAngle <= peripheralViewTreshold)
     result = max(1, result); //always return at least 1 for pixels within the field of view
   return result;
 }
 
 extern "C" __global__
-void fractalRenderReuseSamples(uint** output, long outputPitch, uint width, uint height, float a, float b, float c, float d, uint dwell, uint superSamplingLevel, bool adaptiveSS, bool visualiseSS, float* randomSamples, uint renderRadius, uint focus_x, uint focus_y, float p, float q, float r, float s, uint** input, long inputPitch){
+void fractalRenderReuseSamples(uint** output, long outputPitch, uint width, uint height, float a, float b, float c, float d, uint dwell, uint superSamplingLevel, bool adaptiveSS, bool visualiseSS, float* randomSamples, uint renderRadius, uint focus_x, uint focus_y, float p, float q, float r, float s, uint** input, long inputPitch, bool useFoveation, bool useSampleReuse){
 
   const Pointi idx = getImageIndexes();
   if(idx.x >= width || idx.y >= height) return;
-  // if(idx.x == 0 && idx.y == 0){
-  //   printf("fractalRenderReuseSamples:\n");
-  // }
+  if(idx.x == 0 && idx.y == 0){
+    printf("fractalRenderReuseSamples:\n");
+  }
   ASSERT(idx.x < width);
   ASSERT(idx.y < height);
   Rectangle<float> image = Rectangle<float>(a,b,c,d);
 
+  useSampleReuse = true;
+  useFoveation = true;
+
   //sample reusal:
-  const Pointf originf = getWarpingOrigin(Pointf(idx.x, idx.y),Pointf(width,height),image, Rectangle<float>(p,q,r,s));
-  const Point<int> origin = Point<int>((int)round(originf.x), (int)round(originf.y)); //it is important to convert to signed int, not uint (because the value may be negative)
-  uint* pInput = getPtrToPixel(input, inputPitch, origin.x, origin.y);
   bool reusingSample = false;
   uint reusalResult;
-  if(origin.x < 0 || origin.x >= width || origin.y < 0 || origin.y >= height){
-    reusalResult = 404;   //not-found error :)
-    reusingSample = false;
-  }
-  else{
-    reusalResult = *pInput;
-    reusingSample = true;
+  float reusalWeight;
+  if(useSampleReuse){
+    const Pointf originf = getWarpingOrigin(Pointf(idx.x, idx.y),Pointf(width,height),image, Rectangle<float>(p,q,r,s));
+    const Point<int> origin = Point<int>((int)round(originf.x), (int)round(originf.y)); //it is important to convert to signed int, not uint (because the value may be negative)
+    if(origin.x < 0 || origin.x >= width || origin.y < 0 || origin.y >= height){
+      reusalResult = 404;   //not-found error :)
+      reusingSample = false;
+    }
+    else{
+      pixel_info_t* pInput = getPtrToPixel(input, inputPitch, origin.x, origin.y);
+      reusalResult = pInput->value;
+      reusalWeight = (float) pInput->weight;
+      reusingSample = true;
+    }
   }
   
   //sample generation:
-  uint sampleCount = getAdvisedSampleCount(idx, Pointi(focus_x, focus_y), superSamplingLevel);
-  if(!reusingSample && sampleCount == 0) sampleCount = 1; //at least one sample has to be taken somewhere
+  uint sampleCount = superSamplingLevel;
+  if (useFoveation)
+    sampleCount = getAdvisedSampleCount(idx, Pointi(focus_x, focus_y), superSamplingLevel);
+  if((!reusingSample || reusalWeight == 0) && sampleCount == 0)  sampleCount = 1; //at least one sample has to be taken somewhere
+      //indeed, it may happen that reusalWeight == 0, because reusalWeight decreases in time (see reusedSampleDegradateCoeff)
   uint renderResult = sampleTheFractal(idx, width, height, image, dwell, sampleCount, adaptiveSS, visualiseSS);
+  ASSERT(reusingSample || sampleCount > 0);
 
   //combine reused and generated samples:
-  ASSERT(reusingSample || sampleCount > 0);
-  uint result = renderResult;
+  uint result;
+  float resultWeight;
   if(reusingSample){
-    result = (renderResult * sampleCount + reusalResult) / (sampleCount+1);
-    //todo tohle bohuzel absolutne nefunguje, je potreba prumerovat barvy :(
+    if(sampleCount == 0){
+      result = reusalResult;
+      resultWeight = reusalWeight;    
+    }else{
+      const float reusedSampleDegradateCoeff = 0.65; // must be <=1
+      reusalWeight *= reusedSampleDegradateCoeff;
+      resultWeight = reusalWeight + sampleCount;    
+      result = (reusalResult * reusalWeight + renderResult * sampleCount) / (resultWeight);
+    }
+  }else{
+    result = renderResult;
+    resultWeight = sampleCount;
   }
-  //debug fialova barva:
-  // if(reusingSample)
-  //   result = reusalResult;
-  // else
-  //   result = 404;
 
 // //debug pravy dolni roh:
 //       uint qqq = 16;
@@ -420,8 +441,10 @@ void fractalRenderReuseSamples(uint** output, long outputPitch, uint width, uint
     result = sampleCount / float (superSamplingLevel) * 255;
   }
 
-  uint* pOutput = getPtrToPixel(output, outputPitch, idx.x, idx.y);
-  *pOutput = result;
+  pixel_info_t* pOutput = getPtrToPixel(output, outputPitch, idx.x, idx.y);
+  pOutput->value = result;
+  pOutput->weight = resultWeight;
+  ASSERT(resultWeight > 0);
 }
 
 

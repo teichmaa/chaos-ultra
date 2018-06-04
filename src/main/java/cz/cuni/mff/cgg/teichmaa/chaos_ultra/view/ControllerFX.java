@@ -43,6 +43,10 @@ public class ControllerFX implements Initializable {
     private CheckBox visualiseAdaptiveSS;
     @FXML
     private CheckBox useAutomaticQuality;
+    @FXML
+    private CheckBox useFoveation;
+    @FXML
+    private CheckBox useSampleReusal;
 
     private RenderingController renderingController;
 
@@ -177,29 +181,35 @@ public class ControllerFX implements Initializable {
     }
 
     public void adaptiveSSSelected(ActionEvent actionEvent) {
-        boolean val = useAdaptiveSS.isSelected();
+//        boolean val = useAdaptiveSS.isSelected();
+//        SwingUtilities.invokeLater(() -> {
+//            renderingController.setAdaptiveSS(val);
+//            renderingController.repaint();
+//            if (!val)
+//                renderingController.setVisualiseAdaptiveSS(false);
+//        });
+//        if (!val) {
+//            visualiseAdaptiveSS.setSelected(false);
+//        }
         SwingUtilities.invokeLater(() -> {
-            renderingController.setAdaptiveSS(val);
-            renderingController.repaint();
-            if (!val)
-                renderingController.setVisualiseAdaptiveSS(false);
+            renderingController.setAdaptiveSS(true);
         });
-        if (!val) {
-            visualiseAdaptiveSS.setSelected(false);
-        }
     }
 
     public void visualiseAdaptiveSSSelected(ActionEvent actionEvent) {
-        boolean val = visualiseAdaptiveSS.isSelected();
+//        boolean val = visualiseAdaptiveSS.isSelected();
+//        SwingUtilities.invokeLater(() -> {
+//            renderingController.setVisualiseAdaptiveSS(val);
+//            renderingController.repaint();
+//            if(val)
+//                renderingController.setAdaptiveSS(true);
+//        });
+//        if (val) {
+//            useAdaptiveSS.setSelected(true);
+//        }
         SwingUtilities.invokeLater(() -> {
-            renderingController.setVisualiseAdaptiveSS(val);
-            renderingController.repaint();
-            if(val)
-                renderingController.setAdaptiveSS(true);
+            renderingController.setVisualiseAdaptiveSS(true);
         });
-        if (val) {
-            useAdaptiveSS.setSelected(true);
-        }
     }
 
     public void saveImageClicked(ActionEvent actionEvent) {
@@ -224,5 +234,17 @@ public class ControllerFX implements Initializable {
 
     public void debugButton2Clicked(ActionEvent actionEvent) {
         SwingUtilities.invokeLater(renderingController::debugRightBottomPixel);
+    }
+
+    public void useFoveationSelected(ActionEvent actionEvent) {
+        SwingUtilities.invokeLater(() ->
+                renderingController.setUseFoveation(useFoveation.isSelected())
+        );
+    }
+
+    public void useSampleReusalSelected(ActionEvent actionEvent) {
+        SwingUtilities.invokeLater(() ->
+                renderingController.setUseSampleReusal(useSampleReusal.isSelected())
+        );
     }
 }

@@ -13,6 +13,8 @@ public class KernelReuseSamples extends KernelMain {
     private final short PARAM_IDX_Q;
     private final short PARAM_IDX_R;
     private final short PARAM_IDX_S;
+    private final short PARAM_USE_FOVEATION;
+    private final short PARAM_USE_SAMPLEREUSAL;
 
     public KernelReuseSamples(CUmodule ownerModule) {
         super("fractalRenderReuseSamples", ownerModule);
@@ -23,6 +25,8 @@ public class KernelReuseSamples extends KernelMain {
         PARAM_IDX_S = registerParam(0);
         PARAM_IDX_INPUT = registerParam();
         PARAM_IDX_INPUT_PITCH = registerParam();
+        PARAM_USE_FOVEATION = registerParam(1);
+        PARAM_USE_SAMPLEREUSAL = registerParam(1);
     }
 
     @Override
@@ -38,4 +42,11 @@ public class KernelReuseSamples extends KernelMain {
     }
 
 
+    public void setUseFoveation(boolean value) {
+        params[PARAM_USE_FOVEATION] = CudaHelpers.pointerTo(value);
+    }
+
+    public void setUseSampleReusal(boolean value) {
+        params[PARAM_USE_SAMPLEREUSAL] = CudaHelpers.pointerTo(value);
+    }
 }

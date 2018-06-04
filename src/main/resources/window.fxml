@@ -73,9 +73,27 @@
         <HBox>
             <Label>
                 <padding>
-                    <Insets top="5" right="5" bottom="5" left="25"/>
+                    <Insets top="5" right="5" bottom="5" left="5"/>
                 </padding>
-                visualise adaptive SS:
+                foveation:
+            </Label>
+            <CheckBox fx:id="useFoveation" selected="true" onAction="#useFoveationSelected"/>
+        </HBox>
+        <HBox>
+            <Label>
+                <padding>
+                    <Insets top="5" right="5" bottom="5" left="5"/>
+                </padding>
+                sample reusal:
+            </Label>
+            <CheckBox fx:id="useSampleReusal" selected="true" onAction="#useSampleReusalSelected"/>
+        </HBox>
+        <HBox>
+            <Label>
+                <padding>
+                    <Insets top="5" right="5" bottom="5" left="5"/>
+                </padding>
+                visualise sample levels:
             </Label>
             <CheckBox fx:id="visualiseAdaptiveSS" selected="false" onAction="#visualiseAdaptiveSSSelected"/>
         </HBox>
@@ -124,7 +142,7 @@
             Other functions:
         </Label>
         <Button text="save as image" onAction="#saveImageClicked"/>
-        <Button text="dbg1: force sample reusal" onAction="#debugButton1Clicked"/>
+        <Button text="dbg1: toggle force advanced kernel" onAction="#debugButton1Clicked"/>
         <Button text="dbg2: right btm pixel" onAction="#debugButton2Clicked"/>
 
     </VBox>

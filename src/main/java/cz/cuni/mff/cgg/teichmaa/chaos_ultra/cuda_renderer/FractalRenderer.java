@@ -180,7 +180,6 @@ public class FractalRenderer implements Closeable {
             launchQualityKernel();
             return;
         }
-
         KernelReuseSamples k = kernelReuseSamples;
 
         k.setOriginBounds(lastRendering.left_bottom_x, lastRendering.left_bottom_y, lastRendering.right_top_x, lastRendering.right_top_y);
@@ -192,18 +191,17 @@ public class FractalRenderer implements Closeable {
         params[k.PARAM_IDX_2DARR_OUT] = Pointer.to(memory.getSecondary2DBuffer());
         params[k.PARAM_IDX_2DARR_OUT_PITCH] = CudaHelpers.pointerTo(memory.getSecondary2DBufferPitch());
 
-        memory.switch2DBuffers();
-
         int gridDimX = getWidth() / blockDimX;
         int gridDimY = getHeight() / blockDimY;
 
         cuLaunchKernel(k.getFunction(),
-                gridDimX+10, gridDimY+10,
+                gridDimX, gridDimY,
                 Pointer.to(params)
         );
         JCudaDriver.cuCtxSynchronize();
         launchDrawingKernel(false, kernelCompose, kernelMainFloat);
 
+        memory.switch2DBuffers();
         lastRendering.setFrom(k);
     }
 
@@ -428,5 +426,13 @@ public class FractalRenderer implements Closeable {
         copy2DFromDevToHost(b, w, h, memory.getPrimary2DBufferPitch(), memory.getPrimary2DBuffer());
         System.out.println("b[w,h]:\t" + b.get(w*h-1));
         int breakpoit = 0;
+    }
+
+    public void setUseFoveation(boolean value) {
+        kernelReuseSamples.setUseFoveation(value);
+    }
+
+    public void setUseSampleReusal(boolean value) {
+        kernelReuseSamples.setUseSampleReusal(value);
     }
 }

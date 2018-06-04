@@ -340,10 +340,12 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         if (reuseSamples) {
             fractalRenderer.launchFastKernel(focus.getX(), focus.getY());
         }
-        else if (currentMode.wasProgressiveRendering())
+        else if (currentMode.wasProgressiveRendering()){
             fractalRenderer.launchQualityKernel();
-        else
+        }
+        else {
             fractalRenderer.launchFastKernel(focus.getX(), focus.getY());
+        }
         //fractalRenderer.launchQualityKernel();
 
         gl.glMatrixMode(GL_MODELVIEW);
@@ -470,5 +472,13 @@ public class RenderingController extends MouseAdapter implements GLEventListener
 
     public void debugRightBottomPixel() {
         fractalRenderer.debugRightBottomPixel();
+    }
+
+    public void setUseFoveation(boolean value) {
+        fractalRenderer.setUseFoveation(value);
+    }
+
+    public void setUseSampleReusal(boolean value) {
+        fractalRenderer.setUseSampleReusal(value);
     }
 }
