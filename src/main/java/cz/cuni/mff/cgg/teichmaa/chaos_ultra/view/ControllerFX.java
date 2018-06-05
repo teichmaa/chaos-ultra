@@ -228,10 +228,6 @@ public class ControllerFX implements Initializable {
         dimensions.setText("" + width + " x " + height);
     }
 
-    public void debugButton1Clicked(ActionEvent actionEvent) {
-        renderingController.switchReuseMode();
-    }
-
     public void debugButton2Clicked(ActionEvent actionEvent) {
         SwingUtilities.invokeLater(renderingController::debugRightBottomPixel);
     }
@@ -246,5 +242,8 @@ public class ControllerFX implements Initializable {
         SwingUtilities.invokeLater(() ->
                 renderingController.setUseSampleReusal(useSampleReusal.isSelected())
         );
+    }
+
+    public void debugButton1Clicked(ActionEvent actionEvent) {
     }
 }

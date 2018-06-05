@@ -9,7 +9,7 @@ abstract class KernelMain extends RenderingKernel {
 
 
     private final short PARAM_IDX_MAX_SUPER_SAMPLING;
-    final short PARAM_IDX_FOCUS;
+    private final short PARAM_IDX_FOCUS;
     private final short PARAM_IDX_ADAPTIVE_SS;
     private final short PARAM_IDX_VISUALISE_ADAPTIVE_SS;
 

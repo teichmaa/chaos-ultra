@@ -1,13 +1,14 @@
 package cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer;
 
 import jcuda.Pointer;
+import jcuda.driver.CUdeviceptr;
 import jcuda.driver.CUmodule;
 
 public abstract class RenderingKernel extends CudaKernel {
 
     //final short PARAM_IDX_SURFACE_OUT = 0;
-    final short PARAM_IDX_2DARR_OUT;
-    final short PARAM_IDX_2DARR_OUT_PITCH;
+    private final short PARAM_IDX_2DARR_OUT;
+    private final short PARAM_IDX_2DARR_OUT_PITCH;
     private final short PARAM_IDX_OUT_SIZE;
     private final short PARAM_IDX_IMAGE;
     private final short PARAM_IDX_MAX_ITERATIONS;
@@ -65,6 +66,11 @@ public abstract class RenderingKernel extends CudaKernel {
         this.width = width;
         this.height = height;
         params[PARAM_IDX_OUT_SIZE] = CudaHelpers.pointerTo(width, height);
+    }
+
+    void setOutput(CUdeviceptr output, long outputPitch){
+        params[PARAM_IDX_2DARR_OUT] = Pointer.to(output);
+        params[PARAM_IDX_2DARR_OUT_PITCH] = CudaHelpers.pointerTo(outputPitch);
     }
 
 

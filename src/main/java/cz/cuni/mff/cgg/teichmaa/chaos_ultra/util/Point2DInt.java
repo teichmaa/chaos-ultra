@@ -1,4 +1,4 @@
-package cz.cuni.mff.cgg.teichmaa.chaos_ultra.view;
+package cz.cuni.mff.cgg.teichmaa.chaos_ultra.util;
 
 import java.awt.event.MouseEvent;
 

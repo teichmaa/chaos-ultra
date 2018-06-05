@@ -379,9 +379,6 @@ void fractalRenderReuseSamples(pixel_info_t** output, long outputPitch, Pointi o
   ASSERT(idx.x < outputSize.x);
   ASSERT(idx.y < outputSize.y);
 
-  useSampleReuse = true;
-  useFoveation = true;
-
   //sample reusal:
   bool reusingSample = false;
   uint reusalResult;

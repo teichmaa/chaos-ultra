@@ -3,15 +3,16 @@ package cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer;
 
 
 import jcuda.Pointer;
+import jcuda.driver.CUdeviceptr;
 import jcuda.driver.CUmodule;
 
 public class KernelReuseSamples extends KernelMain {
 
-    final short PARAM_IDX_INPUT;
-    final short PARAM_IDX_INPUT_PITCH;
+    private final short PARAM_IDX_INPUT;
+    private final short PARAM_IDX_INPUT_PITCH;
     private final short PARAM_IMAGE_REUSED;
     private final short PARAM_USE_FOVEATION;
-    private final short PARAM_USE_SAMPLEREUSAL;
+    private final short PARAM_USE_SAMPLE_REUSAL;
 
     public KernelReuseSamples(CUmodule ownerModule) {
         super("fractalRenderReuseSamples", ownerModule);
@@ -20,7 +21,7 @@ public class KernelReuseSamples extends KernelMain {
         PARAM_IDX_INPUT = registerParam();
         PARAM_IDX_INPUT_PITCH = registerParam();
         PARAM_USE_FOVEATION = registerParam(1);
-        PARAM_USE_SAMPLEREUSAL = registerParam(1);
+        PARAM_USE_SAMPLE_REUSAL = registerParam(1);
     }
 
     @Override
@@ -37,12 +38,18 @@ public class KernelReuseSamples extends KernelMain {
         params[PARAM_IMAGE_REUSED] = pointerToAbstractReal(left_bottom_x, left_bottom_y, right_top_x, right_top_y);
     }
 
+    void setInput(CUdeviceptr input, long inputPitch){
+        params[PARAM_IDX_INPUT] = Pointer.to(input);
+        params[PARAM_IDX_INPUT_PITCH] = CudaHelpers.pointerTo(inputPitch);
+    }
+
+
 
     public void setUseFoveation(boolean value) {
         params[PARAM_USE_FOVEATION] = CudaHelpers.pointerTo(value);
     }
 
     public void setUseSampleReusal(boolean value) {
-        params[PARAM_USE_SAMPLEREUSAL] = CudaHelpers.pointerTo(value);
+        params[PARAM_USE_SAMPLE_REUSAL] = CudaHelpers.pointerTo(value);
     }
 }

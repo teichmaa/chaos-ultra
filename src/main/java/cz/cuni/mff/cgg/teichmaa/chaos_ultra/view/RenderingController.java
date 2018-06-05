@@ -7,6 +7,7 @@ import com.jogamp.opengl.util.Animator;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.FractalRenderer;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.ModuleMandelbrot;
 
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.Point2DInt;
 import javafx.application.Platform;
 
 import javax.swing.*;
@@ -335,16 +336,13 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     }
 
     private void render(final GL2 gl) {
-        if (reuseSamples) {
-            fractalRenderer.launchFastKernel(focus.getX(), focus.getY());
-        }
-        else if (currentMode.wasProgressiveRendering()){
-            fractalRenderer.launchQualityKernel();
+        if (currentMode.wasProgressiveRendering()){
+            fractalRenderer.renderQuality();
         }
         else {
-            fractalRenderer.launchFastKernel(focus.getX(), focus.getY());
+            fractalRenderer.renderFast(focus);
         }
-        //fractalRenderer.launchQualityKernel();
+        //fractalRenderer.renderQuality();
 
         gl.glMatrixMode(GL_MODELVIEW);
         //gl.glPushMatrix();
@@ -459,13 +457,6 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         gl.glBindTexture(GL_TEXTURE_2D, 0);
         ImageHelpers.createImage(data, width_t, height_t, saveImageFileName, saveImageFormat);
         System.out.println("Image saved to " + saveImageFileName);
-    }
-
-    private boolean reuseSamples = false;
-
-    public void switchReuseMode() {
-        reuseSamples = !reuseSamples;
-        this.repaint();
     }
 
     public void debugRightBottomPixel() {

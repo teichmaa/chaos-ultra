@@ -1,5 +1,6 @@
 package cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer;
 
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.Point2DInt;
 import jcuda.CudaException;
 import jcuda.NativePointerObject;
 import jcuda.Pointer;
@@ -172,65 +173,41 @@ public class FractalRenderer implements Closeable {
     }
 
     RenderingKernelParamsInfo lastRendering = new RenderingKernelParamsInfo();
-    public void launchReuseSamplesKernel(int focusx, int focusy) {
+    public void renderFast(Point2DInt focus) {
         if(memory.isPrimary2DBufferUnusable()){
             //if there is nothing to reuse, then create it
-            launchQualityKernel();
+            renderQuality();
             return;
         }
         KernelReuseSamples k = kernelReuseSamples;
-
         k.setOriginBounds(lastRendering.left_bottom_x, lastRendering.left_bottom_y, lastRendering.right_top_x, lastRendering.right_top_y);
-        k.setFocus(focusx, focusy);
+        k.setFocus(focus.getX(), focus.getY());
+        k.setInput(memory.getPrimary2DBuffer(), memory.getPrimary2DBufferPitch());
+        k.setOutput(memory.getSecondary2DBuffer(), memory.getSecondary2DBufferPitch());
 
-        NativePointerObject[] params = k.getKernelParams();
-        params[k.PARAM_IDX_INPUT] = Pointer.to(memory.getPrimary2DBuffer());
-        params[k.PARAM_IDX_INPUT_PITCH] = CudaHelpers.pointerTo(memory.getPrimary2DBufferPitch());
-        params[k.PARAM_IDX_2DARR_OUT] = Pointer.to(memory.getSecondary2DBuffer());
-        params[k.PARAM_IDX_2DARR_OUT_PITCH] = CudaHelpers.pointerTo(memory.getSecondary2DBufferPitch());
-
-        int gridDimX = getWidth() / blockDimX;
-        int gridDimY = getHeight() / blockDimY;
-
-        cuLaunchKernel(k.getFunction(),
-                gridDimX, gridDimY,
-                Pointer.to(params)
-        );
-        JCudaDriver.cuCtxSynchronize();
+        launchRenderingKernel(false, k);
         memory.switch2DBuffers();
         lastRendering.setFrom(k);
         launchDrawingKernel(false, kernelCompose, kernelMainFloat);
 
     }
 
-    /**
-     *
-     */
-    public void launchFastKernel(int focusx, int focusy) {
-        launchReuseSamplesKernel(focusx, focusy);
-    }
-
-    public void launchQualityKernel() {
+    public void renderQuality() {
         KernelMain kernelMain = kernelMainFloat.isBoundsAtFloatLimit() ? kernelMainDouble : kernelMainFloat;
         memory.resetBufferSwitch();
-        launchRenderingKernel(false, kernelMain, memory.getPrimary2DBuffer(), memory.getPrimary2DBufferPitch());
+        kernelMain.setOutput(memory.getPrimary2DBuffer(), memory.getPrimary2DBufferPitch());
+        launchRenderingKernel(false, kernelMain);
         launchDrawingKernel(false, kernelCompose, kernelMain);
         lastRendering.setFrom(kernelMain);
         memory.setPrimary2DBufferUnusable(false);
     }
 
-    private void launchRenderingKernel(boolean async, RenderingKernel kernel, CUdeviceptr output, long outputPitch) {
+    private void launchRenderingKernel(boolean async, RenderingKernel kernel) {
         int width = kernel.getWidth();
         int height = kernel.getHeight();
 
-        // Set up the kernel parameters: A pointer to an array
-        // of pointers which point to the actual values.
-        NativePointerObject[] kernelParamsArr = kernel.getKernelParams();
-        {
-            kernelParamsArr[kernel.PARAM_IDX_2DARR_OUT] = Pointer.to(output);
-            kernelParamsArr[kernel.PARAM_IDX_2DARR_OUT_PITCH] = CudaHelpers.pointerTo(outputPitch);
-        }
-        Pointer kernelParams = Pointer.to(kernelParamsArr);
+        // Following the Jcuda API, kerenel params is a pointer to an array of pointers which point to the actual values.
+        Pointer kernelParams = Pointer.to(kernel.getKernelParams());
         CUfunction kernelFunction = kernel.getFunction();
         int gridDimX = width / blockDimX;
         int gridDimY = height / blockDimY;
