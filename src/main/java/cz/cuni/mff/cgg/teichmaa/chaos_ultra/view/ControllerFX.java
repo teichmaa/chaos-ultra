@@ -32,7 +32,7 @@ public class ControllerFX implements Initializable {
     @FXML
     private TextField zoom;
     @FXML
-    private TextField dwell;
+    private TextField maxIterations;
     @FXML
     private TextField superSamplingLevel;
     @FXML
@@ -80,7 +80,7 @@ public class ControllerFX implements Initializable {
             double x = Double.parseDouble(center_x.getText());
             double y = Double.parseDouble(center_y.getText());
             double zoom = Double.parseDouble(this.zoom.getText());
-            int dwell = Integer.parseInt(this.dwell.getText());
+            int maxIterations = Integer.parseInt(this.maxIterations.getText());
             int supsamp_tmp = Integer.parseInt(superSamplingLevel.getText());
             if (supsamp_tmp >= SUPER_SAMPLING_MAX_LEVEL) {
                 supsamp_tmp = SUPER_SAMPLING_MAX_LEVEL;
@@ -96,7 +96,7 @@ public class ControllerFX implements Initializable {
 
             SwingUtilities.invokeLater(() -> {
                 renderingController.setBounds(x, y, zoom);
-                renderingController.setDwell(dwell);
+                renderingController.setMaxIterations(maxIterations);
                 renderingController.setSuperSamplingLevel(supsamp);
                 renderingController.setUseAutomaticQuality(autoQuality);
                 renderingController.setAdaptiveSS(adaptiveSS);
@@ -119,8 +119,8 @@ public class ControllerFX implements Initializable {
         superSamplingLevel.setText("" + SSLevel);
     }
 
-    void setDwell(int dwell){
-        this.dwell.setText("" + dwell);
+    void setMaxIterations(int maxIterations){
+        this.maxIterations.setText("" + maxIterations);
     }
 
     void setZoom(double zoom) {
@@ -131,7 +131,7 @@ public class ControllerFX implements Initializable {
         center_x.setText("-0.5");
         center_y.setText("0");
         zoom.setText("2");
-        dwell.setText("1400");
+        maxIterations.setText("1400");
         useAdaptiveSS.setSelected(false);
         superSamplingLevel.setText("5");
         useAutomaticQuality.setSelected(false);
@@ -176,7 +176,7 @@ public class ControllerFX implements Initializable {
         zoom.setText("8.00592947491907E-09");
         superSamplingLevel.setText("8");
         useAdaptiveSS.setSelected(false);
-        setDwell(3000);
+        setMaxIterations(3000);
         renderClicked(actionEvent);
     }
 

@@ -10,11 +10,9 @@ import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.ModuleMandelbrot;
 import javafx.application.Platform;
 
 import javax.swing.*;
-import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
-import java.awt.geom.Point2D;
 import java.nio.Buffer;
 import java.nio.IntBuffer;
 
@@ -198,7 +196,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
             controllerFX.setZoom(getZoom());
             controllerFX.setX(getCenterX());
             controllerFX.setY(getCenterY());
-            controllerFX.setDwell(fractalRenderer.getDwell());
+            controllerFX.setMaxIterations(fractalRenderer.getDwell());
             controllerFX.setSuperSamplingLevel(fractalRenderer.getSuperSamplingLevel());
             controllerFX.setDimensions(fractalRenderer.getWidth(), fractalRenderer.getHeight());
         });
@@ -414,8 +412,8 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         plane_right_top_y = center_y + windowHeight * zoom / 2;
     }
 
-    void setDwell(int dwell) {
-        fractalRenderer.setDwell(dwell);
+    void setMaxIterations(int maxIterations) {
+        fractalRenderer.setMaxIterations(maxIterations);
     }
 
     void setSuperSamplingLevel(int supSampLvl) {

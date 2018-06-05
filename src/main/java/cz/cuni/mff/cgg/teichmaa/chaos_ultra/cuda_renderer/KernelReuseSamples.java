@@ -9,20 +9,14 @@ public class KernelReuseSamples extends KernelMain {
 
     final short PARAM_IDX_INPUT;
     final short PARAM_IDX_INPUT_PITCH;
-    private final short PARAM_IDX_P;
-    private final short PARAM_IDX_Q;
-    private final short PARAM_IDX_R;
-    private final short PARAM_IDX_S;
+    private final short PARAM_IMAGE_REUSED;
     private final short PARAM_USE_FOVEATION;
     private final short PARAM_USE_SAMPLEREUSAL;
 
     public KernelReuseSamples(CUmodule ownerModule) {
         super("fractalRenderReuseSamples", ownerModule);
 
-        PARAM_IDX_P = registerParam(0);
-        PARAM_IDX_Q = registerParam(0);
-        PARAM_IDX_R = registerParam(0);
-        PARAM_IDX_S = registerParam(0);
+        PARAM_IMAGE_REUSED = registerParam(0);
         PARAM_IDX_INPUT = registerParam();
         PARAM_IDX_INPUT_PITCH = registerParam();
         PARAM_USE_FOVEATION = registerParam(1);
@@ -34,11 +28,13 @@ public class KernelReuseSamples extends KernelMain {
         return CudaHelpers.pointerTo((float) value);
     }
 
-    public void setOriginBounds(double p, double q, double r, double s){
-        params[PARAM_IDX_P] = pointerToAbstractReal(p);
-        params[PARAM_IDX_Q] = pointerToAbstractReal(q);
-        params[PARAM_IDX_R] = pointerToAbstractReal(r);
-        params[PARAM_IDX_S] = pointerToAbstractReal(s);
+    @Override
+    Pointer pointerToAbstractReal(double v1, double v2, double v3, double v4) {
+        return CudaHelpers.pointerTo((float) v1, (float) v2, (float) v3, (float) v4);
+    }
+
+    public void setOriginBounds(double left_bottom_x, double left_bottom_y, double right_top_x, double right_top_y){
+        params[PARAM_IMAGE_REUSED] = pointerToAbstractReal(left_bottom_x, left_bottom_y, right_top_x, right_top_y);
     }
 
 

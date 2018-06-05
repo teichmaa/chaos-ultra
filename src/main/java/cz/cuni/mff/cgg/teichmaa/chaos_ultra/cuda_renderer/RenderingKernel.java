@@ -8,13 +8,9 @@ public abstract class RenderingKernel extends CudaKernel {
     //final short PARAM_IDX_SURFACE_OUT = 0;
     final short PARAM_IDX_2DARR_OUT;
     final short PARAM_IDX_2DARR_OUT_PITCH;
-    private final short PARAM_IDX_WIDTH;
-    private final short PARAM_IDX_HEIGHT;
-    private final short PARAM_IDX_LEFT_BOTTOM_X;
-    private final short PARAM_IDX_LEFT_BOTTOM_Y;
-    private final short PARAM_IDX_RIGHT_TOP_X;
-    private final short PARAM_IDX_RIGHT_TOP_Y;
-    private final short PARAM_IDX_DWELL;
+    private final short PARAM_IDX_OUT_SIZE;
+    private final short PARAM_IDX_IMAGE;
+    private final short PARAM_IDX_MAX_ITERATIONS;
 
     RenderingKernel(String functionName, CUmodule ownerModule) {
         super(functionName, ownerModule);
@@ -22,21 +18,16 @@ public abstract class RenderingKernel extends CudaKernel {
         //initialize params[]:
         PARAM_IDX_2DARR_OUT = registerParam();
         PARAM_IDX_2DARR_OUT_PITCH = registerParam();
-        PARAM_IDX_WIDTH = registerParam();
-        PARAM_IDX_HEIGHT = registerParam();
-        PARAM_IDX_LEFT_BOTTOM_X = registerParam();
-        PARAM_IDX_LEFT_BOTTOM_Y = registerParam();
-        PARAM_IDX_RIGHT_TOP_X = registerParam();
-        PARAM_IDX_RIGHT_TOP_Y  = registerParam();
-        PARAM_IDX_DWELL = registerParam();
+        PARAM_IDX_OUT_SIZE = registerParam();
+        PARAM_IDX_IMAGE = registerParam();
+        PARAM_IDX_MAX_ITERATIONS = registerParam();
 
-        setWidth(width);
-        setHeight(height);
+        setOutputSize(width, height);
         setBounds(left_bottom_x, left_bottom_y, right_top_x, right_top_y);
-        setDwell(100);
+        setMaxIterations(1);
     }
 
-    private int dwell;
+    private int maxIterations;
     private int width;
     private int height;
     private double left_bottom_x;
@@ -50,14 +41,16 @@ public abstract class RenderingKernel extends CudaKernel {
      * @return Float pointer to {@code (float)value} or double pointer to {@code value}
      */
     abstract Pointer pointerToAbstractReal(double value);
+    abstract Pointer pointerToAbstractReal(double v1,double v2,double v3,double v4);
 
-    int getDwell() {
-        return dwell;
+    int getMaxIterations() {
+        return maxIterations;
     }
 
-    void setDwell(int dwell) {
-        this.dwell = dwell;
-        params[PARAM_IDX_DWELL] = CudaHelpers.pointerTo(dwell);
+    void setMaxIterations(int maxIterations) {
+        if(maxIterations < 1) throw new IllegalArgumentException("maxIterations must be a positive number, but is : " + maxIterations);
+        this.maxIterations = maxIterations;
+        params[PARAM_IDX_MAX_ITERATIONS] = CudaHelpers.pointerTo(maxIterations);
     }
 
     int getWidth() {
@@ -68,57 +61,35 @@ public abstract class RenderingKernel extends CudaKernel {
         return height;
     }
 
-    void setWidth(int width) {
+    void setOutputSize(int width, int height) {
         this.width = width;
-        params[PARAM_IDX_WIDTH] = CudaHelpers.pointerTo(width);
+        this.height = height;
+        params[PARAM_IDX_OUT_SIZE] = CudaHelpers.pointerTo(width, height);
     }
 
-    void setHeight(int height) {
-        this.height = height;
-        params[PARAM_IDX_HEIGHT] = CudaHelpers.pointerTo(height);
-    }
 
     double getLeft_bottom_x() {
         return left_bottom_x;
-    }
-
-    void setLeft_bottom_x(double left_bottom_x) {
-        this.left_bottom_x = left_bottom_x;
-        params[PARAM_IDX_LEFT_BOTTOM_X] = pointerToAbstractReal(left_bottom_x);
     }
 
     double getLeft_bottom_y() {
         return left_bottom_y;
     }
 
-    void setLeft_bottom_y(double left_bottom_y) {
-        this.left_bottom_y = left_bottom_y;
-        params[PARAM_IDX_LEFT_BOTTOM_Y] = pointerToAbstractReal(left_bottom_y);
-    }
-
     double getRight_top_x() {
         return right_top_x;
-    }
-
-    void setRight_top_x(double right_top_x) {
-        this.right_top_x = right_top_x;
-        params[PARAM_IDX_RIGHT_TOP_X] = pointerToAbstractReal(right_top_x);
     }
 
     double getRight_top_y() {
         return right_top_y;
     }
 
-    void setRight_top_y(double right_top_y) {
-        this.right_top_y = right_top_y;
-        params[PARAM_IDX_RIGHT_TOP_Y] = pointerToAbstractReal(right_top_y);
-    }
-
     void setBounds(double left_bottom_x, double left_bottom_y, double right_top_x, double right_top_y) {
-        setLeft_bottom_x(left_bottom_x);
-        setLeft_bottom_y(left_bottom_y);
-        setRight_top_x(right_top_x);
-        setRight_top_y(right_top_y);
+        params[PARAM_IDX_IMAGE] = pointerToAbstractReal(left_bottom_x, left_bottom_y, right_top_x, right_top_y);
+        this.left_bottom_x = left_bottom_x;
+        this.left_bottom_y = left_bottom_y;
+        this.right_top_x = right_top_x;
+        this.right_top_y = right_top_y;
         if(isBoundsAtDoubleLimit()){
             System.out.println("warning: double limit");
         }

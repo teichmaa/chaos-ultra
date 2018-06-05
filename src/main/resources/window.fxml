@@ -47,9 +47,9 @@
                 <padding>
                     <Insets top="5" right="5" bottom="5" left="5"/>
                 </padding>
-                dwell:
+                max iterations:
             </Label>
-            <TextField fx:id="dwell" text="2000"/>
+            <TextField fx:id="maxIterations" text="2000"/>
         </HBox>
         <HBox>
             <Label>

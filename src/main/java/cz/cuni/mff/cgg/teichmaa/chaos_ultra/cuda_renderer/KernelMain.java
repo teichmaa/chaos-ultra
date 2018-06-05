@@ -4,30 +4,27 @@ import jcuda.driver.CUmodule;
 
 abstract class KernelMain extends RenderingKernel {
 
-    private final short PARAM_IDX_SUPER_SAMPLING_LEVEL;
+    // uint maxSuperSampling,
+    // Pointi focus, bool adaptiveSS, bool visualiseSS,
+
+
+    private final short PARAM_IDX_MAX_SUPER_SAMPLING;
+    final short PARAM_IDX_FOCUS;
     private final short PARAM_IDX_ADAPTIVE_SS;
     private final short PARAM_IDX_VISUALISE_ADAPTIVE_SS;
-    final short PARAM_IDX_RANDOM_SAMPLES;
-    private final short PARAM_IDX_RENDER_RADIUS;
-    private final short PARAM_IDX_FOCUS_X;
-    private final short PARAM_IDX_FOCUS_Y;
 
     KernelMain(String name, CUmodule ownerModule) {
         super(name, ownerModule);
 
         //initialize params[] :
-        PARAM_IDX_SUPER_SAMPLING_LEVEL = registerParam(1);
+        PARAM_IDX_MAX_SUPER_SAMPLING = registerParam(1);
+        PARAM_IDX_FOCUS = registerParam(0);
         PARAM_IDX_ADAPTIVE_SS = registerParam(1);
         PARAM_IDX_VISUALISE_ADAPTIVE_SS = registerParam(0);
-        PARAM_IDX_RANDOM_SAMPLES = registerParam(0);
-        PARAM_IDX_RENDER_RADIUS = registerParam(0);
-        PARAM_IDX_FOCUS_X = registerParam(0);
-        PARAM_IDX_FOCUS_Y = registerParam(0);
 
         setSuperSamplingLevel(1);
         setAdaptiveSS(true);
         setVisualiseAdaptiveSS(false);
-        setRenderRadius(FractalRenderer.FOVEATION_CENTER_RADIUS);
     }
 
     private int superSamplingLevel;
@@ -55,10 +52,9 @@ abstract class KernelMain extends RenderingKernel {
         params[PARAM_IDX_ADAPTIVE_SS] = CudaHelpers.pointerTo(adaptiveSS);
     }
 
-
     void setSuperSamplingLevel(int superSamplingLevel) {
         this.superSamplingLevel = superSamplingLevel;
-        params[PARAM_IDX_SUPER_SAMPLING_LEVEL] = CudaHelpers.pointerTo(superSamplingLevel);
+        params[PARAM_IDX_MAX_SUPER_SAMPLING] = CudaHelpers.pointerTo(superSamplingLevel);
     }
 
     int getSuperSamplingLevel() {
@@ -69,22 +65,8 @@ abstract class KernelMain extends RenderingKernel {
         return renderRadius;
     }
 
-    public void setRenderRadiusToMax(){
-        setRenderRadius(Math.max(getWidth(),getHeight()));
-    }
-
-    public void setRenderRadius(int renderRadius) {
-        this.renderRadius = renderRadius;
-        params[PARAM_IDX_RENDER_RADIUS] = CudaHelpers.pointerTo(renderRadius);
-    }
-
-    public void setFocusDefault(){
-        setFocus(getWidth() / 2, getHeight() /2);
-    }
-
     public void setFocus(int x, int y){
-        params[PARAM_IDX_FOCUS_X] = CudaHelpers.pointerTo(x);
-        params[PARAM_IDX_FOCUS_Y] = CudaHelpers.pointerTo(y);
+        params[PARAM_IDX_FOCUS] = CudaHelpers.pointerTo(x, y);
         this.focus_x = x;
         this.focus_y = y;
     }

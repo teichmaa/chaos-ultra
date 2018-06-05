@@ -15,6 +15,11 @@ public class KernelMainDouble extends KernelMain {
         return CudaHelpers.pointerTo(value);
     }
 
+    @Override
+    Pointer pointerToAbstractReal(double v1, double v2, double v3, double v4) {
+        return CudaHelpers.pointerTo(v1, v2, v3, v4);
+    }
+
     public KernelMainDouble(CUmodule ownerModule) {
         super(name, ownerModule);
     }

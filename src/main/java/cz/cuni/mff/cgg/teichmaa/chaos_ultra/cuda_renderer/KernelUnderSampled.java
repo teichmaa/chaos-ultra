@@ -37,4 +37,8 @@ class KernelUnderSampled extends RenderingKernel {
         return CudaHelpers.pointerTo((float)value);
     }
 
+    @Override
+    Pointer pointerToAbstractReal(double v1, double v2, double v3, double v4) {
+        return CudaHelpers.pointerTo((float) v1, (float) v2, (float) v3, (float) v4);
+    }
 }

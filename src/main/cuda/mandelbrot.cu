@@ -46,11 +46,11 @@ __device__ const uint MAX_SS_LEVEL = 256;
 //    y ... for imag part (corresponding to geometric y-axis)
 
 template <class Real> __device__ __forceinline__
-uint escape(uint dwell, Point<Real> c){
+uint escape(uint maxIterations, Point<Real> c){
   Point<Real> z(0,0);
   Real zx_new;
   uint i = 0;
-  while(i < dwell && z.x*z.x+z.y*z.y < 4){
+  while(i < maxIterations && z.x*z.x+z.y*z.y < 4){
       zx_new = z.x*z.x-z.y*z.y + c.x;
       z.y = 2*z.x*z.y + c.y; 
       z.x = zx_new;
@@ -120,18 +120,18 @@ __device__ const Point<uint> getImageIndexes(){
 }
 
 __device__ __forceinline__
-pixel_info_t* getPtrToPixel(uint** array2D, long pitch, uint x, uint y){
+pixel_info_t* getPtrToPixel(pixel_info_t** array2D, long pitch, uint x, uint y){
   return (((pixel_info_t*)((char*)array2D + y * pitch)) + x);
 }
 
 /// param sampleCount: Maximum number of samples to take. Actual number of samples taken will be stored here before returning. If adaptiveSS==false, the value will not change.
 template <class Real> __device__
-uint sampleTheFractal(Pointi pixel, uint width, uint height, Rectangle<Real> image, uint dwell,uint & sampleCount, bool adaptiveSS, bool visualiseSS){
+uint sampleTheFractal(Pointi pixel, Pointi size, Rectangle<Real> image, uint maxIterations,uint & sampleCount, bool adaptiveSS, bool visualiseSS){
   const uint adaptiveTreshold = 10;
   uint r[adaptiveTreshold];
 
   //We are in a complex plane from (left_bottom) to (right_top), so we scale the pixels to it
-  Point<Real> pixelSize = image.size() / Point<Real>(width, height);
+  Point<Real> pixelSize = image.size() / size.cast<Real>();
   
   uint escapeTimeSum = 0;
   ASSERT (sampleCount <= MAX_SS_LEVEL);
@@ -142,7 +142,7 @@ uint sampleTheFractal(Pointi pixel, uint width, uint height, Rectangle<Real> ima
     const Point<Real> c = Point<Real>(image.left_bottom.x, image.right_top.y) +
       Point<Real>(1,-1) * (pixel.cast<Real>() + delta) * pixelSize;
 
-    uint escapeTime = escape(dwell, c);
+    uint escapeTime = escape(maxIterations, c);
     escapeTimeSum += escapeTime;
     if(i < adaptiveTreshold){
       r[i] = escapeTime;
@@ -173,40 +173,42 @@ uint sampleTheFractal(Pointi pixel, uint width, uint height, Rectangle<Real> ima
 } 
 
 template <class Real> __device__ __forceinline__
-void fractalRenderMain(uint** output, long outputPitch, uint width, uint height, Rectangle<Real> image, uint dwell, uint superSamplingLevel, bool adaptiveSS, bool visualiseSS, float* randomSamples, uint renderRadius, uint focus_x, uint focus_y, bool isDoublePrecision)
-// todo: usporadat poradi paramateru, cudaXXObjects predavat pointrem, ne kopirovanim (tohle rozmyslet, mozna je to takhle dobre)
-//  todo ma to fakt hodne pointeru, mnoho z nich je pritom pro vsechny launche stejny - nezdrzuje tohle? omezene registry a tak
+void fractalRenderMain(pixel_info_t** output, long outputPitch, Pointi outputSize, Rectangle<Real> image, uint maxIterations, uint maxSuperSampling, Pointi focus, bool adaptiveSS, bool visualiseSS)
 {
   const Pointi idx = getImageIndexes();
-  if(idx.x >= width || idx.y >= height) return;
-  // if(idx.x == 0 && idx.y == 0){
-  //   printf();
-  // }
-  //if(!isWithinRadius(idx.x, idx.y, width, height, renderRadius, focus_x, focus_y)) return;
+  if(idx.x >= outputSize.x || idx.y >= outputSize.y) return;
+  if(idx.x == 0 && idx.y == 0){
+    //printf("fractal render main\n");
+    // printf("image:\t%f\t%f\t%f\t%f\n", image.left_bottom.x, image.left_bottom.y, image.right_top.x, image.right_top.y);
+    // printf("outputsize:\t%d\t%d\n", outputSize.x, outputSize.y);
+    // printf("focus:\t%d\t%d\n", focus.x, focus.y);
+    // printf("dwell:\t%d\tss:\t%d\n", maxIterations, maxSuperSampling);
+  }
   
-  uint result = sampleTheFractal(idx, width, height, image, dwell, superSamplingLevel, adaptiveSS, visualiseSS);
+  //the value of maxSuperSampling will be changed by the calee
+  uint result = sampleTheFractal(idx, outputSize, image, maxIterations, maxSuperSampling, adaptiveSS, visualiseSS);
 
   pixel_info_t* pOutput = getPtrToPixel(output, outputPitch, idx.x, idx.y);
   pOutput->value = result;
-  pOutput->weight = (float) superSamplingLevel;
+  pOutput->weight = (float) maxSuperSampling;
   ASSERT(pOutput->weight > 0);
 }
 
 //section exported global kernels:
 
 extern "C" __global__
-void fractalRenderMainFloat(uint** output, long outputPitch, uint width, uint height, float left_bottom_x, float left_bottom_y, float right_top_x, float right_top_y, uint dwell, uint superSamplingLevel, bool adaptiveSS, bool visualiseSS, float* randomSamples, uint renderRadius, uint focus_x, uint focus_y){
-  fractalRenderMain<float>(output, outputPitch, width, height, Rectangle<float>(left_bottom_x, left_bottom_y, right_top_x, right_top_y), dwell, superSamplingLevel, adaptiveSS, visualiseSS, randomSamples,  renderRadius, focus_x, focus_y, false);
+void fractalRenderMainFloat(pixel_info_t** output, long outputPitch, Pointi outputSize, Rectangle<float> image, uint maxIterations, uint maxSuperSampling, Pointi focus, bool adaptiveSS, bool visualiseSS){
+  fractalRenderMain<float>(output, outputPitch, outputSize, image, maxIterations, maxSuperSampling, focus, adaptiveSS, visualiseSS);
 }
 
 extern "C" __global__
-void fractalRenderMainDouble(uint** output, long outputPitch, uint width, uint height, double left_bottom_x, double left_bottom_y, double right_top_x, double right_top_y, uint dwell, uint superSamplingLevel, bool adaptiveSS, bool visualiseSS, float* randomSamples, uint renderRadius, uint focus_x, uint focus_y){
-  fractalRenderMain<double>(output, outputPitch, width, height, Rectangle<double>(left_bottom_x, left_bottom_y, right_top_x, right_top_y), dwell, superSamplingLevel, adaptiveSS, visualiseSS, randomSamples,  renderRadius, focus_x, focus_y, true);
+void fractalRenderMainDouble(pixel_info_t** output, long outputPitch, Pointi outputSize, Rectangle<double> image, uint maxIterations, uint maxSuperSampling, Pointi focus, bool adaptiveSS, bool visualiseSS){
+  fractalRenderMain<double>(output, outputPitch, outputSize, image, maxIterations, maxSuperSampling, focus, adaptiveSS, visualiseSS);
 
 }
 
 extern "C" __global__
-void compose(uint** inputMain, long inputMainPitch, uint** inputBcg, long inputBcgPitch, cudaSurfaceObject_t surfaceOutput, uint width, uint height, cudaSurfaceObject_t colorPalette, uint paletteLength, uint dwell, uint mainRenderRadius, uint focus_x, uint focus_y){
+void compose(pixel_info_t** inputMain, long inputMainPitch, pixel_info_t** inputBcg, long inputBcgPitch, cudaSurfaceObject_t surfaceOutput, uint width, uint height, cudaSurfaceObject_t colorPalette, uint paletteLength, uint maxIterations, uint mainRenderRadius, uint focus_x, uint focus_y){
   const uint idx_x = blockDim.x * blockIdx.x + threadIdx.x;
   const uint idx_y = blockDim.y * blockIdx.y + threadIdx.y;
   if(idx_x >= width || idx_y >= height) return;
@@ -241,11 +243,7 @@ void compose(uint** inputMain, long inputMainPitch, uint** inputBcg, long inputB
   //choose result from one or two
 
   pixel_info_t* pResult;
-  if(isWithinRadius(idx_x, idx_y, width, height, mainRenderRadius, focus_x, focus_y)){
-    pResult = getPtrToPixel(inputMain, inputMainPitch, idx_x, idx_y);
-  }else{
-    pResult = getPtrToPixel(inputBcg, inputBcgPitch, idx_x, idx_y);
-  }
+  pResult = getPtrToPixel(inputMain, inputMainPitch, idx_x, idx_y);
   uint result = pResult->value;
 
   uint paletteIdx = paletteLength - (result % paletteLength) - 1;
@@ -253,7 +251,7 @@ void compose(uint** inputMain, long inputMainPitch, uint** inputBcg, long inputB
   ASSERT(paletteIdx < paletteLength);
   uint resultColor;
   surf2Dread(&resultColor, colorPalette, paletteIdx * sizeof(uint), 0);
-  // if(result == dwell || result == dwell-1)
+  // if(result == maxIterations || result == maxIterations-1)
   //   resultColor = ColorsARGB::YELLOW;
 
   surf2Dwrite(resultColor, surfaceOutput, idx_x * sizeof(uint), idx_y);
@@ -263,7 +261,7 @@ extern "C" __global__
 void blur(){}
 
 extern "C" __global__
-void fractalRenderUnderSampled(uint** output, long outputPitch, uint width, uint height, float left_bottom_x, float left_bottom_y, float right_top_x, float right_top_y, uint dwell, uint underSamplingLevel)
+void fractalRenderUnderSampled(pixel_info_t** output, long outputPitch, uint width, uint height, float left_bottom_x, float left_bottom_y, float right_top_x, float right_top_y, uint maxIterations, uint underSamplingLevel)
 {
   //work only at every Nth pixel:
   const uint idx_x = (blockDim.x * blockIdx.x + threadIdx.x) * underSamplingLevel;
@@ -277,7 +275,7 @@ void fractalRenderUnderSampled(uint** output, long outputPitch, uint width, uint
   float cx = left_bottom_x + (idx_x)  * pixelWidth;
   float cy = right_top_y - (idx_y) * pixelHeight;
 
-  uint escapeTime = escape(dwell, Pointf(cx, cy));
+  uint escapeTime = escape(maxIterations, Pointf(cx, cy));
 
   for(uint x = 0; x < underSamplingLevel; x++){
     for(uint y = 0; y < underSamplingLevel; y++){
@@ -371,16 +369,15 @@ uint getAdvisedSampleCount(Pointi pixel, Pointi focus, uint maxSuperSamplingLeve
 }
 
 extern "C" __global__
-void fractalRenderReuseSamples(uint** output, long outputPitch, uint width, uint height, float a, float b, float c, float d, uint dwell, uint superSamplingLevel, bool adaptiveSS, bool visualiseSS, float* randomSamples, uint renderRadius, uint focus_x, uint focus_y, float p, float q, float r, float s, uint** input, long inputPitch, bool useFoveation, bool useSampleReuse){
+void fractalRenderReuseSamples(pixel_info_t** output, long outputPitch, Pointi outputSize, Rectangle<float> image, uint maxIterations, uint maxSuperSampling, Pointi focus, bool adaptiveSS, bool visualiseSS, Rectangle<float> imageReused, pixel_info_t** input, long inputPitch, bool useFoveation, bool useSampleReuse){
 
   const Pointi idx = getImageIndexes();
-  if(idx.x >= width || idx.y >= height) return;
-  if(idx.x == 0 && idx.y == 0){
-    printf("fractalRenderReuseSamples:\n");
-  }
-  ASSERT(idx.x < width);
-  ASSERT(idx.y < height);
-  Rectangle<float> image = Rectangle<float>(a,b,c,d);
+  if(idx.x >= outputSize.x || idx.y >= outputSize.y) return;
+  // if(idx.x == 0 && idx.y == 0){
+  //   printf("fractalRenderReuseSamples:\n");
+  // }
+  ASSERT(idx.x < outputSize.x);
+  ASSERT(idx.y < outputSize.y);
 
   useSampleReuse = true;
   useFoveation = true;
@@ -390,10 +387,9 @@ void fractalRenderReuseSamples(uint** output, long outputPitch, uint width, uint
   uint reusalResult;
   float reusalWeight;
   if(useSampleReuse){
-    const Pointf originf = getWarpingOrigin(Pointf(idx.x, idx.y),Pointf(width,height),image, Rectangle<float>(p,q,r,s));
+    const Pointf originf = getWarpingOrigin(Pointf(idx.x, idx.y),outputSize.cast<float>(),image, imageReused);
     const Point<int> origin = Point<int>((int)round(originf.x), (int)round(originf.y)); //it is important to convert to signed int, not uint (because the value may be negative)
-    if(origin.x < 0 || origin.x >= width || origin.y < 0 || origin.y >= height){
-      reusalResult = 404;   //not-found error :)
+    if(origin.x < 0 || origin.x >= outputSize.x || origin.y < 0 || origin.y >= outputSize.y){
       reusingSample = false;
     }
     else{
@@ -405,12 +401,12 @@ void fractalRenderReuseSamples(uint** output, long outputPitch, uint width, uint
   }
   
   //sample generation:
-  uint sampleCount = superSamplingLevel;
+  uint sampleCount = maxSuperSampling;
   if (useFoveation)
-    sampleCount = getAdvisedSampleCount(idx, Pointi(focus_x, focus_y), superSamplingLevel);
+    sampleCount = getAdvisedSampleCount(idx, focus, maxSuperSampling);
   if((!reusingSample || reusalWeight == 0) && sampleCount == 0)  sampleCount = 1; //at least one sample has to be taken somewhere
       //indeed, it may happen that reusalWeight == 0, because reusalWeight decreases in time (see reusedSampleDegradateCoeff)
-  uint renderResult = sampleTheFractal(idx, width, height, image, dwell, sampleCount, adaptiveSS, visualiseSS);
+  uint renderResult = sampleTheFractal(idx, outputSize, image, maxIterations, sampleCount, adaptiveSS, visualiseSS);
   ASSERT(reusingSample || sampleCount > 0);
 
   //combine reused and generated samples:
@@ -434,11 +430,11 @@ void fractalRenderReuseSamples(uint** output, long outputPitch, uint width, uint
 // //debug pravy dolni roh:
 //       uint qqq = 16;
 //   if(idx.x >= width-qqq || idx.y >= height-qqq)      
-//       result = dwell;
+//       result = maxIterations;
 
   if(visualiseSS){
     if(reusingSample) ++sampleCount;
-    result = sampleCount / float (superSamplingLevel) * 255;
+    result = sampleCount / float (maxSuperSampling) * 255;
   }
 
   pixel_info_t* pOutput = getPtrToPixel(output, outputPitch, idx.x, idx.y);
@@ -448,7 +444,7 @@ void fractalRenderReuseSamples(uint** output, long outputPitch, uint width, uint
 }
 
 
-__device__ void printParams_debug(cudaSurfaceObject_t surfaceOutput, long outputDataPitch_debug, uint width, uint height, float left_bottom_x, float left_bottom_y, float right_top_x, float right_top_y, uint dwell, uint** outputData_debug, cudaSurfaceObject_t colorPalette, uint paletteLength, float* randomSamples, uint superSamplingLevel, bool adaptiveSS, bool visualiseSS){
+__device__ void printParams_debug(cudaSurfaceObject_t surfaceOutput, long outputDataPitch_debug, uint width, uint height, float left_bottom_x, float left_bottom_y, float right_top_x, float right_top_y, uint maxIterations, uint** outputData_debug, cudaSurfaceObject_t colorPalette, uint paletteLength, float* randomSamples, uint superSamplingLevel, bool adaptiveSS, bool visualiseSS){
   const uint idx_x = blockDim.x * blockIdx.x + threadIdx.x;
   const uint idx_y = blockDim.y * blockIdx.y + threadIdx.y;
   if(idx_x != 0 || idx_y != 0)
@@ -456,6 +452,6 @@ __device__ void printParams_debug(cudaSurfaceObject_t surfaceOutput, long output
   printf("\n");
   printf("width:\t%u\n",width);
   printf("height:\t%u\n",height);
-  printf("dwell:\t%u\n",dwell);
+  printf("maxIterations:\t%u\n",maxIterations);
   printf("SS lvl:\t%u\n",superSamplingLevel);
 }

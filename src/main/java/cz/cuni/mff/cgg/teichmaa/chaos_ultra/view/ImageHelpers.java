@@ -14,8 +14,7 @@ public class ImageHelpers {
 
         //rgb-2-hsv transitions palette:
 
-        //idea: the last color seems to be always the background color (with curr dwell)  - allow user setting of bcg color?
-        //  resp. allow user modulo-rotating of color palette
+        //  resp. allow user modulo-rotating of color palette or some other changes
 
         for (int i = max * 0; i < max * 1; i++) {
             p[i] = fromRGB(i,0,Math.min(fullColor, fullColor/2+i)); //blue to magenta gradient
