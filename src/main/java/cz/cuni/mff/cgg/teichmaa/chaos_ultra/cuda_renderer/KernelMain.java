@@ -9,7 +9,6 @@ abstract class KernelMain extends RenderingKernel {
 
 
     private final short PARAM_IDX_MAX_SUPER_SAMPLING;
-    private final short PARAM_IDX_FOCUS;
     private final short PARAM_IDX_ADAPTIVE_SS;
     private final short PARAM_IDX_VISUALISE_ADAPTIVE_SS;
 
@@ -18,7 +17,6 @@ abstract class KernelMain extends RenderingKernel {
 
         //initialize params[] :
         PARAM_IDX_MAX_SUPER_SAMPLING = registerParam(1);
-        PARAM_IDX_FOCUS = registerParam(0);
         PARAM_IDX_ADAPTIVE_SS = registerParam(1);
         PARAM_IDX_VISUALISE_ADAPTIVE_SS = registerParam(0);
 
@@ -30,9 +28,6 @@ abstract class KernelMain extends RenderingKernel {
     private int superSamplingLevel;
     private boolean adaptiveSS;
     private boolean visualiseAdaptiveSS;
-    private int renderRadius;
-    private int focus_x;
-    private int focus_y;
 
     boolean getVisualiseAdaptiveSS() {
         return visualiseAdaptiveSS;
@@ -61,22 +56,5 @@ abstract class KernelMain extends RenderingKernel {
         return superSamplingLevel;
     }
 
-    public int getRenderRadius() {
-        return renderRadius;
-    }
-
-    public void setFocus(int x, int y){
-        params[PARAM_IDX_FOCUS] = CudaHelpers.pointerTo(x, y);
-        this.focus_x = x;
-        this.focus_y = y;
-    }
-
-    public int getFocusX() {
-        return focus_x;
-    }
-
-    public int getFocusY() {
-        return focus_y;
-    }
 
 }

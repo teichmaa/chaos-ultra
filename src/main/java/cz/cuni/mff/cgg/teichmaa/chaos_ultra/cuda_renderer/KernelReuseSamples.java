@@ -12,6 +12,7 @@ public class KernelReuseSamples extends KernelMain {
     private final short PARAM_IDX_INPUT_PITCH;
     private final short PARAM_IMAGE_REUSED;
     private final short PARAM_USE_FOVEATION;
+    private final short PARAM_IDX_FOCUS;
     private final short PARAM_USE_SAMPLE_REUSAL;
 
     public KernelReuseSamples(CUmodule ownerModule) {
@@ -21,8 +22,12 @@ public class KernelReuseSamples extends KernelMain {
         PARAM_IDX_INPUT = registerParam();
         PARAM_IDX_INPUT_PITCH = registerParam();
         PARAM_USE_FOVEATION = registerParam(1);
+        PARAM_IDX_FOCUS = registerParam(0);
         PARAM_USE_SAMPLE_REUSAL = registerParam(1);
     }
+
+    private int focus_x;
+    private int focus_y;
 
     @Override
     Pointer pointerToAbstractReal(double value) {
@@ -41,6 +46,20 @@ public class KernelReuseSamples extends KernelMain {
     void setInput(CUdeviceptr input, long inputPitch){
         params[PARAM_IDX_INPUT] = Pointer.to(input);
         params[PARAM_IDX_INPUT_PITCH] = CudaHelpers.pointerTo(inputPitch);
+    }
+
+    public void setFocus(int x, int y){
+        params[PARAM_IDX_FOCUS] = CudaHelpers.pointerTo(x, y);
+        this.focus_x = x;
+        this.focus_y = y;
+    }
+
+    public int getFocusX() {
+        return focus_x;
+    }
+
+    public int getFocusY() {
+        return focus_y;
     }
 
 

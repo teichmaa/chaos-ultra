@@ -13,10 +13,6 @@ public class KernelCompose extends CudaKernel {
     final short PARAM_IDX_HEIGHT;
     final short PARAM_IDX_SURFACE_PALETTE;
     final short PARAM_IDX_PALETTE_LENGTH;
-    final short PARAM_IDX_DWELL;
-    final short PARAM_IDX_MAIN_RADIUS;
-    final short PARAM_IDX_FOCUS_X;
-    final short PARAM_IDX_FOCUS_Y;
 
     public static final String name = "compose";
 
@@ -32,10 +28,6 @@ public class KernelCompose extends CudaKernel {
         PARAM_IDX_HEIGHT = registerParam();
         PARAM_IDX_SURFACE_PALETTE = registerParam();
         PARAM_IDX_PALETTE_LENGTH = registerParam();
-        PARAM_IDX_DWELL = registerParam();
-        PARAM_IDX_MAIN_RADIUS  = registerParam();
-        PARAM_IDX_FOCUS_X  = registerParam();
-        PARAM_IDX_FOCUS_Y  = registerParam();
     }
 
 }

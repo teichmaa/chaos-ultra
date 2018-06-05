@@ -173,7 +173,7 @@ uint sampleTheFractal(Pointi pixel, Pointi size, Rectangle<Real> image, uint max
 } 
 
 template <class Real> __device__ __forceinline__
-void fractalRenderMain(pixel_info_t** output, long outputPitch, Pointi outputSize, Rectangle<Real> image, uint maxIterations, uint maxSuperSampling, Pointi focus, bool adaptiveSS, bool visualiseSS)
+void fractalRenderMain(pixel_info_t** output, long outputPitch, Pointi outputSize, Rectangle<Real> image, uint maxIterations, uint maxSuperSampling, bool adaptiveSS, bool visualiseSS)
 {
   const Pointi idx = getImageIndexes();
   if(idx.x >= outputSize.x || idx.y >= outputSize.y) return;
@@ -197,18 +197,18 @@ void fractalRenderMain(pixel_info_t** output, long outputPitch, Pointi outputSiz
 //section exported global kernels:
 
 extern "C" __global__
-void fractalRenderMainFloat(pixel_info_t** output, long outputPitch, Pointi outputSize, Rectangle<float> image, uint maxIterations, uint maxSuperSampling, Pointi focus, bool adaptiveSS, bool visualiseSS){
-  fractalRenderMain<float>(output, outputPitch, outputSize, image, maxIterations, maxSuperSampling, focus, adaptiveSS, visualiseSS);
+void fractalRenderMainFloat(pixel_info_t** output, long outputPitch, Pointi outputSize, Rectangle<float> image, uint maxIterations, uint maxSuperSampling, bool adaptiveSS, bool visualiseSS){
+  fractalRenderMain<float>(output, outputPitch, outputSize, image, maxIterations, maxSuperSampling, adaptiveSS, visualiseSS);
 }
 
 extern "C" __global__
-void fractalRenderMainDouble(pixel_info_t** output, long outputPitch, Pointi outputSize, Rectangle<double> image, uint maxIterations, uint maxSuperSampling, Pointi focus, bool adaptiveSS, bool visualiseSS){
-  fractalRenderMain<double>(output, outputPitch, outputSize, image, maxIterations, maxSuperSampling, focus, adaptiveSS, visualiseSS);
+void fractalRenderMainDouble(pixel_info_t** output, long outputPitch, Pointi outputSize, Rectangle<double> image, uint maxIterations, uint maxSuperSampling, bool adaptiveSS, bool visualiseSS){
+  fractalRenderMain<double>(output, outputPitch, outputSize, image, maxIterations, maxSuperSampling, adaptiveSS, visualiseSS);
 
 }
 
 extern "C" __global__
-void compose(pixel_info_t** inputMain, long inputMainPitch, pixel_info_t** inputBcg, long inputBcgPitch, cudaSurfaceObject_t surfaceOutput, uint width, uint height, cudaSurfaceObject_t colorPalette, uint paletteLength, uint maxIterations, uint mainRenderRadius, uint focus_x, uint focus_y){
+void compose(pixel_info_t** inputMain, long inputMainPitch, pixel_info_t** inputBcg, long inputBcgPitch, cudaSurfaceObject_t surfaceOutput, uint width, uint height, cudaSurfaceObject_t colorPalette, uint paletteLength){
   const uint idx_x = blockDim.x * blockIdx.x + threadIdx.x;
   const uint idx_y = blockDim.y * blockIdx.y + threadIdx.y;
   if(idx_x >= width || idx_y >= height) return;
@@ -369,7 +369,7 @@ uint getAdvisedSampleCount(Pointi pixel, Pointi focus, uint maxSuperSamplingLeve
 }
 
 extern "C" __global__
-void fractalRenderReuseSamples(pixel_info_t** output, long outputPitch, Pointi outputSize, Rectangle<float> image, uint maxIterations, uint maxSuperSampling, Pointi focus, bool adaptiveSS, bool visualiseSS, Rectangle<float> imageReused, pixel_info_t** input, long inputPitch, bool useFoveation, bool useSampleReuse){
+void fractalRenderReuseSamples(pixel_info_t** output, long outputPitch, Pointi outputSize, Rectangle<float> image, uint maxIterations, uint maxSuperSampling, bool adaptiveSS, bool visualiseSS, Rectangle<float> imageReused, pixel_info_t** input, long inputPitch, bool useFoveation, Pointi focus, bool useSampleReuse){
 
   const Pointi idx = getImageIndexes();
   if(idx.x >= outputSize.x || idx.y >= outputSize.y) return;

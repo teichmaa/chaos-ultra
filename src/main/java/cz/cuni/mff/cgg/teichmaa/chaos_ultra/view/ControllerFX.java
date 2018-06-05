@@ -181,34 +181,14 @@ public class ControllerFX implements Initializable {
     }
 
     public void adaptiveSSSelected(ActionEvent actionEvent) {
-//        boolean val = useAdaptiveSS.isSelected();
-//        SwingUtilities.invokeLater(() -> {
-//            renderingController.setAdaptiveSS(val);
-//            renderingController.repaint();
-//            if (!val)
-//                renderingController.setVisualiseAdaptiveSS(false);
-//        });
-//        if (!val) {
-//            visualiseAdaptiveSS.setSelected(false);
-//        }
         SwingUtilities.invokeLater(() -> {
-            renderingController.setAdaptiveSS(true);
+            renderingController.setAdaptiveSS(useAdaptiveSS.isSelected());
         });
     }
 
     public void visualiseAdaptiveSSSelected(ActionEvent actionEvent) {
-//        boolean val = visualiseAdaptiveSS.isSelected();
-//        SwingUtilities.invokeLater(() -> {
-//            renderingController.setVisualiseAdaptiveSS(val);
-//            renderingController.repaint();
-//            if(val)
-//                renderingController.setAdaptiveSS(true);
-//        });
-//        if (val) {
-//            useAdaptiveSS.setSelected(true);
-//        }
         SwingUtilities.invokeLater(() -> {
-            renderingController.setVisualiseAdaptiveSS(true);
+            renderingController.setVisualiseAdaptiveSS(visualiseAdaptiveSS.isSelected());
         });
     }
 

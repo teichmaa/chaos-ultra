@@ -284,10 +284,6 @@ public class FractalRenderer implements Closeable {
                         composeParamsArr[kernel.PARAM_IDX_INPUT_BCG_PITCH] = CudaHelpers.pointerTo(memory.getSecondary2DBufferPitch());
                         composeParamsArr[kernel.PARAM_IDX_SURFACE_PALETTE] = Pointer.to(surfacePalette);
                         composeParamsArr[kernel.PARAM_IDX_PALETTE_LENGTH] = CudaHelpers.pointerTo(paletteLength);
-                        composeParamsArr[kernel.PARAM_IDX_DWELL] = CudaHelpers.pointerTo(getDwell());
-                        composeParamsArr[kernel.PARAM_IDX_MAIN_RADIUS] = CudaHelpers.pointerTo(kernelMain.getRenderRadius());
-                        composeParamsArr[kernel.PARAM_IDX_FOCUS_X] = CudaHelpers.pointerTo(kernelMain.getFocusX());
-                        composeParamsArr[kernel.PARAM_IDX_FOCUS_Y] = CudaHelpers.pointerTo(kernelMain.getFocusY());
                     }
 
                     if (gridDimX <= 0 || gridDimY <= 0) return;
