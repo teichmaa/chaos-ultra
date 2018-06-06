@@ -1,6 +1,7 @@
 package cz.cuni.mff.cgg.teichmaa.chaos_ultra.view;
 
 import com.jogamp.opengl.awt.GLJPanel;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.FloatPrecision;
 import javafx.embed.swing.SwingNode;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -21,10 +22,7 @@ public class ControllerFX implements Initializable {
 
     static final int SUPER_SAMPLING_MAX_LEVEL = RenderingController.SUPER_SAMPLING_MAX_LEVEL;
     @FXML
-    private SwingNode swingNode;
-    @FXML
     private Button renderButton;
-    private GLJPanel fractalCanvas;
     @FXML
     private TextField center_x;
     @FXML
@@ -47,6 +45,8 @@ public class ControllerFX implements Initializable {
     private CheckBox useFoveation;
     @FXML
     private CheckBox useSampleReuse;
+    @FXML
+    private Label precision;
 
     private RenderingController renderingController;
 
@@ -121,6 +121,10 @@ public class ControllerFX implements Initializable {
 
     void setZoom(double zoom) {
         this.zoom.setText("" + zoom);
+    }
+
+    void setPrecision(FloatPrecision value){
+        precision.setText(value.toString());
     }
 
     public void showDefaultView(){

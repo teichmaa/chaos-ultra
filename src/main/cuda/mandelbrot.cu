@@ -36,6 +36,10 @@ __device__ const uint MAX_SS_LEVEL = 256;
 #endif
 
 
+extern "C" __global__
+void init(){
+
+}
 
 //Mandelbrot content, using standard mathematical terminology for Mandelbrot set definition, i.e.
 //  f_n = f_{n-1}^2 + c
@@ -207,126 +211,6 @@ void fractalRenderMain(pixel_info_t** output, long outputPitch, Pointi outputSiz
   ASSERT(pOutput->weight > 0);
 }
 
-//section exported global kernels:
-
-extern "C" __global__
-void fractalRenderMainFloat(pixel_info_t** output, long outputPitch, Pointi outputSize, Rectangle<float> image, uint maxIterations, uint maxSuperSampling, uint flags){
-  fractalRenderMain<float>(output, outputPitch, outputSize, image, maxIterations, maxSuperSampling, flags);
-}
-
-extern "C" __global__
-void fractalRenderMainDouble(pixel_info_t** output, long outputPitch, Pointi outputSize, Rectangle<double> image, uint maxIterations, uint maxSuperSampling, uint flags){
-  fractalRenderMain<double>(output, outputPitch, outputSize, image, maxIterations, maxSuperSampling, flags);
-
-}
-
-extern "C" __global__
-void compose(pixel_info_t** inputMain, long inputMainPitch, pixel_info_t** inputBcg, long inputBcgPitch, cudaSurfaceObject_t surfaceOutput, uint width, uint height, cudaSurfaceObject_t colorPalette, uint paletteLength){
-  const uint idx_x = blockDim.x * blockIdx.x + threadIdx.x;
-  const uint idx_y = blockDim.y * blockIdx.y + threadIdx.y;
-  if(idx_x >= width || idx_y >= height) return;
-
-  /*
-  const uint blurSize = 4;
-  
-  const uint convolution[blurSize][blurSize] = {
-      //  {1,2,1},
-      //  {2,4,2},
-      //  {1,2,1}
-      {0,0,0},
-      {0,1,0},
-      {0,0,0}
-  };
-  const uint convolutionDivisor = 1;
-
-  uint sum = 0;
-  #pragma unroll
-  for(uint i = -blurSize/2; i < blurSize/2; i++){ 
-    #pragma unroll
-    for(uint j = -blurSize/2; j < blurSize/2; j++){
-      uint x = max(0,min(width,idx_x + i));
-      uint y = max(0,min(height,idx_y + j));
-      uint* pInput1 = (uint*)((char*)input1 + y * input1pitch) + x;
-      sum += (*pInput1) * convolution[i+blurSize/2][j+blurSize/2];
-    }
-  }
-  uint result;
-  result = sum / convolutionDivisor;
-  */
-  //choose result from one or two
-
-  pixel_info_t* pResult;
-  pResult = getPtrToPixel(inputMain, inputMainPitch, idx_x, idx_y);
-  uint result = pResult->value;
-
-  uint paletteIdx = paletteLength - (result % paletteLength) - 1;
-//  ASSERT(paletteIdx >=0);
-  ASSERT(paletteIdx < paletteLength);
-  uint resultColor;
-  surf2Dread(&resultColor, colorPalette, paletteIdx * sizeof(uint), 0);
-  // if(result == maxIterations || result == maxIterations-1)
-  //   resultColor = ColorsARGB::YELLOW;
-
-  surf2Dwrite(resultColor, surfaceOutput, idx_x * sizeof(uint), idx_y);
-}
-
-extern "C" __global__
-void fractalRenderUnderSampled(pixel_info_t** output, long outputPitch, uint width, uint height, float left_bottom_x, float left_bottom_y, float right_top_x, float right_top_y, uint maxIterations, uint underSamplingLevel)
-{
-  //work only at every Nth pixel:
-  const uint idx_x = (blockDim.x * blockIdx.x + threadIdx.x) * underSamplingLevel;
-  const uint idx_y = (blockDim.y * blockIdx.y + threadIdx.y) * underSamplingLevel;
-  if(idx_x >= width-underSamplingLevel || idx_y >= height-underSamplingLevel) return;
-  
-  //We are in a complex plane from (left_bottom) to (right_top), so we scale the pixels to it
-  float pixelWidth = (right_top_x - left_bottom_x) / (float) width;
-  float pixelHeight = (right_top_y - left_bottom_y) / (float) height;
-  
-  float cx = left_bottom_x + (idx_x)  * pixelWidth;
-  float cy = right_top_y - (idx_y) * pixelHeight;
-
-  uint escapeTime = escape(maxIterations, Pointf(cx, cy));
-
-  for(uint x = 0; x < underSamplingLevel; x++){
-    for(uint y = 0; y < underSamplingLevel; y++){
-      //surf2Dwrite(resultColor, surfaceOutput, (idx_x + x) * sizeof(unsigned uint), (idx_y+y));
-      pixel_info_t* pOutput = getPtrToPixel(output, outputPitch, idx_x+x, idx_y+y);
-      pOutput->value = escapeTime;
-      pOutput->weight = 1 / (float) underSamplingLevel;
-    }
-  }
-
-}
-
-struct big{
-  uint a;
-  uint b;
-  uint c;
-  uint d;
-  uint e;
-  uint f;
-};
-
-extern "C" __global__
-void debug(big a, uint c){
-  const uint idx_x = blockDim.x * blockIdx.x + threadIdx.x;
-  const uint idx_y = blockDim.y * blockIdx.y + threadIdx.y;
-  if(idx_x == 0 && idx_y == 0){
-    // printf("aa:\t%u\n",a.a);
-    // printf("ab:\t%u\n",a.b);
-    // printf("ac:\t%u\n",a.c);
-    // printf("ad:\t%u\n",a.d);
-    // printf("ae:\t%u\n",a.e);
-    // printf("af:\t%u\n",a.f);
-    // printf("c:\t%u\n",c);
-  }
-}
-
-extern "C" __global__
-void init(){
-
-}
-
 /// for given point <code>p</code> in the current image and given warping information, find cooridnates of the same point (=representing the same point in the fractal's complex plane) in the image being warped
 /// @param p: the point whose warping origin is being returned
 /// @param imageSize: width and height (in pixels) of current image
@@ -378,8 +262,8 @@ uint getAdvisedSampleCount(Pointi pixel, Pointi focus, uint maxSuperSamplingLeve
   return result;
 }
 
-extern "C" __global__
-void fractalRenderReuseSamples(pixel_info_t** output, long outputPitch, Pointi outputSize, Rectangle<float> image, uint maxIterations, uint maxSuperSampling, uint flags, Rectangle<float> imageReused, pixel_info_t** input, long inputPitch, Pointi focus){
+template <class Real> __device__ 
+void fractalRenderAdvanced(pixel_info_t** output, long outputPitch, Pointi outputSize, Rectangle<Real> image, uint maxIterations, uint maxSuperSampling, uint flags, Rectangle<Real> imageReused, pixel_info_t** input, long inputPitch, Pointi focus){
 
   const Pointi idx = getImageIndexes();
   if(idx.x >= outputSize.x || idx.y >= outputSize.y) return;
@@ -395,8 +279,8 @@ void fractalRenderReuseSamples(pixel_info_t** output, long outputPitch, Pointi o
   uint reusalResult;
   float reusalWeight;
   if(flags & USE_SAMPLE_REUSE_FLAG_MASK){
-    const Pointf originf = getWarpingOrigin(Pointf(idx.x, idx.y),outputSize.cast<float>(),image, imageReused);
-    const Point<int> origin = Point<int>((int)round(originf.x), (int)round(originf.y)); //it is important to convert to signed int, not uint (because the value may be negative)
+    const Point<Real> originr = getWarpingOrigin(Point<Real>(idx.x, idx.y),outputSize.cast<Real>(),image, imageReused);
+    const Point<int> origin = Point<int>((int)round(originr.x), (int)round(originr.y)); //it is important to convert to signed int, not uint (because the value may be negative)
     if(origin.x < 0 || origin.x >= outputSize.x || origin.y < 0 || origin.y >= outputSize.y){
       reusingSample = false;
     }
@@ -452,14 +336,78 @@ void fractalRenderReuseSamples(pixel_info_t** output, long outputPitch, Pointi o
 }
 
 
-__device__ void printParams_debug(cudaSurfaceObject_t surfaceOutput, long outputDataPitch_debug, uint width, uint height, float left_bottom_x, float left_bottom_y, float right_top_x, float right_top_y, uint maxIterations, uint** outputData_debug, cudaSurfaceObject_t colorPalette, uint paletteLength, float* randomSamples, uint superSamplingLevel, bool adaptiveSS, bool visualiseSS){
+extern "C" __global__
+void fractalRenderMainFloat(pixel_info_t** output, long outputPitch, Pointi outputSize, Rectangle<float> image, uint maxIterations, uint maxSuperSampling, uint flags){
+  fractalRenderMain<float>(output, outputPitch, outputSize, image, maxIterations, maxSuperSampling, flags);
+}
+
+extern "C" __global__
+void fractalRenderMainDouble(pixel_info_t** output, long outputPitch, Pointi outputSize, Rectangle<double> image, uint maxIterations, uint maxSuperSampling, uint flags){
+  fractalRenderMain<double>(output, outputPitch, outputSize, image, maxIterations, maxSuperSampling, flags);
+
+}
+
+extern "C" __global__
+void fractalRenderAdvancedFloat(pixel_info_t** output, long outputPitch, Pointi outputSize, Rectangle<float> image, uint maxIterations, uint maxSuperSampling, uint flags, Rectangle<float> imageReused, pixel_info_t** input, long inputPitch, Pointi focus){
+  fractalRenderAdvanced<float>(output, outputPitch, outputSize, image, maxIterations, maxSuperSampling, flags, imageReused, input, inputPitch, focus);
+}
+
+extern "C" __global__
+void fractalRenderAdvancedDouble(pixel_info_t** output, long outputPitch, Pointi outputSize, Rectangle<double> image, uint maxIterations, uint maxSuperSampling, uint flags, Rectangle<double> imageReused, pixel_info_t** input, long inputPitch, Pointi focus){
+  fractalRenderAdvanced<double>(output, outputPitch, outputSize, image, maxIterations, maxSuperSampling, flags, imageReused, input, inputPitch, focus);
+
+}
+
+extern "C" __global__
+void compose(pixel_info_t** inputMain, long inputMainPitch, pixel_info_t** inputBcg, long inputBcgPitch, cudaSurfaceObject_t surfaceOutput, uint width, uint height, cudaSurfaceObject_t colorPalette, uint paletteLength){
   const uint idx_x = blockDim.x * blockIdx.x + threadIdx.x;
   const uint idx_y = blockDim.y * blockIdx.y + threadIdx.y;
-  if(idx_x != 0 || idx_y != 0)
-    return;
-  printf("\n");
-  printf("width:\t%u\n",width);
-  printf("height:\t%u\n",height);
-  printf("maxIterations:\t%u\n",maxIterations);
-  printf("SS lvl:\t%u\n",superSamplingLevel);
+  if(idx_x >= width || idx_y >= height) return;
+
+  pixel_info_t* pResult;
+  pResult = getPtrToPixel(inputMain, inputMainPitch, idx_x, idx_y);
+  uint result = pResult->value;
+
+  uint paletteIdx = paletteLength - (result % paletteLength) - 1;
+  ASSERT(paletteIdx < paletteLength);
+  uint resultColor;
+  surf2Dread(&resultColor, colorPalette, paletteIdx * sizeof(uint), 0);
+  surf2Dwrite(resultColor, surfaceOutput, idx_x * sizeof(uint), idx_y);
+}
+
+extern "C" __global__
+void fractalRenderUnderSampled(pixel_info_t** output, long outputPitch, uint width, uint height, float left_bottom_x, float left_bottom_y, float right_top_x, float right_top_y, uint maxIterations, uint underSamplingLevel)
+{
+  //work only at every Nth pixel:
+  const uint idx_x = (blockDim.x * blockIdx.x + threadIdx.x) * underSamplingLevel;
+  const uint idx_y = (blockDim.y * blockIdx.y + threadIdx.y) * underSamplingLevel;
+  if(idx_x >= width-underSamplingLevel || idx_y >= height-underSamplingLevel) return;
+  
+  //We are in a complex plane from (left_bottom) to (right_top), so we scale the pixels to it
+  float pixelWidth = (right_top_x - left_bottom_x) / (float) width;
+  float pixelHeight = (right_top_y - left_bottom_y) / (float) height;
+  
+  float cx = left_bottom_x + (idx_x)  * pixelWidth;
+  float cy = right_top_y - (idx_y) * pixelHeight;
+
+  uint escapeTime = escape(maxIterations, Pointf(cx, cy));
+
+  for(uint x = 0; x < underSamplingLevel; x++){
+    for(uint y = 0; y < underSamplingLevel; y++){
+      //surf2Dwrite(resultColor, surfaceOutput, (idx_x + x) * sizeof(unsigned uint), (idx_y+y));
+      pixel_info_t* pOutput = getPtrToPixel(output, outputPitch, idx_x+x, idx_y+y);
+      pOutput->value = escapeTime;
+      pOutput->weight = 1 / (float) underSamplingLevel;
+    }
+  }
+
+}
+
+extern "C" __global__
+void debug(){
+  const uint idx_x = blockDim.x * blockIdx.x + threadIdx.x;
+  const uint idx_y = blockDim.y * blockIdx.y + threadIdx.y;
+  if(idx_x == 0 && idx_y == 0){
+    // printf("aa:\t%u\n",a.a);
+  }
 }

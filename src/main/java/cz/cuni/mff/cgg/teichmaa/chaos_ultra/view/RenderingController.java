@@ -200,6 +200,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
             controllerFX.setMaxIterations(fractalRenderer.getDwell());
             controllerFX.setSuperSamplingLevel(fractalRenderer.getSuperSamplingLevel());
             controllerFX.setDimensions(fractalRenderer.getWidth(), fractalRenderer.getHeight());
+            controllerFX.setPrecision(fractalRenderer.getPrecision());
         });
     }
 

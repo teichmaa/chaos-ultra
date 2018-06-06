@@ -119,6 +119,19 @@
                 </padding>
             </Label>
         </HBox>
+        <HBox>
+            <Label>
+                <padding>
+                    <Insets top="5" right="5" bottom="5" left="5"/>
+                </padding>
+                float precision:
+            </Label>
+            <Label fx:id="precision" text="single">
+                <padding>
+                    <Insets top="5" right="0" bottom="5" left="0"/>
+                </padding>
+            </Label>
+        </HBox>
 
 
 

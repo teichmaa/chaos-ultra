@@ -6,12 +6,10 @@ import jcuda.driver.CUresult;
 import jcuda.driver.JCudaDriver;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
 import static jcuda.driver.JCudaDriver.cuModuleLoad;
-import static jcuda.driver.JCudaDriver.cuModuleUnload;
 
 /**
  * A structure of JCuda classes, together representing a CUDA module (=1 ptx file) used by FractalRenderer class.
@@ -61,13 +59,14 @@ abstract class FractalRenderingModule implements Closeable {
         }
 
         //add known kernels:
+        kernels.put(KernelInit.class, new KernelInit(module));
         kernels.put(KernelMainFloat.class, new KernelMainFloat(module));
         kernels.put(KernelMainDouble.class, new KernelMainDouble(module));
-        kernels.put(KernelInit.class, new KernelInit(module));
+        kernels.put(KernelAdvancedFloat.class, new KernelAdvancedFloat(module));
+        kernels.put(KernelAdvancedDouble.class, new KernelAdvancedDouble(module));
         kernels.put(KernelUnderSampled.class, new KernelUnderSampled(module));
         kernels.put(KernelCompose.class, new KernelCompose(module));
         kernels.put(KernelDebug.class, new KernelDebug(module));
-        kernels.put(KernelReuseSamples.class, new KernelReuseSamples(module));
 
     }
 

@@ -6,7 +6,7 @@ import jcuda.Pointer;
 import jcuda.driver.CUdeviceptr;
 import jcuda.driver.CUmodule;
 
-public class KernelReuseSamples extends KernelMain {
+abstract class KernelAdvanced extends KernelMain {
 
     private final short PARAM_IDX_INPUT;
     private final short PARAM_IDX_INPUT_PITCH;
@@ -18,8 +18,8 @@ public class KernelReuseSamples extends KernelMain {
     private final static int IS_ZOOMING_FLAG_IDX = 4;
 
 
-    public KernelReuseSamples(CUmodule ownerModule) {
-        super("fractalRenderReuseSamples", ownerModule);
+    public KernelAdvanced(String name, CUmodule ownerModule) {
+        super(name, ownerModule);
 
         PARAM_IDX_IMAGE_REUSED = registerParam(0);
         PARAM_IDX_INPUT = registerParam();
@@ -29,16 +29,6 @@ public class KernelReuseSamples extends KernelMain {
 
     private int focus_x;
     private int focus_y;
-
-    @Override
-    Pointer pointerToAbstractReal(double value) {
-        return CudaHelpers.pointerTo((float) value);
-    }
-
-    @Override
-    Pointer pointerToAbstractReal(double v1, double v2, double v3, double v4) {
-        return CudaHelpers.pointerTo((float) v1, (float) v2, (float) v3, (float) v4);
-    }
 
     public void setOriginBounds(double left_bottom_x, double left_bottom_y, double right_top_x, double right_top_y){
         params[PARAM_IDX_IMAGE_REUSED] = pointerToAbstractReal(left_bottom_x, left_bottom_y, right_top_x, right_top_y);

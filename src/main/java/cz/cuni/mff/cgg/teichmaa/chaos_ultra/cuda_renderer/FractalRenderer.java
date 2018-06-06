@@ -1,5 +1,6 @@
 package cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer;
 
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.FloatPrecision;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.Point2DInt;
 import jcuda.CudaException;
 import jcuda.NativePointerObject;
@@ -31,8 +32,8 @@ public class FractalRenderer implements Closeable {
     private KernelUnderSampled kernelUndersampled;
     private KernelMainFloat kernelMainFloat;
     private KernelMainDouble kernelMainDouble;
-    private KernelReuseSamples kernelReuseSamples;
-    //private KernelBlur kernelBlur;
+    private KernelAdvancedFloat kernelAdvancedFloat;
+    private KernelAdvancedDouble kernelAdvancedDouble;
     private KernelCompose kernelCompose;
 
     private DeviceMemory memory = new DeviceMemory();
@@ -57,8 +58,8 @@ public class FractalRenderer implements Closeable {
         kernelMainFloat = module.getKernel(KernelMainFloat.class);
         kernelMainDouble = module.getKernel(KernelMainDouble.class);
         kernelCompose = module.getKernel(KernelCompose.class);
-        kernelReuseSamples = module.getKernel(KernelReuseSamples.class);
-        //kernelBlur = module.getKernel(KernelBlur.class);
+        kernelAdvancedFloat = module.getKernel(KernelAdvancedFloat.class);
+        kernelAdvancedDouble = module.getKernel(KernelAdvancedDouble.class);
 
         memory.reallocatePrimary2DBuffer(getWidth(), getHeight());
         memory.reallocateSecondary2DBuffer(getWidth(), getHeight());
@@ -136,7 +137,7 @@ public class FractalRenderer implements Closeable {
             renderQuality();
             return;
         }
-        KernelReuseSamples k = kernelReuseSamples;
+        KernelAdvanced k = kernelAdvancedFloat.isBoundsAtFloatLimit() ? kernelAdvancedDouble : kernelAdvancedFloat;
         k.setOriginBounds(lastRendering.left_bottom_x, lastRendering.left_bottom_y, lastRendering.right_top_x, lastRendering.right_top_y);
         k.setFocus(focus.getX(), focus.getY());
         k.setInput(memory.getPrimary2DBuffer(), memory.getPrimary2DBufferPitch());
@@ -193,7 +194,6 @@ public class FractalRenderer implements Closeable {
     /**
      * @param async
      * @param kernel
-     * @param kernelMain kernel that was used before to render. Will not be launched.
      */
     private void launchDrawingKernel(boolean async, KernelCompose kernel) {
         long start = System.currentTimeMillis();
@@ -295,25 +295,18 @@ public class FractalRenderer implements Closeable {
     }
 
     public void setAdaptiveSS(boolean adaptiveSS) {
-        kernelMainFloat.setAdaptiveSS(adaptiveSS);
-        kernelMainDouble.setAdaptiveSS(adaptiveSS);
-        kernelReuseSamples.setAdaptiveSS(adaptiveSS);
+        onAllMainKernels(k -> k.setAdaptiveSS(adaptiveSS));
     }
 
     public void setVisualiseSampleCount(boolean visualiseAdaptiveSS) {
-        if (kernelReuseSamples.getVisualiseSampleCount() == true &&
+        if (kernelAdvancedFloat.getVisualiseSampleCount() == true &&
                 visualiseAdaptiveSS == false) //when switching from "visualiseAdaptiveSS" mode back to normal, don't reuse the texture
             memory.setPrimary2DBufferUnusable(true);
-        kernelReuseSamples.setVisualiseSampleCount(visualiseAdaptiveSS);
-        kernelMainFloat.setVisualiseSampleCount(visualiseAdaptiveSS);
-        kernelMainDouble.setVisualiseSampleCount(visualiseAdaptiveSS);
+        onAllMainKernels(k -> k.setVisualiseSampleCount(visualiseAdaptiveSS));
     }
 
     public void setSuperSamplingLevel(int supSampLvl) {
-        kernelMainFloat.setSuperSamplingLevel(supSampLvl);
-        kernelMainDouble.setSuperSamplingLevel(supSampLvl);
-        kernelReuseSamples.setSuperSamplingLevel(supSampLvl);
-        //randomSamplesInit();
+        onAllMainKernels(k -> k.setSuperSamplingLevel(supSampLvl));
     }
 
     public void setMaxIterations(int MaxIterations) {
@@ -332,11 +325,26 @@ public class FractalRenderer implements Closeable {
         onAllRenderingKernels(k -> k.setBounds(left_bottom_x, left_bottom_y, right_top_x, right_top_y));
     }
 
+    public void setUseFoveation(boolean value) {
+        kernelAdvancedFloat.setUseFoveation(value);
+        kernelAdvancedDouble.setUseFoveation(value);
+    }
+
+    public void setUseSampleReuse(boolean value) {
+        kernelAdvancedFloat.setUseSampleReuse(value);
+        kernelAdvancedDouble.setUseSampleReuse(value);
+    }
+
     void onAllRenderingKernels(Consumer<RenderingKernel> c) {
+        onAllMainKernels(c);
+        c.accept(kernelUndersampled);
+    }
+
+    void onAllMainKernels(Consumer<? super KernelMain> c ){
         c.accept(kernelMainFloat);
         c.accept(kernelMainDouble);
-        c.accept(kernelUndersampled);
-        c.accept(kernelReuseSamples);
+        c.accept(kernelAdvancedFloat);
+        c.accept(kernelAdvancedDouble);
     }
 
     public void debugRightBottomPixel() {
@@ -351,11 +359,7 @@ public class FractalRenderer implements Closeable {
         int breakpoit = 0;
     }
 
-    public void setUseFoveation(boolean value) {
-        kernelReuseSamples.setUseFoveation(value);
-    }
-
-    public void setUseSampleReuse(boolean value) {
-        kernelReuseSamples.setUseSampleReuse(value);
+    public FloatPrecision getPrecision() {
+        return kernelMainDouble.isBoundsAtFloatLimit() ? FloatPrecision.doublePrecision : FloatPrecision.singlePrecision;
     }
 }
