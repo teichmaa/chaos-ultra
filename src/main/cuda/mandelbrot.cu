@@ -126,7 +126,7 @@ pixel_info_t* getPtrToPixel(pixel_info_t** array2D, long pitch, uint x, uint y){
 
 /// param sampleCount: Maximum number of samples to take. Actual number of samples taken will be stored here before returning. If adaptiveSS==false, the value will not change.
 template <class Real> __device__
-uint sampleTheFractal(Pointi pixel, Pointi size, Rectangle<Real> image, uint maxIterations,uint & sampleCount, bool adaptiveSS, bool visualiseSS){
+uint sampleTheFractal(Pointi pixel, Pointi size, Rectangle<Real> image, uint maxIterations,uint & sampleCount, bool adaptiveSS){
   const uint adaptiveTreshold = 10;
   uint r[adaptiveTreshold];
 
@@ -172,21 +172,28 @@ uint sampleTheFractal(Pointi pixel, Pointi size, Rectangle<Real> image, uint max
   // }
 } 
 
+__device__ const uint USE_ADAPTIVE_SS_FLAG_MASK = (1 << 0);
+__device__ const uint USE_FOVEATION_FLAG_MASK = (1 << 1);
+__device__ const uint USE_SAMPLE_REUSE_FLAG_MASK = (1 << 2);
+__device__ const uint VISUALISE_SAMPLE_COUNT_FLAG_MASK = (1 << 3);
+__device__ const uint IS_ZOOMING_FLAG_MASK = (1 << 4);
+
 template <class Real> __device__ __forceinline__
-void fractalRenderMain(pixel_info_t** output, long outputPitch, Pointi outputSize, Rectangle<Real> image, uint maxIterations, uint maxSuperSampling, bool adaptiveSS, bool visualiseSS)
+void fractalRenderMain(pixel_info_t** output, long outputPitch, Pointi outputSize, Rectangle<Real> image, uint maxIterations, uint maxSuperSampling, uint flags)
 {
   const Pointi idx = getImageIndexes();
   if(idx.x >= outputSize.x || idx.y >= outputSize.y) return;
   if(idx.x == 0 && idx.y == 0){
-    //printf("fractal render main\n");
+    // printf("fractal render main\n");
     // printf("image:\t%f\t%f\t%f\t%f\n", image.left_bottom.x, image.left_bottom.y, image.right_top.x, image.right_top.y);
     // printf("outputsize:\t%d\t%d\n", outputSize.x, outputSize.y);
     // printf("focus:\t%d\t%d\n", focus.x, focus.y);
     // printf("dwell:\t%d\tss:\t%d\n", maxIterations, maxSuperSampling);
+    // printf("\n");
   }
   
   //the value of maxSuperSampling will be changed by the calee
-  uint result = sampleTheFractal(idx, outputSize, image, maxIterations, maxSuperSampling, adaptiveSS, visualiseSS);
+  uint result = sampleTheFractal(idx, outputSize, image, maxIterations, maxSuperSampling, flags & USE_ADAPTIVE_SS_FLAG_MASK);
 
   pixel_info_t* pOutput = getPtrToPixel(output, outputPitch, idx.x, idx.y);
   pOutput->value = result;
@@ -197,13 +204,13 @@ void fractalRenderMain(pixel_info_t** output, long outputPitch, Pointi outputSiz
 //section exported global kernels:
 
 extern "C" __global__
-void fractalRenderMainFloat(pixel_info_t** output, long outputPitch, Pointi outputSize, Rectangle<float> image, uint maxIterations, uint maxSuperSampling, bool adaptiveSS, bool visualiseSS){
-  fractalRenderMain<float>(output, outputPitch, outputSize, image, maxIterations, maxSuperSampling, adaptiveSS, visualiseSS);
+void fractalRenderMainFloat(pixel_info_t** output, long outputPitch, Pointi outputSize, Rectangle<float> image, uint maxIterations, uint maxSuperSampling, uint flags){
+  fractalRenderMain<float>(output, outputPitch, outputSize, image, maxIterations, maxSuperSampling, flags);
 }
 
 extern "C" __global__
-void fractalRenderMainDouble(pixel_info_t** output, long outputPitch, Pointi outputSize, Rectangle<double> image, uint maxIterations, uint maxSuperSampling, bool adaptiveSS, bool visualiseSS){
-  fractalRenderMain<double>(output, outputPitch, outputSize, image, maxIterations, maxSuperSampling, adaptiveSS, visualiseSS);
+void fractalRenderMainDouble(pixel_info_t** output, long outputPitch, Pointi outputSize, Rectangle<double> image, uint maxIterations, uint maxSuperSampling, uint flags){
+  fractalRenderMain<double>(output, outputPitch, outputSize, image, maxIterations, maxSuperSampling, flags);
 
 }
 
@@ -256,9 +263,6 @@ void compose(pixel_info_t** inputMain, long inputMainPitch, pixel_info_t** input
 
   surf2Dwrite(resultColor, surfaceOutput, idx_x * sizeof(uint), idx_y);
 }
-
-extern "C" __global__
-void blur(){}
 
 extern "C" __global__
 void fractalRenderUnderSampled(pixel_info_t** output, long outputPitch, uint width, uint height, float left_bottom_x, float left_bottom_y, float right_top_x, float right_top_y, uint maxIterations, uint underSamplingLevel)
@@ -369,13 +373,14 @@ uint getAdvisedSampleCount(Pointi pixel, Pointi focus, uint maxSuperSamplingLeve
 }
 
 extern "C" __global__
-void fractalRenderReuseSamples(pixel_info_t** output, long outputPitch, Pointi outputSize, Rectangle<float> image, uint maxIterations, uint maxSuperSampling, bool adaptiveSS, bool visualiseSS, Rectangle<float> imageReused, pixel_info_t** input, long inputPitch, bool useFoveation, Pointi focus, bool useSampleReuse){
+void fractalRenderReuseSamples(pixel_info_t** output, long outputPitch, Pointi outputSize, Rectangle<float> image, uint maxIterations, uint maxSuperSampling, uint flags, Rectangle<float> imageReused, pixel_info_t** input, long inputPitch, Pointi focus){
 
   const Pointi idx = getImageIndexes();
   if(idx.x >= outputSize.x || idx.y >= outputSize.y) return;
-  // if(idx.x == 0 && idx.y == 0){
-  //   printf("fractalRenderReuseSamples:\n");
-  // }
+  if(idx.x == 0 && idx.y == 0){
+    // printf("fractalRenderReuseSamples:\n");
+    // printf("\n");
+  }
   ASSERT(idx.x < outputSize.x);
   ASSERT(idx.y < outputSize.y);
 
@@ -383,7 +388,7 @@ void fractalRenderReuseSamples(pixel_info_t** output, long outputPitch, Pointi o
   bool reusingSample = false;
   uint reusalResult;
   float reusalWeight;
-  if(useSampleReuse){
+  if(flags & USE_SAMPLE_REUSE_FLAG_MASK){
     const Pointf originf = getWarpingOrigin(Pointf(idx.x, idx.y),outputSize.cast<float>(),image, imageReused);
     const Point<int> origin = Point<int>((int)round(originf.x), (int)round(originf.y)); //it is important to convert to signed int, not uint (because the value may be negative)
     if(origin.x < 0 || origin.x >= outputSize.x || origin.y < 0 || origin.y >= outputSize.y){
@@ -399,11 +404,11 @@ void fractalRenderReuseSamples(pixel_info_t** output, long outputPitch, Pointi o
   
   //sample generation:
   uint sampleCount = maxSuperSampling;
-  if (useFoveation)
+  if (flags & USE_FOVEATION_FLAG_MASK)
     sampleCount = getAdvisedSampleCount(idx, focus, maxSuperSampling);
   if((!reusingSample || reusalWeight == 0) && sampleCount == 0)  sampleCount = 1; //at least one sample has to be taken somewhere
       //indeed, it may happen that reusalWeight == 0, because reusalWeight decreases in time (see reusedSampleDegradateCoeff)
-  uint renderResult = sampleTheFractal(idx, outputSize, image, maxIterations, sampleCount, adaptiveSS, visualiseSS);
+  uint renderResult = sampleTheFractal(idx, outputSize, image, maxIterations, sampleCount, flags & USE_ADAPTIVE_SS_FLAG_MASK);
   ASSERT(reusingSample || sampleCount > 0);
 
   //combine reused and generated samples:
@@ -414,8 +419,9 @@ void fractalRenderReuseSamples(pixel_info_t** output, long outputPitch, Pointi o
       result = reusalResult;
       resultWeight = reusalWeight;    
     }else{
-      const float reusedSampleDegradateCoeff = 0.65; // must be <=1
-      reusalWeight *= reusedSampleDegradateCoeff;
+      const float reusedSampleDegradateCoeff = 0.6; // must be <=1
+      if(flags & IS_ZOOMING_FLAG_MASK)
+        reusalWeight *= reusedSampleDegradateCoeff;
       resultWeight = reusalWeight + sampleCount;    
       result = (reusalResult * reusalWeight + renderResult * sampleCount) / (resultWeight);
     }
@@ -429,7 +435,7 @@ void fractalRenderReuseSamples(pixel_info_t** output, long outputPitch, Pointi o
 //   if(idx.x >= width-qqq || idx.y >= height-qqq)      
 //       result = maxIterations;
 
-  if(visualiseSS){
+  if(flags & VISUALISE_SAMPLE_COUNT_FLAG_MASK){
     if(reusingSample) ++sampleCount;
     result = sampleCount / float (maxSuperSampling) * 255;
   }

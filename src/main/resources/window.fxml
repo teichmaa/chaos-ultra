@@ -84,18 +84,18 @@
                 <padding>
                     <Insets top="5" right="5" bottom="5" left="5"/>
                 </padding>
-                sample reusal:
+                sample reuse:
             </Label>
-            <CheckBox fx:id="useSampleReusal" selected="true" onAction="#useSampleReusalSelected"/>
+            <CheckBox fx:id="useSampleReuse" selected="true" onAction="#useSampleReuseSelected"/>
         </HBox>
         <HBox>
             <Label>
                 <padding>
                     <Insets top="5" right="5" bottom="5" left="5"/>
                 </padding>
-                visualise sample levels:
+                visualise sample count:
             </Label>
-            <CheckBox fx:id="visualiseAdaptiveSS" selected="false" onAction="#visualiseAdaptiveSSSelected"/>
+            <CheckBox fx:id="visualiseSampleCount" selected="false" onAction="#visualiseSampleCountSelected"/>
         </HBox>
         <HBox>
             <Label>

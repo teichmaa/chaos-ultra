@@ -9,34 +9,24 @@ abstract class KernelMain extends RenderingKernel {
 
 
     private final short PARAM_IDX_MAX_SUPER_SAMPLING;
-    private final short PARAM_IDX_ADAPTIVE_SS;
-    private final short PARAM_IDX_VISUALISE_ADAPTIVE_SS;
+    protected final short PARAM_IDX_FLAGS;
+
+    private final static int USE_ADAPTIVE_SS_FLAG_IDX = 0;
 
     KernelMain(String name, CUmodule ownerModule) {
         super(name, ownerModule);
 
         //initialize params[] :
         PARAM_IDX_MAX_SUPER_SAMPLING = registerParam(1);
-        PARAM_IDX_ADAPTIVE_SS = registerParam(1);
-        PARAM_IDX_VISUALISE_ADAPTIVE_SS = registerParam(0);
+        PARAM_IDX_FLAGS = registerParam(1);
 
         setSuperSamplingLevel(1);
         setAdaptiveSS(true);
-        setVisualiseAdaptiveSS(false);
     }
 
     private int superSamplingLevel;
     private boolean adaptiveSS;
-    private boolean visualiseAdaptiveSS;
-
-    boolean getVisualiseAdaptiveSS() {
-        return visualiseAdaptiveSS;
-    }
-
-    void setVisualiseAdaptiveSS(boolean visualiseAdaptiveSS) {
-        this.visualiseAdaptiveSS = visualiseAdaptiveSS;
-        params[PARAM_IDX_VISUALISE_ADAPTIVE_SS] = CudaHelpers.pointerTo(visualiseAdaptiveSS);
-    }
+    protected BitMask flags = new BitMask();
 
     boolean getAdaptiveSS() {
         return adaptiveSS;
@@ -44,7 +34,8 @@ abstract class KernelMain extends RenderingKernel {
 
     void setAdaptiveSS(boolean adaptiveSS) {
         this.adaptiveSS = adaptiveSS;
-        params[PARAM_IDX_ADAPTIVE_SS] = CudaHelpers.pointerTo(adaptiveSS);
+        flags.setBit(USE_ADAPTIVE_SS_FLAG_IDX, adaptiveSS);
+        params[PARAM_IDX_FLAGS] = CudaHelpers.pointerTo(flags.getValue());
     }
 
     void setSuperSamplingLevel(int superSamplingLevel) {

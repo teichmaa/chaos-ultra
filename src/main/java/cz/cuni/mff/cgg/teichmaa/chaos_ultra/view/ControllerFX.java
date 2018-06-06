@@ -40,13 +40,13 @@ public class ControllerFX implements Initializable {
     @FXML
     private CheckBox useAdaptiveSS;
     @FXML
-    private CheckBox visualiseAdaptiveSS;
+    private CheckBox visualiseSampleCount;
     @FXML
     private CheckBox useAutomaticQuality;
     @FXML
     private CheckBox useFoveation;
     @FXML
-    private CheckBox useSampleReusal;
+    private CheckBox useSampleReuse;
 
     private RenderingController renderingController;
 
@@ -91,15 +91,11 @@ public class ControllerFX implements Initializable {
                 superSamplingLevel.setText("1");
             }
             int supsamp = supsamp_tmp; //for lambda, to pass effectively final value
-            boolean autoQuality = useAutomaticQuality.isSelected();
-            boolean adaptiveSS = useAdaptiveSS.isSelected();
 
             SwingUtilities.invokeLater(() -> {
                 renderingController.setBounds(x, y, zoom);
                 renderingController.setMaxIterations(maxIterations);
                 renderingController.setSuperSamplingLevel(supsamp);
-                renderingController.setUseAutomaticQuality(autoQuality);
-                renderingController.setAdaptiveSS(adaptiveSS);
                 renderingController.repaint();
             });
         }catch (NumberFormatException e){
@@ -132,9 +128,17 @@ public class ControllerFX implements Initializable {
         center_y.setText("0");
         zoom.setText("2");
         maxIterations.setText("1400");
-        useAdaptiveSS.setSelected(false);
         superSamplingLevel.setText("5");
-        useAutomaticQuality.setSelected(false);
+        useAdaptiveSS.setSelected(true);
+        renderingController.setAdaptiveSS(true);
+        useFoveation.setSelected(true);
+        renderingController.setUseFoveation(true);
+        useSampleReuse.setSelected(true);
+        renderingController.setUseSampleReuse(true);
+        useAutomaticQuality.setSelected(true);
+        renderingController.setUseAutomaticQuality(true);
+        visualiseSampleCount.setSelected(false);
+        renderingController.setVisualiseSampleCount(false);
         render();
     }
 
@@ -186,9 +190,9 @@ public class ControllerFX implements Initializable {
         });
     }
 
-    public void visualiseAdaptiveSSSelected(ActionEvent actionEvent) {
+    public void visualiseSampleCountSelected(ActionEvent actionEvent) {
         SwingUtilities.invokeLater(() -> {
-            renderingController.setVisualiseAdaptiveSS(visualiseAdaptiveSS.isSelected());
+            renderingController.setVisualiseSampleCount(visualiseSampleCount.isSelected());
         });
     }
 
@@ -218,9 +222,9 @@ public class ControllerFX implements Initializable {
         );
     }
 
-    public void useSampleReusalSelected(ActionEvent actionEvent) {
+    public void useSampleReuseSelected(ActionEvent actionEvent) {
         SwingUtilities.invokeLater(() ->
-                renderingController.setUseSampleReusal(useSampleReusal.isSelected())
+                renderingController.setUseSampleReuse(useSampleReuse.isSelected())
         );
     }
 

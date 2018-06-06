@@ -284,7 +284,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
 
         lastFrameRenderTime = (int) (endTime - startTime);
         //lastFramesRenderTime.get(currentMode.getCurrent()).add((int) (endTime - startTime));
-        System.out.println("" + lastFrameRenderTime + " ms (frame total render time)");
+//        System.out.println("" + lastFrameRenderTime + " ms (frame total render time)");
     }
 
     private static final int shortestFrameRenderTime = 15;
@@ -340,7 +340,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
             fractalRenderer.renderQuality();
         }
         else {
-            fractalRenderer.renderFast(focus);
+            fractalRenderer.renderFast(focus, currentMode.isZooming());
         }
         //fractalRenderer.renderQuality();
 
@@ -427,8 +427,8 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         fractalRenderer.setAdaptiveSS(adaptiveSS);
     }
 
-    void setVisualiseAdaptiveSS(boolean visualiseAdaptiveSS) {
-        fractalRenderer.setVisualiseAdaptiveSS(visualiseAdaptiveSS);
+    void setVisualiseSampleCount(boolean visualiseAdaptiveSS) {
+        fractalRenderer.setVisualiseSampleCount(visualiseAdaptiveSS);
     }
 
     void setUseAutomaticQuality(boolean useAutomaticQuality) {
@@ -467,7 +467,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         fractalRenderer.setUseFoveation(value);
     }
 
-    public void setUseSampleReusal(boolean value) {
-        fractalRenderer.setUseSampleReusal(value);
+    public void setUseSampleReuse(boolean value) {
+        fractalRenderer.setUseSampleReuse(value);
     }
 }

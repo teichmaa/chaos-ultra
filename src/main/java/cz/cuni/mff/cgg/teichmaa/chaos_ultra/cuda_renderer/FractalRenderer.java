@@ -63,51 +63,8 @@ public class FractalRenderer implements Closeable {
         memory.reallocatePrimary2DBuffer(getWidth(), getHeight());
         memory.reallocateSecondary2DBuffer(getWidth(), getHeight());
 
-
         //moduleInit();
-        randomSamplesInit();
     }
-
-    private void randomSamplesInit() {
-//        if(randomValues != null){
-//            JCuda.cudaFree(randomValues);
-//        }else{
-//            randomValues = new CUdeviceptr();
-//        }
-//
-//        int w = kernel.getWidth();
-//        int h = kernel.getHeight();
-//
-//        int sampleCount = w * h * SUPER_SAMPLING_MAX_LEVEL * 2; //2 because we are in 2D
-//
-//        curandGenerator gen = new curandGenerator();
-//        //JCurand.curandCreateGenerator(gen, CURAND_RNG_QUASI_SOBOL32);
-//        JCurand.curandCreateGenerator(gen, CURAND_RNG_PSEUDO_DEFAULT);
-//        //JCurand.curandSetQuasiRandomGeneratorDimensions(gen, 2);
-//        JCuda.cudaMalloc(randomValues, sampleCount * Sizeof.FLOAT);
-///*
-//        //crazy slow and hacky solution, which yet might give desired results
-//        for (int i = 0; i < w; i++) {
-//            for (int j = 0; j < h; j++) {
-//                PointerHelpers.nativePointerArtihmeticHack(randomValues, ssl * Sizeof.FLOAT);
-//                JCurand.curandGenerateUniform(gen, randomValues, ssl);
-//            }
-//        }
-//        PointerHelpers.nativePointerArtihmeticHack(randomValues, - w * h * ssl * Sizeof.FLOAT);*/
-//        JCurand.curandGenerateUniform(gen, randomValues, sampleCount);
-//
-//        /*ByteBuffer testOut = ByteBuffer.allocateDirect(sampleCount * Sizeof.FLOAT);
-//        JCuda.cudaMemcpy(Pointer.to(testOut), randomValues, sampleCount * Sizeof.FLOAT, cudaMemcpyKind.cudaMemcpyDeviceToHost);
-//        float[] floats = new float[sampleCount];
-//        for (int i = 0; i < floats.length; i++) {
-//            floats[i] = (float) testOut.getInt();
-//        }
-//        for (int i = 0; i < 100; i++) {
-//            System.out.println(floats[i]);
-//        }*/
-//        int a = 0; //breakpoint
-    }
-
 
     private void moduleInit() {
 
@@ -148,7 +105,6 @@ public class FractalRenderer implements Closeable {
     public void resize(int width, int height, int outputTextureGLhandle, int GLtarget) {
         //System.out.println("resize: " +width + " x " + height);
         onAllRenderingKernels(k -> k.setOutputSize(width, height));
-        randomSamplesInit();
         registerOutputTexture(outputTextureGLhandle, GLtarget);
         memory.reallocatePrimary2DBuffer(width, height);
         memory.reallocateSecondary2DBuffer(width, height);
@@ -173,8 +129,9 @@ public class FractalRenderer implements Closeable {
     }
 
     RenderingKernelParamsInfo lastRendering = new RenderingKernelParamsInfo();
-    public void renderFast(Point2DInt focus) {
-        if(memory.isPrimary2DBufferUnusable()){
+
+    public void renderFast(Point2DInt focus, boolean isZooming) {
+        if (memory.isPrimary2DBufferUnusable()) {
             //if there is nothing to reuse, then create it
             renderQuality();
             return;
@@ -184,12 +141,12 @@ public class FractalRenderer implements Closeable {
         k.setFocus(focus.getX(), focus.getY());
         k.setInput(memory.getPrimary2DBuffer(), memory.getPrimary2DBufferPitch());
         k.setOutput(memory.getSecondary2DBuffer(), memory.getSecondary2DBufferPitch());
+        k.setIsZooming(isZooming);
 
         launchRenderingKernel(false, k);
         memory.switch2DBuffers();
         lastRendering.setFrom(k);
-        launchDrawingKernel(false, kernelCompose, kernelMainFloat);
-
+        launchDrawingKernel(false, kernelCompose);
     }
 
     public void renderQuality() {
@@ -197,7 +154,7 @@ public class FractalRenderer implements Closeable {
         memory.resetBufferSwitch();
         kernelMain.setOutput(memory.getPrimary2DBuffer(), memory.getPrimary2DBufferPitch());
         launchRenderingKernel(false, kernelMain);
-        launchDrawingKernel(false, kernelCompose, kernelMain);
+        launchDrawingKernel(false, kernelCompose);
         lastRendering.setFrom(kernelMain);
         memory.setPrimary2DBufferUnusable(false);
     }
@@ -238,7 +195,7 @@ public class FractalRenderer implements Closeable {
      * @param kernel
      * @param kernelMain kernel that was used before to render. Will not be launched.
      */
-    private void launchDrawingKernel(boolean async, KernelCompose kernel, KernelMain kernelMain) {
+    private void launchDrawingKernel(boolean async, KernelCompose kernel) {
         long start = System.currentTimeMillis();
 
         try {
@@ -343,13 +300,11 @@ public class FractalRenderer implements Closeable {
         kernelReuseSamples.setAdaptiveSS(adaptiveSS);
     }
 
-    public void setVisualiseAdaptiveSS(boolean visualiseAdaptiveSS) {
-        if(kernelMainFloat.getVisualiseAdaptiveSS() == true &&
-                visualiseAdaptiveSS == false)
+    public void setVisualiseSampleCount(boolean visualiseAdaptiveSS) {
+        if (kernelReuseSamples.getVisualiseSampleCount() == true &&
+                visualiseAdaptiveSS == false) //when switching from "visualiseAdaptiveSS" mode back to normal, don't reuse the texture
             memory.setPrimary2DBufferUnusable(true);
-        kernelMainFloat.setVisualiseAdaptiveSS(visualiseAdaptiveSS);
-        kernelMainDouble.setVisualiseAdaptiveSS(visualiseAdaptiveSS);
-        kernelReuseSamples.setVisualiseAdaptiveSS(visualiseAdaptiveSS);
+        kernelReuseSamples.setVisualiseSampleCount(visualiseAdaptiveSS);
     }
 
     public void setSuperSamplingLevel(int supSampLvl) {
@@ -361,7 +316,6 @@ public class FractalRenderer implements Closeable {
 
     public void setMaxIterations(int MaxIterations) {
         onAllRenderingKernels(k -> k.setMaxIterations(MaxIterations));
-
     }
 
     public int getSuperSamplingLevel() {
@@ -389,9 +343,9 @@ public class FractalRenderer implements Closeable {
         memory.resetBufferSwitch();
         //launchReuseSamplesKernel();
         memory.resetBufferSwitch();
-        IntBuffer b = IntBuffer.allocate(w*h);
+        IntBuffer b = IntBuffer.allocate(w * h);
         copy2DFromDevToHost(b, w, h, memory.getPrimary2DBufferPitch(), memory.getPrimary2DBuffer());
-        System.out.println("b[w,h]:\t" + b.get(w*h-1));
+        System.out.println("b[w,h]:\t" + b.get(w * h - 1));
         int breakpoit = 0;
     }
 
@@ -399,7 +353,7 @@ public class FractalRenderer implements Closeable {
         kernelReuseSamples.setUseFoveation(value);
     }
 
-    public void setUseSampleReusal(boolean value) {
-        kernelReuseSamples.setUseSampleReusal(value);
+    public void setUseSampleReuse(boolean value) {
+        kernelReuseSamples.setUseSampleReuse(value);
     }
 }

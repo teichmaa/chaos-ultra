@@ -23,7 +23,6 @@ abstract class FractalRenderingModule implements Closeable {
     static final String kernelMainDouble = KernelMainDouble.name;
     static final String kernelUnderSampled = KernelUnderSampled.name;
     static final String kernelCompose = KernelCompose.name;
-    static final String kernelBlur = KernelBlur.name;
 
     /**
      * using an absolute path is a temporary workaround and should be fixed
@@ -67,7 +66,6 @@ abstract class FractalRenderingModule implements Closeable {
         kernels.put(KernelInit.class, new KernelInit(module));
         kernels.put(KernelUnderSampled.class, new KernelUnderSampled(module));
         kernels.put(KernelCompose.class, new KernelCompose(module));
-        kernels.put(KernelBlur.class, new KernelBlur(module));
         kernels.put(KernelDebug.class, new KernelDebug(module));
         kernels.put(KernelReuseSamples.class, new KernelReuseSamples(module));
 
