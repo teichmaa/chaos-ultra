@@ -305,6 +305,8 @@ public class FractalRenderer implements Closeable {
                 visualiseAdaptiveSS == false) //when switching from "visualiseAdaptiveSS" mode back to normal, don't reuse the texture
             memory.setPrimary2DBufferUnusable(true);
         kernelReuseSamples.setVisualiseSampleCount(visualiseAdaptiveSS);
+        kernelMainFloat.setVisualiseSampleCount(visualiseAdaptiveSS);
+        kernelMainDouble.setVisualiseSampleCount(visualiseAdaptiveSS);
     }
 
     public void setSuperSamplingLevel(int supSampLvl) {

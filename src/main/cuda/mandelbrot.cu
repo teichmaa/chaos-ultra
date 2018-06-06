@@ -173,10 +173,12 @@ uint sampleTheFractal(Pointi pixel, Pointi size, Rectangle<Real> image, uint max
 } 
 
 __device__ const uint USE_ADAPTIVE_SS_FLAG_MASK = (1 << 0);
-__device__ const uint USE_FOVEATION_FLAG_MASK = (1 << 1);
-__device__ const uint USE_SAMPLE_REUSE_FLAG_MASK = (1 << 2);
-__device__ const uint VISUALISE_SAMPLE_COUNT_FLAG_MASK = (1 << 3);
+__device__ const uint VISUALISE_SAMPLE_COUNT_FLAG_MASK = (1 << 1);
+__device__ const uint USE_FOVEATION_FLAG_MASK = (1 << 2);
+__device__ const uint USE_SAMPLE_REUSE_FLAG_MASK = (1 << 3);
 __device__ const uint IS_ZOOMING_FLAG_MASK = (1 << 4);
+
+__device__ const uint visualityAmplifyCoeff = 10;
 
 template <class Real> __device__ __forceinline__
 void fractalRenderMain(pixel_info_t** output, long outputPitch, Pointi outputSize, Rectangle<Real> image, uint maxIterations, uint maxSuperSampling, uint flags)
@@ -194,6 +196,10 @@ void fractalRenderMain(pixel_info_t** output, long outputPitch, Pointi outputSiz
   
   //the value of maxSuperSampling will be changed by the calee
   uint result = sampleTheFractal(idx, outputSize, image, maxIterations, maxSuperSampling, flags & USE_ADAPTIVE_SS_FLAG_MASK);
+
+  if(flags & VISUALISE_SAMPLE_COUNT_FLAG_MASK){
+    result = maxSuperSampling * visualityAmplifyCoeff;
+  }
 
   pixel_info_t* pOutput = getPtrToPixel(output, outputPitch, idx.x, idx.y);
   pOutput->value = result;
@@ -436,8 +442,7 @@ void fractalRenderReuseSamples(pixel_info_t** output, long outputPitch, Pointi o
 //       result = maxIterations;
 
   if(flags & VISUALISE_SAMPLE_COUNT_FLAG_MASK){
-    if(reusingSample) ++sampleCount;
-    result = sampleCount / float (maxSuperSampling) * 255;
+    result = sampleCount * visualityAmplifyCoeff;
   }
 
   pixel_info_t* pOutput = getPtrToPixel(output, outputPitch, idx.x, idx.y);

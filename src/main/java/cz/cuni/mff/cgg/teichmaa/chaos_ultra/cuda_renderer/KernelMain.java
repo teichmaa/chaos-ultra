@@ -12,6 +12,7 @@ abstract class KernelMain extends RenderingKernel {
     protected final short PARAM_IDX_FLAGS;
 
     private final static int USE_ADAPTIVE_SS_FLAG_IDX = 0;
+    private final static int VISUALISE_SAMPLE_COUNT_FLAG_IDX = 1;
 
     KernelMain(String name, CUmodule ownerModule) {
         super(name, ownerModule);
@@ -30,6 +31,15 @@ abstract class KernelMain extends RenderingKernel {
 
     boolean getAdaptiveSS() {
         return adaptiveSS;
+    }
+
+    boolean getVisualiseSampleCount(){
+        return flags.getBit(VISUALISE_SAMPLE_COUNT_FLAG_IDX);
+    }
+
+    void setVisualiseSampleCount(boolean visualise) {
+        flags.setBit(VISUALISE_SAMPLE_COUNT_FLAG_IDX, visualise);
+        params[PARAM_IDX_FLAGS] = CudaHelpers.pointerTo(flags.getValue());
     }
 
     void setAdaptiveSS(boolean adaptiveSS) {

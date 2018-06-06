@@ -13,9 +13,8 @@ public class KernelReuseSamples extends KernelMain {
     private final short PARAM_IDX_IMAGE_REUSED;
     private final short PARAM_IDX_FOCUS;
 
-    private final static int USE_FOVEATION_FLAG_IDX = 1;
-    private final static int USE_SAMPLE_REUSE_FLAG_IDX = 2;
-    private final static int VISUALISE_SAMPLE_COUNT_FLAG_IDX = 3;
+    private final static int USE_FOVEATION_FLAG_IDX = 2;
+    private final static int USE_SAMPLE_REUSE_FLAG_IDX = 3;
     private final static int IS_ZOOMING_FLAG_IDX = 4;
 
 
@@ -62,15 +61,6 @@ public class KernelReuseSamples extends KernelMain {
 
     public int getFocusY() {
         return focus_y;
-    }
-
-    boolean getVisualiseSampleCount(){
-        return flags.getBit(VISUALISE_SAMPLE_COUNT_FLAG_IDX);
-    }
-
-    void setVisualiseSampleCount(boolean visualise) {
-        flags.setBit(VISUALISE_SAMPLE_COUNT_FLAG_IDX, visualise);
-        params[PARAM_IDX_FLAGS] = CudaHelpers.pointerTo(flags.getValue());
     }
 
     public void setIsZooming(boolean zooming){

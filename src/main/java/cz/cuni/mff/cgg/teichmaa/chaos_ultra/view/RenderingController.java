@@ -429,6 +429,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
 
     void setVisualiseSampleCount(boolean visualiseAdaptiveSS) {
         fractalRenderer.setVisualiseSampleCount(visualiseAdaptiveSS);
+        target.repaint();
     }
 
     void setUseAutomaticQuality(boolean useAutomaticQuality) {
