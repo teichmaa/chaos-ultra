@@ -12,4 +12,4 @@ This project originated as a bachelor thesis on [MFF UK](https://mff.cuni.cz/).
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details
