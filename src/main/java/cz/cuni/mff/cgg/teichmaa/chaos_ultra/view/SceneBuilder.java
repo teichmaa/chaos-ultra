@@ -43,10 +43,12 @@ class SceneBuilder {
         final JFrame root = new JFrame("Mandelzoomer");
         root.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         //todo mozna muzu pouzit jiny layout a to vyresi moje problemy
-        root.setLayout(new BoxLayout(root.getContentPane(), BoxLayout.X_AXIS));
+        root.setLayout(new BorderLayout());
         root.add(getGLCanvas(ControllerFX.getSingleton()));
-        root.add(fxPanel);
-        root.setMinimumSize(new Dimension(800, 800));
+        root.add(fxPanel, BorderLayout.EAST);
+        root.setMinimumSize(new Dimension(800, 800)); //todo tohle je blby, ja bych ten JPanel potreboval ctvercovy
+        //napriklad https://stackoverflow.com/questions/16075022/making-a-jpanel-square
+        // ale to chci resit az na desktopu
         root.setVisible(true);
     }
 
@@ -61,7 +63,6 @@ class SceneBuilder {
             fractalCanvas.addMouseWheelListener(renderingController);
             fractalCanvas.addMouseMotionListener(renderingController);
             fractalCanvas.addMouseListener(renderingController);
-            //fractalCanvas.setMinimumSize(new Dimension(800,800));
         }
         controllerFX.setRenderingController(renderingController);
 
@@ -69,7 +70,6 @@ class SceneBuilder {
         {
             panel.setLayout(new BorderLayout(0, 0));
             panel.add(fractalCanvas);
-            //panel.setMinimumSize(new Dimension(800,800));
         }
         return panel;
     }
