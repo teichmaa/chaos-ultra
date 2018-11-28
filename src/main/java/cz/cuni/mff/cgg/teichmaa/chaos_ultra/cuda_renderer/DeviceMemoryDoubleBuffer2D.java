@@ -8,64 +8,78 @@ import jcuda.runtime.JCuda;
 
 import java.io.Closeable;
 
-class DeviceMemory implements Closeable {
+//TODO a better design would be to have a separate class for Cuda2DArray, containing its CUdeviceptr, width, height and pitch. Then, here rename all the methods (no need for the '2D' indication). This is like programming C, instead  of C++ (whilst having Java)
 
-    private CUdeviceptr output2DArray1 = new CUdeviceptr();
-    private CUdeviceptr output2DArray2 = new CUdeviceptr();
-    private long output2DArray1Pitch;
-    private long output2DArray2Pitch;
-    private CUdeviceptr randomValues;
+
+/**
+ * Represents two distinct 2D arrays in CUDA memory, whose order may be switched
+ */
+class DeviceMemoryDoubleBuffer2D implements Closeable {
+
+    private CUdeviceptr array1 = new CUdeviceptr();
+    private CUdeviceptr array2 = new CUdeviceptr();
+    private long array1Pitch;
+    private long array2Pitch;
+
+    void reallocate(int w, int h){
+        reallocatePrimary2DBuffer(w, h);
+        reallocatePrimary2DBuffer(w, h);
+    }
 
     /**
-     * Reallocate the 2D buffer and internally mark is as empty
+     * Reallocate the 2D buffer and internally mark it as empty
      * @param w
      * @param h
      */
-    void reallocatePrimary2DBuffer(int w, int h){
-        output2DArray1Pitch = allocateDevice2DBuffer(w, h, 2, output2DArray1);
-        setPrimary2DBufferUnusable(true);
+    private void reallocatePrimary2DBuffer(int w, int h){
+        array1Pitch = allocateDevice2DBuffer(w, h, 2, array1);
+        setPrimary2DBufferEmpty(true);
     }
-    void reallocateSecondary2DBuffer(int w, int h){
-        output2DArray2Pitch = allocateDevice2DBuffer(w, h, 2, output2DArray2);
+    private void reallocateSecondary2DBuffer(int w, int h){
+        array2Pitch = allocateDevice2DBuffer(w, h, 2, array2);
     }
 
     CUdeviceptr getPrimary2DBuffer(){
-        return output2DArray1;
+        return array1;
     }
     CUdeviceptr getSecondary2DBuffer(){
-        return output2DArray2;
+        return array2;
     }
-    long getPrimary2DBufferPitch(){return output2DArray1Pitch; }
-    long getSecondary2DBufferPitch(){return output2DArray2Pitch; }
+    long getPrimary2DBufferPitch(){return array1Pitch; }
+    long getSecondary2DBufferPitch(){return array2Pitch; }
 
-    boolean buffersSwitched = false;
+    private boolean buffersSwitched = false;
+
+    /**
+     * Make the primary buffer a secondary one and vice versa
+     */
     void switch2DBuffers(){
         buffersSwitched = !buffersSwitched;
-        CUdeviceptr switchPtr = output2DArray1;
-        output2DArray1 = output2DArray2;
-        output2DArray2 = switchPtr;
-        long switchPitch = output2DArray1Pitch;
-        output2DArray1Pitch = output2DArray2Pitch;
-        output2DArray2Pitch = switchPitch;
+        CUdeviceptr switchPtr = array1;
+        array1 = array2;
+        array2 = switchPtr;
+        long switchPitch = array1Pitch;
+        array1Pitch = array2Pitch;
+        array2Pitch = switchPitch;
     }
     boolean isBuffersSwitched(){return  buffersSwitched; }
 
     /***
-     * returns buffers to initial order, whether they have been previously switched or not
+     * makes buffers order the initial one (whether the buffers have been previously switched or not)
      */
-    void resetBufferSwitch(){
+    void resetBufferOrder(){
         if(isBuffersSwitched())
             switch2DBuffers();
     }
 
-    private boolean primary2DBufferUnusable = true;
+    private boolean primary2DBufferEmpty = true;
 
-    public boolean isPrimary2DBufferUnusable() {
-        return primary2DBufferUnusable;
+    public boolean isPrimary2DBufferEmpty() {
+        return primary2DBufferEmpty;
     }
 
-    public void setPrimary2DBufferUnusable(boolean primary2DBufferUnusable) {
-        this.primary2DBufferUnusable = primary2DBufferUnusable;
+    public void setPrimary2DBufferEmpty(boolean primary2DBufferEmpty) {
+        this.primary2DBufferEmpty = primary2DBufferEmpty;
     }
 
     /**
@@ -112,11 +126,9 @@ class DeviceMemory implements Closeable {
 
     @Override
     public void close() {
-        if(output2DArray1 != null)
-            JCuda.cudaFree(output2DArray1);
-        if(output2DArray2 != null)
-            JCuda.cudaFree(output2DArray2);
-        if (randomValues != null)
-            JCuda.cudaFree(randomValues);
+        if(array1 != null)
+            JCuda.cudaFree(array1);
+        if(array2 != null)
+            JCuda.cudaFree(array2);
     }
 }

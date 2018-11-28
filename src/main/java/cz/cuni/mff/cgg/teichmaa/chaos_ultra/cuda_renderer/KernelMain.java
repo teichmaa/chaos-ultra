@@ -1,5 +1,6 @@
 package cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer;
 
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.BitField;
 import jcuda.driver.CUmodule;
 
 abstract class KernelMain extends RenderingKernel {
@@ -11,6 +12,7 @@ abstract class KernelMain extends RenderingKernel {
     private final short PARAM_IDX_MAX_SUPER_SAMPLING;
     protected final short PARAM_IDX_FLAGS;
 
+    //todo this should only be defined at one place - not both in cuda and java
     private final static int USE_ADAPTIVE_SS_FLAG_IDX = 0;
     private final static int VISUALISE_SAMPLE_COUNT_FLAG_IDX = 1;
 
@@ -27,7 +29,7 @@ abstract class KernelMain extends RenderingKernel {
 
     private int superSamplingLevel;
     private boolean adaptiveSS;
-    protected BitMask flags = new BitMask();
+    protected BitField flags = new BitField();
 
     boolean getAdaptiveSS() {
         return adaptiveSS;

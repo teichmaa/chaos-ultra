@@ -4,6 +4,7 @@ import jcuda.NativePointerObject;
 
 import java.lang.reflect.Field;
 
+@Deprecated
 class PointerHelpers {
 
     private static Field address;

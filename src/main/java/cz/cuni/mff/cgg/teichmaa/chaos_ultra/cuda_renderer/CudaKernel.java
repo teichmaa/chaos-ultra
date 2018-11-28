@@ -104,7 +104,10 @@ public abstract class CudaKernel {
 
 
     /**
-     * @return Array of Kernel's specific parameters. Fields to which the object presents a public index must be defined by the caller.
+     * @return Array of Kernel's specific parameters.
+     *
+     * TODO tento radek snad jiz brzy nebude pravada, a vsechny parametry budou Java-style
+     * Fields to which the object presents a public index must be defined by the caller.
      */
     public final NativePointerObject[] getKernelParams(){return params;}
 

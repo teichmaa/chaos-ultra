@@ -12,7 +12,7 @@ import java.util.Map;
 import static jcuda.driver.JCudaDriver.cuModuleLoad;
 
 /**
- * A structure of JCuda classes, together representing a CUDA module (=1 ptx file) used by FractalRenderer class.
+ * A structure of JCuda classes, together representing a CUDA module (=1 ptx file) used by CudaFractalRenderer class.
  */
 abstract class FractalRenderingModule implements Closeable {
 
