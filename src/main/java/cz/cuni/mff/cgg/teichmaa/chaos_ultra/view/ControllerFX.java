@@ -1,15 +1,10 @@
 package cz.cuni.mff.cgg.teichmaa.chaos_ultra.view;
 
-import com.jogamp.opengl.awt.GLJPanel;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.FloatPrecision;
-import javafx.embed.swing.SwingNode;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.Button;
-import javafx.scene.control.CheckBox;
-import javafx.scene.control.TextField;
-import javafx.scene.control.Label;
+import javafx.scene.control.*;
 
 
 import javax.swing.*;
@@ -59,18 +54,14 @@ public class ControllerFX implements Initializable {
     public void initialize(URL location, ResourceBundle resources) {
         if(singleton == null)
             singleton = this;
-        while(RenderingController.getSingleton() == null){
-            //TODO TODO TODO this is super bad bad practice
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-        renderingController = RenderingController.getSingleton();
     }
 
-    public void renderClicked(ActionEvent actionEvent) {
+    void setRenderingController(RenderingController renderingController){
+        this.renderingController = renderingController;
+    }
+
+    @FXML
+    private void renderClicked(ActionEvent actionEvent) {
        useAutomaticQuality.setSelected(false);
        render();
     }
@@ -146,31 +137,36 @@ public class ControllerFX implements Initializable {
         render();
     }
 
-    public void example0Clicked(ActionEvent actionEvent) {
+    @FXML
+    private void example0Clicked(ActionEvent actionEvent) {
         showDefaultView();
     }
 
-    public void example1Clicked(ActionEvent actionEvent) {
+    @FXML
+    private void example1Clicked(ActionEvent actionEvent) {
         center_x.setText("-0.748");
         center_y.setText("0.1");
         zoom.setText("0.0014");
         renderClicked(actionEvent);
     }
 
-    public void example2Clicked(ActionEvent actionEvent) {
+    @FXML
+    private void example2Clicked(ActionEvent actionEvent) {
         center_x.setText("-0.235125");
         center_y.setText("0.827215");
         zoom.setText("4.0E-5");
         renderClicked(actionEvent);
     }
 
-    public void example3Clicked(ActionEvent actionEvent) {
+    @FXML
+    private void example3Clicked(ActionEvent actionEvent) {
         center_x.setText("-0.925");
         center_y.setText("0.266");
         zoom.setText("0.032");
         renderClicked(actionEvent);
     }
-    public void example4Clicked(ActionEvent actionEvent) {
+    @FXML
+    private void example4Clicked(ActionEvent actionEvent) {
         center_x.setText("-0.57675236");
         center_y.setText("0.4625193");
         zoom.setText("0.029995363");
@@ -178,7 +174,8 @@ public class ControllerFX implements Initializable {
         useAdaptiveSS.setSelected(false);
         renderClicked(actionEvent);
     }
-    public void example5Clicked(ActionEvent actionEvent) {
+    @FXML
+    private void example5Clicked(ActionEvent actionEvent) {
         center_x.setText("-0.551042868375875");
         center_y.setText("0.62714332109057");
         zoom.setText("8.00592947491907E-09");
@@ -188,25 +185,29 @@ public class ControllerFX implements Initializable {
         renderClicked(actionEvent);
     }
 
-    public void adaptiveSSSelected(ActionEvent actionEvent) {
+    @FXML
+    private void adaptiveSSSelected(ActionEvent actionEvent) {
         SwingUtilities.invokeLater(() -> {
             renderingController.setAdaptiveSS(useAdaptiveSS.isSelected());
         });
     }
 
-    public void visualiseSampleCountSelected(ActionEvent actionEvent) {
+    @FXML
+    private void visualiseSampleCountSelected(ActionEvent actionEvent) {
         SwingUtilities.invokeLater(() -> {
             renderingController.setVisualiseSampleCount(visualiseSampleCount.isSelected());
         });
     }
 
-    public void saveImageClicked(ActionEvent actionEvent) {
+    @FXML
+    private void saveImageClicked(ActionEvent actionEvent) {
         String time = new SimpleDateFormat("dd-MM-YY_HH-mm-ss").format(new Date());
         SwingUtilities.invokeLater(() -> renderingController.saveImage("E:\\Tonda\\Desktop\\fractal-out\\fractal_" + time + ".png", "png"));
     }
 
 
-    public void automaticQualitySelected(ActionEvent actionEvent) {
+    @FXML
+    private void automaticQualitySelected(ActionEvent actionEvent) {
         SwingUtilities.invokeLater(() ->
             renderingController.setUseAutomaticQuality(useAutomaticQuality.isSelected())
         );
@@ -216,22 +217,33 @@ public class ControllerFX implements Initializable {
         dimensions.setText("" + width + " x " + height);
     }
 
-    public void debugButton2Clicked(ActionEvent actionEvent) {
+    @FXML
+    private void debugButton2Clicked(ActionEvent actionEvent) {
         SwingUtilities.invokeLater(renderingController::debugRightBottomPixel);
     }
 
-    public void useFoveationSelected(ActionEvent actionEvent) {
+    @FXML
+    private void useFoveationSelected(ActionEvent actionEvent) {
         SwingUtilities.invokeLater(() ->
                 renderingController.setUseFoveation(useFoveation.isSelected())
         );
     }
 
-    public void useSampleReuseSelected(ActionEvent actionEvent) {
+    @FXML
+    private void useSampleReuseSelected(ActionEvent actionEvent) {
         SwingUtilities.invokeLater(() ->
                 renderingController.setUseSampleReuse(useSampleReuse.isSelected())
         );
     }
 
-    public void debugButton1Clicked(ActionEvent actionEvent) {
+    @FXML
+    private void debugButton1Clicked(ActionEvent actionEvent) {
+    }
+
+    void showErrorMessage(String message){
+        new Alert(
+                Alert.AlertType.ERROR,
+                message
+        ).showAndWait();
     }
 }

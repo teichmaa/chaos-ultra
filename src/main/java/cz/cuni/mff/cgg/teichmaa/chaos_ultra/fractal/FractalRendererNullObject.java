@@ -1,6 +1,5 @@
-package cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer;
+package cz.cuni.mff.cgg.teichmaa.chaos_ultra.fractal;
 
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.FloatPrecision;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.Point2DInt;
 
 public class FractalRendererNullObject implements FractalRenderer {

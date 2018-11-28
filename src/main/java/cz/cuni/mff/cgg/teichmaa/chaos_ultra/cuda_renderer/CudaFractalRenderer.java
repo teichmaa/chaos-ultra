@@ -1,5 +1,7 @@
 package cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer;
 
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.fractal.FractalRenderer;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.fractal.FractalRendererException;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.FloatPrecision;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.Point2DInt;
 import jcuda.CudaException;
@@ -9,7 +11,6 @@ import jcuda.Sizeof;
 import jcuda.driver.*;
 import jcuda.runtime.*;
 
-import java.io.Closeable;
 import java.nio.IntBuffer;
 import java.security.InvalidParameterException;
 import java.util.function.Consumer;
@@ -20,6 +21,8 @@ import static jcuda.runtime.cudaGraphicsRegisterFlags.cudaGraphicsRegisterFlagsW
 import static jcuda.runtime.cudaResourceType.cudaResourceTypeArray;
 
 public class CudaFractalRenderer implements FractalRenderer {
+
+    int CUDA_MAX_GRID_DIM = 65536 - 1;
 
     private static final Pointer NULLPTR = CudaHelpers.pointerTo(0);
 
