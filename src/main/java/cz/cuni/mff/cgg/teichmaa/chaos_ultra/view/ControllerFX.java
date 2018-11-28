@@ -1,6 +1,7 @@
 package cz.cuni.mff.cgg.teichmaa.chaos_ultra.view;
 
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.FloatPrecision;
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -46,27 +47,28 @@ public class ControllerFX implements Initializable {
     private RenderingController renderingController;
 
     private static ControllerFX singleton = null;
-    static ControllerFX getSingleton(){
+
+    static ControllerFX getSingleton() {
         return singleton;
     }
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        if(singleton == null)
+        if (singleton == null)
             singleton = this;
     }
 
-    void setRenderingController(RenderingController renderingController){
-        this.renderingController = renderingController;
+    void setRenderingController(RenderingController renderingController) {
+        Platform.runLater(() -> this.renderingController = renderingController);
     }
 
     @FXML
     private void renderClicked(ActionEvent actionEvent) {
-       useAutomaticQuality.setSelected(false);
-       render();
+        useAutomaticQuality.setSelected(false);
+        render();
     }
 
-    private void render(){
+    private void render() {
         try {
             double x = Double.parseDouble(center_x.getText());
             double y = Double.parseDouble(center_y.getText());
@@ -89,52 +91,54 @@ public class ControllerFX implements Initializable {
                 renderingController.setSuperSamplingLevel(supsamp);
                 renderingController.repaint();
             });
-        }catch (NumberFormatException e){
+        } catch (NumberFormatException e) {
             System.out.println("Warning: number in a text field could not be parsed.");
         }
     }
 
     void setX(double x) {
-        center_x.setText("" + x);
+        Platform.runLater(() -> center_x.setText("" + x));
     }
 
     void setY(double y) {
-        center_y.setText("" + y);
+        Platform.runLater(() -> center_y.setText("" + y));
     }
 
-    void setSuperSamplingLevel(int SSLevel){
-        superSamplingLevel.setText("" + SSLevel);
+    void setSuperSamplingLevel(int SSLevel) {
+        Platform.runLater(() -> superSamplingLevel.setText("" + SSLevel));
     }
 
-    void setMaxIterations(int maxIterations){
-        this.maxIterations.setText("" + maxIterations);
+    void setMaxIterations(int maxIterations) {
+        Platform.runLater(() -> this.maxIterations.setText("" + maxIterations));
     }
 
     void setZoom(double zoom) {
-        this.zoom.setText("" + zoom);
+        Platform.runLater(() -> this.zoom.setText("" + zoom));
     }
 
-    void setPrecision(FloatPrecision value){
-        precision.setText(value.toString());
+    void setPrecision(FloatPrecision value) {
+        Platform.runLater(() -> precision.setText(value.toString()));
     }
 
-    public void showDefaultView(){
-        center_x.setText("-0.5");
-        center_y.setText("0");
-        zoom.setText("2");
-        maxIterations.setText("1400");
-        superSamplingLevel.setText("5");
-        useAdaptiveSS.setSelected(true);
-        renderingController.setAdaptiveSS(true);
-        useFoveation.setSelected(true);
-        renderingController.setUseFoveation(true);
-        useSampleReuse.setSelected(true);
-        renderingController.setUseSampleReuse(true);
-        useAutomaticQuality.setSelected(true);
-        renderingController.setUseAutomaticQuality(true);
-        visualiseSampleCount.setSelected(false);
-        renderingController.setVisualiseSampleCount(false);
-        render();
+    public void showDefaultView() {
+        Platform.runLater(() -> {
+            center_x.setText("-0.5");
+            center_y.setText("0");
+            zoom.setText("2");
+            maxIterations.setText("1400");
+            superSamplingLevel.setText("5");
+            useAdaptiveSS.setSelected(true);
+            renderingController.setAdaptiveSS(true);
+            useFoveation.setSelected(true);
+            renderingController.setUseFoveation(true);
+            useSampleReuse.setSelected(true);
+            renderingController.setUseSampleReuse(true);
+            useAutomaticQuality.setSelected(true);
+            renderingController.setUseAutomaticQuality(true);
+            visualiseSampleCount.setSelected(false);
+            renderingController.setVisualiseSampleCount(false);
+            render();
+        });
     }
 
     @FXML
@@ -165,6 +169,7 @@ public class ControllerFX implements Initializable {
         zoom.setText("0.032");
         renderClicked(actionEvent);
     }
+
     @FXML
     private void example4Clicked(ActionEvent actionEvent) {
         center_x.setText("-0.57675236");
@@ -174,6 +179,7 @@ public class ControllerFX implements Initializable {
         useAdaptiveSS.setSelected(false);
         renderClicked(actionEvent);
     }
+
     @FXML
     private void example5Clicked(ActionEvent actionEvent) {
         center_x.setText("-0.551042868375875");
@@ -209,12 +215,12 @@ public class ControllerFX implements Initializable {
     @FXML
     private void automaticQualitySelected(ActionEvent actionEvent) {
         SwingUtilities.invokeLater(() ->
-            renderingController.setUseAutomaticQuality(useAutomaticQuality.isSelected())
+                renderingController.setUseAutomaticQuality(useAutomaticQuality.isSelected())
         );
     }
 
     public void setDimensions(int width, int height) {
-        dimensions.setText("" + width + " x " + height);
+        Platform.runLater(() -> dimensions.setText("" + width + " x " + height));
     }
 
     @FXML
@@ -240,10 +246,7 @@ public class ControllerFX implements Initializable {
     private void debugButton1Clicked(ActionEvent actionEvent) {
     }
 
-    void showErrorMessage(String message){
-        new Alert(
-                Alert.AlertType.ERROR,
-                message
-        ).showAndWait();
+    void showErrorMessage(String message) {
+        Platform.runLater(() -> new Alert(Alert.AlertType.ERROR, message).showAndWait());
     }
 }

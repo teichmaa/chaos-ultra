@@ -11,7 +11,6 @@ import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.ModuleMandelbrot;
 
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.fractal.FractalRendererNullObjectVerbose;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.Point2DInt;
-import javafx.application.Platform;
 
 import javax.swing.*;
 import java.awt.event.MouseAdapter;
@@ -192,15 +191,13 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     }
 
     private void updateFXUI() {
-        Platform.runLater(() -> {
-            controllerFX.setZoom(getZoom());
-            controllerFX.setX(getCenterX());
-            controllerFX.setY(getCenterY());
-            controllerFX.setMaxIterations(fractalRenderer.getDwell());
-            controllerFX.setSuperSamplingLevel(fractalRenderer.getSuperSamplingLevel());
-            controllerFX.setDimensions(fractalRenderer.getWidth(), fractalRenderer.getHeight());
-            controllerFX.setPrecision(fractalRenderer.getPrecision());
-        });
+        controllerFX.setZoom(getZoom());
+        controllerFX.setX(getCenterX());
+        controllerFX.setY(getCenterY());
+        controllerFX.setMaxIterations(fractalRenderer.getDwell());
+        controllerFX.setSuperSamplingLevel(fractalRenderer.getSuperSamplingLevel());
+        controllerFX.setDimensions(fractalRenderer.getWidth(), fractalRenderer.getHeight());
+        controllerFX.setPrecision(fractalRenderer.getPrecision());
     }
 
     @Override
@@ -233,14 +230,14 @@ public class RenderingController extends MouseAdapter implements GLEventListener
                     outputTextureGLhandle, GL_TEXTURE_2D, paletteTextureGLhandle, GL_TEXTURE_2D, paletteTextureLength);
         } catch (UnsatisfiedLinkError e) {
             if (e.getMessage().contains("Cuda")) {
-                Platform.runLater(() -> controllerFX.showErrorMessage("Error while loading a Cuda native library. Do you have CUDA installed?"));
+                controllerFX.showErrorMessage("Error while loading a Cuda native library. Do you have CUDA installed?");
             } else {
                 e.printStackTrace();
             }
         }
         // fractalRenderer uses the null-object pattern, so even if not initialised to CudaFractalRenderer, we can still call its methods
 
-        Platform.runLater(controllerFX::showDefaultView);
+        controllerFX.showDefaultView();
         fractalRenderer.launchDebugKernel();
     }
 
