@@ -1,7 +1,8 @@
 package cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer;
 
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.fractal.FractalRenderer;
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.fractal.FractalRendererException;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.FractalRenderer;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.FractalRendererException;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.heuristicsParams.ChaosUltraRenderingParams;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.FloatPrecision;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.Point2DInt;
 import jcuda.CudaException;
@@ -141,7 +142,7 @@ public class CudaFractalRenderer implements FractalRenderer {
 
     @Override
     public void renderFast(Point2DInt focus, boolean isZooming) {
-        if (memory.isPrimary2DBufferEmpty()) {
+        if (memory.isPrimary2DBufferDirty()) {
             //if there is nothing to reuse, then create it
             renderQuality();
             return;
@@ -167,14 +168,14 @@ public class CudaFractalRenderer implements FractalRenderer {
         launchRenderingKernel(false, kernelMain);
         launchDrawingKernel(false, kernelCompose);
         lastRendering.setFrom(kernelMain);
-        memory.setPrimary2DBufferEmpty(false);
+        memory.setPrimary2DBufferDirty(false);
     }
 
     private void launchRenderingKernel(boolean async, RenderingKernel kernel) {
         int width = kernel.getWidth();
         int height = kernel.getHeight();
 
-        // Following the Jcuda API, kernel params is a pointer to an array of pointers which point to the actual values.
+        // Following the Jcuda API, kernel heuristicsParams is a pointer to an array of pointers which point to the actual values.
         Pointer kernelParams = Pointer.to(kernel.getKernelParams());
         CUfunction kernelFunction = kernel.getFunction();
         int gridDimX = width / blockDimX;
@@ -292,6 +293,7 @@ public class CudaFractalRenderer implements FractalRenderer {
 
     /**
      * just a syntactic sugar - just call the JCudaDriver.cuLaunchKernel with some more parameter's default values
+     *
      * @param kernelParams
      */
     private void cuLaunchKernel(CUfunction kernelFunction, int gridDimX, int gridDimY, Pointer kernelParams) {
@@ -310,54 +312,11 @@ public class CudaFractalRenderer implements FractalRenderer {
         module.close();
     }
 
-    @Override
-    public void setAdaptiveSS(boolean adaptiveSS) {
-        onAllMainKernels(k -> k.setAdaptiveSS(adaptiveSS));
-    }
-
-    @Override
-    public void setVisualiseSampleCount(boolean visualiseAdaptiveSS) {
-        if (kernelAdvancedFloat.getVisualiseSampleCount() == true &&
-                visualiseAdaptiveSS == false) //when switching from "visualiseAdaptiveSS" mode back to normal, don't reuse the texture
-            memory.setPrimary2DBufferEmpty(true);
-        onAllMainKernels(k -> k.setVisualiseSampleCount(visualiseAdaptiveSS));
-    }
-
-    @Override
-    public void setSuperSamplingLevel(int supSampLvl) {
-        onAllMainKernels(k -> k.setSuperSamplingLevel(supSampLvl));
-    }
-
-    @Override
-    public void setMaxIterations(int MaxIterations) {
-        onAllRenderingKernels(k -> k.setMaxIterations(MaxIterations));
-    }
-
-    @Override
-    public int getSuperSamplingLevel() {
-        return kernelMainFloat.getSuperSamplingLevel();
-    }
-
-    @Override
-    public int getDwell() {
-        return kernelMainFloat.getMaxIterations();
-    }
 
     @Override
     public void setBounds(double left_bottom_x, double left_bottom_y, double right_top_x, double right_top_y) {
         onAllRenderingKernels(k -> k.setBounds(left_bottom_x, left_bottom_y, right_top_x, right_top_y));
-    }
-
-    @Override
-    public void setUseFoveation(boolean value) {
-        kernelAdvancedFloat.setUseFoveation(value);
-        kernelAdvancedDouble.setUseFoveation(value);
-    }
-
-    @Override
-    public void setUseSampleReuse(boolean value) {
-        kernelAdvancedFloat.setUseSampleReuse(value);
-        kernelAdvancedDouble.setUseSampleReuse(value);
+        updateFloatPrecision();
     }
 
     void onAllRenderingKernels(Consumer<RenderingKernel> c) {
@@ -365,9 +324,13 @@ public class CudaFractalRenderer implements FractalRenderer {
         c.accept(kernelUndersampled);
     }
 
-    void onAllMainKernels(Consumer<? super KernelMain> c ){
+    void onAllMainKernels(Consumer<? super KernelMain> c) {
+        onAllAdvancedKernels(c);
         c.accept(kernelMainFloat);
         c.accept(kernelMainDouble);
+    }
+
+    void onAllAdvancedKernels(Consumer<? super KernelAdvanced> c) {
         c.accept(kernelAdvancedFloat);
         c.accept(kernelAdvancedDouble);
     }
@@ -385,8 +348,43 @@ public class CudaFractalRenderer implements FractalRenderer {
         int breakpoit = 0;
     }
 
+
+    private void updateFloatPrecision() {
+        heuristicsParams.floatingPointPrecisionProperty().setValue(kernelMainDouble.isBoundsAtFloatLimit() ? FloatPrecision.doublePrecision : FloatPrecision.singlePrecision);
+    }
+
+    ChaosUltraRenderingParams heuristicsParams;
+
     @Override
-    public FloatPrecision getPrecision() {
-        return kernelMainDouble.isBoundsAtFloatLimit() ? FloatPrecision.doublePrecision : FloatPrecision.singlePrecision;
+    public void bindParamsTo(ChaosUltraRenderingParams params) {
+        this.heuristicsParams = params;
+
+        //todo in future, this pattern could go further and delegate this binding to the kernels (where each kernel would decide which heuristics they support and hence bind to). But that would be too much for now.
+
+        params.maxIterationsProperty().addListener((__, ___, newVal) ->
+                onAllMainKernels(k -> k.setMaxIterations(newVal.intValue())));
+        params.superSamplingLevelProperty().addListener((__, ___, newVal) ->
+                onAllMainKernels(k -> k.setSuperSamplingLevel(newVal.intValue())));
+
+        params.useAdaptiveSupersamplingProperty().addListener((__, ___, newVal) ->
+                onAllMainKernels(k -> k.setAdaptiveSS(newVal)));
+        params.visualiseSampleCountProperty().addListener((__, ___, newVal) ->
+                updateVisualiseSampleCount(newVal));
+
+        params.useFoveatedRenderingProperty().addListener((__, ___, newVal) ->
+                onAllAdvancedKernels(k -> k.setUseFoveation(newVal)));
+        params.useSampleReuseProperty().addListener((__, ___, newVal) ->
+                onAllAdvancedKernels(k -> k.setUseSampleReuse(newVal)));
+
+
+    }
+
+    private void updateVisualiseSampleCount(boolean visualiseAdaptiveSS) {
+        //when switching from "visualiseAdaptiveSS" mode back to normal, don't reuse the texture for sampleReuse
+        if (kernelAdvancedFloat.isVisualiseSampleCount() &&
+                !visualiseAdaptiveSS) {
+            memory.setPrimary2DBufferDirty(true);
+        }
+        onAllMainKernels(k -> k.setVisualiseSampleCount(visualiseAdaptiveSS));
     }
 }

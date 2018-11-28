@@ -16,7 +16,7 @@ public abstract class RenderingKernel extends CudaKernel {
     RenderingKernel(String functionName, CUmodule ownerModule) {
         super(functionName, ownerModule);
 
-        //initialize params[]:
+        //initialize heuristicsParams[]:
         PARAM_IDX_2DARR_OUT = registerParam();
         PARAM_IDX_2DARR_OUT_PITCH = registerParam();
         PARAM_IDX_OUT_SIZE = registerParam();

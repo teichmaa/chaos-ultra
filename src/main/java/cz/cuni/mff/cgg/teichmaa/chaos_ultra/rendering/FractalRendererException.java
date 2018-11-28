@@ -1,4 +1,4 @@
-package cz.cuni.mff.cgg.teichmaa.chaos_ultra.fractal;
+package cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering;
 
 public class FractalRendererException extends RuntimeException {
     public FractalRendererException() {

@@ -5,12 +5,14 @@ import com.jogamp.opengl.*;
 import com.jogamp.opengl.awt.GLCanvas;
 import com.jogamp.opengl.util.Animator;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.CudaFractalRenderer;
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.fractal.FractalRenderer;
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.fractal.FractalRendererNullObject;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.FractalRenderer;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.ModuleMandelbrot;
 
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.fractal.FractalRendererNullObjectVerbose;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.FractalRendererNullObjectVerbose;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.heuristicsParams.ChaosUltraRenderingParams;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.Point2DInt;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 
 import javax.swing.*;
 import java.awt.event.MouseAdapter;
@@ -54,7 +56,6 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     private ControllerFX controllerFX;
     private Animator animator;
     private RenderingModeFSM currentMode = new RenderingModeFSM();
-    private boolean useAutomaticQuality = true;
 
     private int width_t;
     private int height_t;
@@ -63,6 +64,8 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     private double plane_left_bottom_y;
     private double plane_right_top_x;
     private double plane_right_top_y;
+
+    private ChaosUltraRenderingParams params = new ChaosUltraRenderingParams();
 
     public RenderingController(GLCanvas target, ControllerFX controllerFX) {
         this.width_t = target.getWidth();
@@ -73,6 +76,9 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         animator.setRunAsFastAsPossible(true);
         animator.stop();
         renderInFuture.setRepeats(false);
+
+        controllerFX.bindParamsTo(params);
+        params.visualiseSampleCountProperty().addListener((__) -> target.repaint());
 
 //        for(RenderingModeFSM.RenderingMode mode : RenderingModeFSM.RenderingMode.values()){
 //            lastFramesRenderTime.put(mode, new CyclicBuffer(lastFramesRenderTimeBufferLength, shortestFrameRenderTime));
@@ -194,10 +200,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         controllerFX.setZoom(getZoom());
         controllerFX.setX(getCenterX());
         controllerFX.setY(getCenterY());
-        controllerFX.setMaxIterations(fractalRenderer.getDwell());
-        controllerFX.setSuperSamplingLevel(fractalRenderer.getSuperSamplingLevel());
-        controllerFX.setDimensions(fractalRenderer.getWidth(), fractalRenderer.getHeight());
-        controllerFX.setPrecision(fractalRenderer.getPrecision());
+        controllerFX.setDimensions(width_t, height_t);
     }
 
     @Override
@@ -301,9 +304,9 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     private int lastFrameRenderTime = shortestFrameRenderTime;
 
     private void updateQuality() {
-        if (!useAutomaticQuality) return;
+        if (!params.isAutomaticQuality()) return;
         if (currentMode.isWaiting() && currentMode.wasProgressiveRendering()) {
-            fractalRenderer.setSuperSamplingLevel(10);
+            params.setSuperSamplingLevel(10); //todo lol proc zrovna deset, kde se to vzalo?
             return;
         }
 
@@ -323,7 +326,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
             //pridat sem currentMode.getHighQualityIteration()
             //   a do RenderingMode::step dat highQIteration++
         }
-        if (fractalRenderer.getSuperSamplingLevel() == SUPER_SAMPLING_MAX_LEVEL)
+        if (params.getSuperSamplingLevel() == SUPER_SAMPLING_MAX_LEVEL)
             currentMode.reset();
     }
 
@@ -337,7 +340,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
 //        System.out.println();
 
         //int mean = Math.round(lastFramesRenderTime.get(currentMode.getCurrent()).getMeanValue());
-        int newSS = Math.round(fractalRenderer.getSuperSamplingLevel() * ms / (float) Math.max(1, lastFrameRenderTime));
+        int newSS = Math.round(params.getSuperSamplingLevel() * ms / (float) Math.max(1, lastFrameRenderTime));
         //System.out.println("newSS = " + newSS);
         setSuperSamplingLevel(newSS);
     }
@@ -417,29 +420,16 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     }
 
     void setMaxIterations(int maxIterations) {
-        fractalRenderer.setMaxIterations(maxIterations);
+        params.setMaxIterations(maxIterations);
     }
 
     void setSuperSamplingLevel(int supSampLvl) {
         //supSampLvl will be clamped to be >=1 and <= SUPER_SAMPLING_MAX_LEVEL
-        fractalRenderer.setSuperSamplingLevel(Math.max(1, Math.min(supSampLvl, SUPER_SAMPLING_MAX_LEVEL)));
+        params.setSuperSamplingLevel(Math.max(1, Math.min(supSampLvl, SUPER_SAMPLING_MAX_LEVEL)));
     }
 
     void repaint() {
         target.repaint();
-    }
-
-    void setAdaptiveSS(boolean adaptiveSS) {
-        fractalRenderer.setAdaptiveSS(adaptiveSS);
-    }
-
-    void setVisualiseSampleCount(boolean visualiseAdaptiveSS) {
-        fractalRenderer.setVisualiseSampleCount(visualiseAdaptiveSS);
-        target.repaint();
-    }
-
-    void setUseAutomaticQuality(boolean useAutomaticQuality) {
-        this.useAutomaticQuality = useAutomaticQuality;
     }
 
     public void saveImage(String fileName, String format) {
@@ -470,11 +460,4 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         fractalRenderer.debugRightBottomPixel();
     }
 
-    public void setUseFoveation(boolean value) {
-        fractalRenderer.setUseFoveation(value);
-    }
-
-    public void setUseSampleReuse(boolean value) {
-        fractalRenderer.setUseSampleReuse(value);
-    }
 }

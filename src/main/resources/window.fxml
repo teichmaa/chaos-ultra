@@ -68,7 +68,7 @@
                 </padding>
                 adaptive SS:
             </Label>
-            <CheckBox fx:id="useAdaptiveSS" selected="false" onAction="#adaptiveSSSelected"/>
+            <CheckBox fx:id="useAdaptiveSS" selected="false"/>
         </HBox>
         <HBox>
             <Label>
@@ -77,7 +77,7 @@
                 </padding>
                 foveation:
             </Label>
-            <CheckBox fx:id="useFoveation" selected="true" onAction="#useFoveationSelected"/>
+            <CheckBox fx:id="useFoveation" selected="true"/>
         </HBox>
         <HBox>
             <Label>
@@ -86,7 +86,7 @@
                 </padding>
                 sample reuse:
             </Label>
-            <CheckBox fx:id="useSampleReuse" selected="true" onAction="#useSampleReuseSelected"/>
+            <CheckBox fx:id="useSampleReuse" selected="true" />
         </HBox>
         <HBox>
             <Label>
@@ -95,7 +95,7 @@
                 </padding>
                 visualise sample count:
             </Label>
-            <CheckBox fx:id="visualiseSampleCount" selected="false" onAction="#visualiseSampleCountSelected"/>
+            <CheckBox fx:id="visualiseSampleCount" selected="false"/>
         </HBox>
         <HBox>
             <Label>
@@ -104,7 +104,7 @@
                 </padding>
                 Automatic quality:
             </Label>
-            <CheckBox fx:id="useAutomaticQuality" selected="true" onAction="#automaticQualitySelected"/>
+            <CheckBox fx:id="useAutomaticQuality" selected="true"/>
         </HBox>
         <HBox>
             <Label>

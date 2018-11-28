@@ -1,13 +1,15 @@
-package cz.cuni.mff.cgg.teichmaa.chaos_ultra.fractal;
+package cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering;
 
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.heuristicsParams.ChaosUltraRenderingParams;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.Helpers;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.Point2DInt;
 
 public class FractalRendererNullObjectVerbose implements FractalRenderer {
 
     public static boolean verbose = true;
-    private void printMethodName(){
-        if(!verbose) return;
+
+    private void printMethodName() {
+        if (!verbose) return;
         System.out.println("FractalRendererNullObjectVerbose." + Helpers.getCallingMethodName(1));
 
     }
@@ -60,49 +62,7 @@ public class FractalRendererNullObjectVerbose implements FractalRenderer {
     }
 
     @Override
-    public void setAdaptiveSS(boolean adaptiveSS) {
-        printMethodName();
-    }
-
-    @Override
-    public void setVisualiseSampleCount(boolean visualiseAdaptiveSS) {
-        printMethodName();
-    }
-
-    @Override
-    public void setSuperSamplingLevel(int supSampLvl) {
-        printMethodName();
-    }
-
-    @Override
-    public void setMaxIterations(int MaxIterations) {
-        printMethodName();
-    }
-
-    @Override
-    public int getSuperSamplingLevel() {
-        printMethodName();
-        return 0;
-    }
-
-    @Override
-    public int getDwell() {
-        printMethodName();
-        return 0;
-    }
-
-    @Override
     public void setBounds(double left_bottom_x, double left_bottom_y, double right_top_x, double right_top_y) {
-        printMethodName();
-    }
-
-    @Override
-    public void setUseFoveation(boolean value) {
-        printMethodName();
-    }
-
-    @Override
-    public void setUseSampleReuse(boolean value) {
         printMethodName();
     }
 
@@ -111,4 +71,8 @@ public class FractalRendererNullObjectVerbose implements FractalRenderer {
         printMethodName();
     }
 
+    @Override
+    public void bindParamsTo(ChaosUltraRenderingParams params) {
+        printMethodName();
+    }
 }

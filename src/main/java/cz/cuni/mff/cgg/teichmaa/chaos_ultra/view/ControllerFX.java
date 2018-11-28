@@ -1,11 +1,14 @@
 package cz.cuni.mff.cgg.teichmaa.chaos_ultra.view;
 
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.heuristicsParams.ChaosUltraRenderingParams;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.FloatPrecision;
 import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
+import javafx.util.converter.NumberStringConverter;
 
 
 import javax.swing.*;
@@ -62,6 +65,53 @@ public class ControllerFX implements Initializable {
         Platform.runLater(() -> this.renderingController = renderingController);
     }
 
+
+    void showErrorMessage(String message) {
+        Platform.runLater(() -> new Alert(Alert.AlertType.ERROR, message).showAndWait());
+    }
+
+    void bindParamsTo(ChaosUltraRenderingParams params){
+        Bindings.bindBidirectional(maxIterations.textProperty(), params.maxIterationsProperty(), new NumberStringConverter());
+        Bindings.bindBidirectional(superSamplingLevel.textProperty(), params.superSamplingLevelProperty(), new NumberStringConverter());
+        params.useAdaptiveSupersamplingProperty().bindBidirectional(useAdaptiveSS.selectedProperty());
+        params.useFoveatedRenderingProperty().bindBidirectional(useFoveation.selectedProperty());
+        params.useSampleReuseProperty().bindBidirectional(useSampleReuse.selectedProperty());
+        params.visualiseSampleCountProperty().bindBidirectional(visualiseSampleCount.selectedProperty());
+        params.automaticQualityProperty().bindBidirectional(useAutomaticQuality.selectedProperty());
+    }
+
+    void setX(double x) {
+        Platform.runLater(() -> center_x.setText("" + x));
+    }
+
+    void setY(double y) {
+        Platform.runLater(() -> center_y.setText("" + y));
+    }
+
+    void setZoom(double zoom) {
+        Platform.runLater(() -> this.zoom.setText("" + zoom));
+    }
+
+    public void setDimensions(int width, int height) {
+        Platform.runLater(() -> dimensions.setText("" + width + " x " + height));
+    }
+
+    void showDefaultView() {
+        Platform.runLater(() -> {
+            center_x.setText("-0.5");
+            center_y.setText("0");
+            zoom.setText("2");
+            maxIterations.setText("1400");
+            superSamplingLevel.setText("5");
+            useAdaptiveSS.setSelected(true);
+            useFoveation.setSelected(true);
+            useSampleReuse.setSelected(true);
+            useAutomaticQuality.setSelected(true);
+            visualiseSampleCount.setSelected(false);
+            render();
+        });
+    }
+
     @FXML
     private void renderClicked(ActionEvent actionEvent) {
         useAutomaticQuality.setSelected(false);
@@ -94,51 +144,6 @@ public class ControllerFX implements Initializable {
         } catch (NumberFormatException e) {
             System.out.println("Warning: number in a text field could not be parsed.");
         }
-    }
-
-    void setX(double x) {
-        Platform.runLater(() -> center_x.setText("" + x));
-    }
-
-    void setY(double y) {
-        Platform.runLater(() -> center_y.setText("" + y));
-    }
-
-    void setSuperSamplingLevel(int SSLevel) {
-        Platform.runLater(() -> superSamplingLevel.setText("" + SSLevel));
-    }
-
-    void setMaxIterations(int maxIterations) {
-        Platform.runLater(() -> this.maxIterations.setText("" + maxIterations));
-    }
-
-    void setZoom(double zoom) {
-        Platform.runLater(() -> this.zoom.setText("" + zoom));
-    }
-
-    void setPrecision(FloatPrecision value) {
-        Platform.runLater(() -> precision.setText(value.toString()));
-    }
-
-    public void showDefaultView() {
-        Platform.runLater(() -> {
-            center_x.setText("-0.5");
-            center_y.setText("0");
-            zoom.setText("2");
-            maxIterations.setText("1400");
-            superSamplingLevel.setText("5");
-            useAdaptiveSS.setSelected(true);
-            renderingController.setAdaptiveSS(true);
-            useFoveation.setSelected(true);
-            renderingController.setUseFoveation(true);
-            useSampleReuse.setSelected(true);
-            renderingController.setUseSampleReuse(true);
-            useAutomaticQuality.setSelected(true);
-            renderingController.setUseAutomaticQuality(true);
-            visualiseSampleCount.setSelected(false);
-            renderingController.setVisualiseSampleCount(false);
-            render();
-        });
     }
 
     @FXML
@@ -187,41 +192,17 @@ public class ControllerFX implements Initializable {
         zoom.setText("8.00592947491907E-09");
         superSamplingLevel.setText("8");
         useAdaptiveSS.setSelected(false);
-        setMaxIterations(3000);
+        maxIterations.setText("3000");
         renderClicked(actionEvent);
-    }
-
-    @FXML
-    private void adaptiveSSSelected(ActionEvent actionEvent) {
-        SwingUtilities.invokeLater(() -> {
-            renderingController.setAdaptiveSS(useAdaptiveSS.isSelected());
-        });
-    }
-
-    @FXML
-    private void visualiseSampleCountSelected(ActionEvent actionEvent) {
-        SwingUtilities.invokeLater(() -> {
-            renderingController.setVisualiseSampleCount(visualiseSampleCount.isSelected());
-        });
     }
 
     @FXML
     private void saveImageClicked(ActionEvent actionEvent) {
         String time = new SimpleDateFormat("dd-MM-YY_HH-mm-ss").format(new Date());
-        SwingUtilities.invokeLater(() -> renderingController.saveImage("E:\\Tonda\\Desktop\\fractal-out\\fractal_" + time + ".png", "png"));
+        SwingUtilities.invokeLater(() -> renderingController.saveImage("E:\\Tonda\\Desktop\\rendering-out\\fractal_" + time + ".png", "png"));
+        // todo vybiratko na soubory
     }
 
-
-    @FXML
-    private void automaticQualitySelected(ActionEvent actionEvent) {
-        SwingUtilities.invokeLater(() ->
-                renderingController.setUseAutomaticQuality(useAutomaticQuality.isSelected())
-        );
-    }
-
-    public void setDimensions(int width, int height) {
-        Platform.runLater(() -> dimensions.setText("" + width + " x " + height));
-    }
 
     @FXML
     private void debugButton2Clicked(ActionEvent actionEvent) {
@@ -229,24 +210,7 @@ public class ControllerFX implements Initializable {
     }
 
     @FXML
-    private void useFoveationSelected(ActionEvent actionEvent) {
-        SwingUtilities.invokeLater(() ->
-                renderingController.setUseFoveation(useFoveation.isSelected())
-        );
-    }
-
-    @FXML
-    private void useSampleReuseSelected(ActionEvent actionEvent) {
-        SwingUtilities.invokeLater(() ->
-                renderingController.setUseSampleReuse(useSampleReuse.isSelected())
-        );
-    }
-
-    @FXML
     private void debugButton1Clicked(ActionEvent actionEvent) {
     }
 
-    void showErrorMessage(String message) {
-        Platform.runLater(() -> new Alert(Alert.AlertType.ERROR, message).showAndWait());
-    }
 }

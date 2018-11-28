@@ -36,7 +36,7 @@ abstract class FractalRenderingModule implements Closeable {
     /**
      *
      * @param ptxFileName name of the cuda-compiled file containing the module, without '.ptx'
-     * @param fractalName name of the fractal that this module represents
+     * @param fractalName name of the rendering that this module represents
      */
     FractalRenderingModule(String ptxFileName, String fractalName) {
         this.ptxFileFullPath = pathAbsolutePrefix + pathLocalPrefix + ptxFileName + pathSuffix;

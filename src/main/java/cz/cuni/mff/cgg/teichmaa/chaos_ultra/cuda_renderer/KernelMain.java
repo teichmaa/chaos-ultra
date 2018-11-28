@@ -19,7 +19,7 @@ abstract class KernelMain extends RenderingKernel {
     KernelMain(String name, CUmodule ownerModule) {
         super(name, ownerModule);
 
-        //initialize params[] :
+        //initialize heuristicsParams[] :
         PARAM_IDX_MAX_SUPER_SAMPLING = registerParam(1);
         PARAM_IDX_FLAGS = registerParam(1);
 
@@ -35,7 +35,7 @@ abstract class KernelMain extends RenderingKernel {
         return adaptiveSS;
     }
 
-    boolean getVisualiseSampleCount(){
+    boolean isVisualiseSampleCount(){
         return flags.getBit(VISUALISE_SAMPLE_COUNT_FLAG_IDX);
     }
 

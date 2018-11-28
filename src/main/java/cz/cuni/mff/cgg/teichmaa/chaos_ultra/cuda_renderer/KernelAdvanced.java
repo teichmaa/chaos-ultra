@@ -2,6 +2,9 @@ package cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer;
 
 
 
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.heuristicsParams.DynamicFloatingPointPrecision;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.heuristicsParams.FoveatedRendering;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.heuristicsParams.IterationLimit;
 import jcuda.Pointer;
 import jcuda.driver.CUdeviceptr;
 import jcuda.driver.CUmodule;
