@@ -230,7 +230,8 @@ public class RenderingController extends MouseAdapter implements GLEventListener
 
         try {
             fractalRenderer = new CudaFractalRenderer(new ModuleMandelbrot(),
-                    outputTextureGLhandle, GL_TEXTURE_2D, paletteTextureGLhandle, GL_TEXTURE_2D, paletteTextureLength);
+                    outputTextureGLhandle, GL_TEXTURE_2D, paletteTextureGLhandle, GL_TEXTURE_2D, paletteTextureLength,
+                    params);
         } catch (UnsatisfiedLinkError e) {
             if (e.getMessage().contains("Cuda")) {
                 controllerFX.showErrorMessage("Error while loading a Cuda native library. Do you have CUDA installed?");

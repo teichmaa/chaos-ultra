@@ -50,7 +50,7 @@ public class CudaFractalRenderer implements FractalRenderer {
     private cudaStream_t defaultStream = new cudaStream_t();
 
     //todo dokumentacni komentar k metode
-    public CudaFractalRenderer(FractalRenderingModule module, int outputTextureGLHandle, int outputTextureGLTarget, int paletteTextureGLHandle, int paletteTextureGLTarget, int paletteLength) {
+    public CudaFractalRenderer(FractalRenderingModule module, int outputTextureGLHandle, int outputTextureGLTarget, int paletteTextureGLHandle, int paletteTextureGLTarget, int paletteLength, ChaosUltraRenderingParams params) {
         this.module = module;
         this.paletteLength = paletteLength;
         registerOutputTexture(outputTextureGLHandle, outputTextureGLTarget);
@@ -66,6 +66,8 @@ public class CudaFractalRenderer implements FractalRenderer {
         kernelAdvancedDouble = module.getKernel(KernelAdvancedDouble.class);
 
         memory.reallocate(getWidth(), getHeight());
+
+        bindParamsTo(params);
 
         //moduleInit();
     }
@@ -319,18 +321,18 @@ public class CudaFractalRenderer implements FractalRenderer {
         updateFloatPrecision();
     }
 
-    void onAllRenderingKernels(Consumer<RenderingKernel> c) {
+    private void onAllRenderingKernels(Consumer<RenderingKernel> c) {
         onAllMainKernels(c);
         c.accept(kernelUndersampled);
     }
 
-    void onAllMainKernels(Consumer<? super KernelMain> c) {
+    private void onAllMainKernels(Consumer<? super KernelMain> c) {
         onAllAdvancedKernels(c);
         c.accept(kernelMainFloat);
         c.accept(kernelMainDouble);
     }
 
-    void onAllAdvancedKernels(Consumer<? super KernelAdvanced> c) {
+    private void onAllAdvancedKernels(Consumer<? super KernelAdvanced> c) {
         c.accept(kernelAdvancedFloat);
         c.accept(kernelAdvancedDouble);
     }

@@ -21,16 +21,16 @@ class DeviceMemoryDoubleBuffer2D implements Closeable {
     private long array1Pitch;
     private long array2Pitch;
 
+    /**
+     * Allocates two new 2D buffers in device memory. Also frees old memory, if needed.
+     * @param w new width
+     * @param h nw height
+     */
     void reallocate(int w, int h){
         reallocatePrimary2DBuffer(w, h);
-        reallocatePrimary2DBuffer(w, h);
+        reallocateSecondary2DBuffer(w, h);
     }
 
-    /**
-     * Reallocate the 2D buffer and internally mark it as empty
-     * @param w
-     * @param h
-     */
     private void reallocatePrimary2DBuffer(int w, int h){
         array1Pitch = allocateDevice2DBuffer(w, h, 2, array1);
         setPrimary2DBufferDirty(true);
