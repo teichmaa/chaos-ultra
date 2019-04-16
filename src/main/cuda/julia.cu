@@ -28,7 +28,6 @@ __global__ void julia(int** outputData, long pitch, long width, long height, flo
 }
 
 
-
 /*
 CUDA snippets
 

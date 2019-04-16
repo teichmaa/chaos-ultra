@@ -1,3 +1,6 @@
+#ifndef HELPERS
+#define HELPERS
+
 template <class T> struct Point {
   T x;
   T y;
@@ -83,3 +86,5 @@ struct Color{
   char b;
   char a;
 };
+
+#endif
