@@ -1,7 +1,6 @@
 package cz.cuni.mff.cgg.teichmaa.chaos_ultra.view;
 
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.heuristicsParams.ChaosUltraRenderingParams;
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.FloatPrecision;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.event.ActionEvent;
@@ -20,6 +19,8 @@ import java.util.ResourceBundle;
 public class ControllerFX implements Initializable {
 
     static final int SUPER_SAMPLING_MAX_LEVEL = RenderingController.SUPER_SAMPLING_MAX_LEVEL;
+    @FXML
+    private TextField fractalSpecificParams;
     @FXML
     private Button renderButton;
     @FXML
@@ -213,4 +214,8 @@ public class ControllerFX implements Initializable {
     private void debugButton1Clicked(ActionEvent actionEvent) {
     }
 
+    @FXML
+    private void fractalSpecificParamsSetClicked(ActionEvent actionEvent) {
+        renderingController.setFractalSpecificParams(fractalSpecificParams.getText().trim());
+    }
 }

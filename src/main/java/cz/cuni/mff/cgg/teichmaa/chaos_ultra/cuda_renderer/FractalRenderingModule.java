@@ -90,7 +90,7 @@ abstract class FractalRenderingModule implements Closeable {
         return fractalName;
     }
 
-    private CUmodule getModule() {
+    protected CUmodule getModule() {
         return module;
     }
 

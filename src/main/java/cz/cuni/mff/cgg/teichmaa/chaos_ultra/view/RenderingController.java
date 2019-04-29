@@ -5,14 +5,16 @@ import com.jogamp.opengl.*;
 import com.jogamp.opengl.awt.GLCanvas;
 import com.jogamp.opengl.util.Animator;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.CudaFractalRenderer;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.CudaInitializationException;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.ModuleJulia;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.FractalRenderer;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.ModuleMandelbrot;
 
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.FractalRendererNullObjectVerbose;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.FractalRendererProvider;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.heuristicsParams.ChaosUltraRenderingParams;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.Point2DDoubleImmutable;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.Point2DInt;
-import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.SimpleBooleanProperty;
 
 import javax.swing.*;
 import java.awt.event.MouseAdapter;
@@ -52,6 +54,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     private int paletteTextureGLhandle;
     private int paletteTextureLength;
     private FractalRenderer fractalRenderer = new FractalRendererNullObjectVerbose();
+    private FractalRendererProvider fractalRendererProvider;
     private GLCanvas target;
     private ControllerFX controllerFX;
     private Animator animator;
@@ -228,19 +231,22 @@ public class RenderingController extends MouseAdapter implements GLEventListener
             gl.glBindTexture(GL_TEXTURE_2D, 0);
         }
 
+        fractalRendererProvider = new FractalRendererProvider(outputTextureGLhandle, GL_TEXTURE_2D, paletteTextureGLhandle, GL_TEXTURE_2D, paletteTextureLength,
+                params);
         try {
-            fractalRenderer = new CudaFractalRenderer(new ModuleMandelbrot(),
-                    outputTextureGLhandle, GL_TEXTURE_2D, paletteTextureGLhandle, GL_TEXTURE_2D, paletteTextureLength,
-                    params);
+            fractalRenderer = fractalRendererProvider.getRenderer();
+            //todo tohle prepsat. Zjistit, kdo je zodpovedny za chytani tech vyjimek.
         } catch (UnsatisfiedLinkError e) {
             if (e.getMessage().contains("Cuda")) {
-                controllerFX.showErrorMessage("Error while loading a Cuda native library. Do you have CUDA installed?");
+                controllerFX.showErrorMessage("Error while loading the Cuda native library. Do you have CUDA installed?");
             } else {
                 e.printStackTrace();
             }
+        } catch (CudaInitializationException e) {
+            controllerFX.showErrorMessage("Error while loading cuda: " + e.getMessage());
         }
-        // fractalRenderer uses the null-object pattern, so even if not initialised to CudaFractalRenderer, we can still call its methods
 
+        // fractalRenderer uses the null-object pattern, so even if not initialized properly to CudaFractalRenderer, we can still call its methods
         controllerFX.showDefaultView();
         fractalRenderer.launchDebugKernel();
     }
@@ -461,4 +467,8 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         fractalRenderer.debugRightBottomPixel();
     }
 
+    public void setFractalSpecificParams(String text) {
+        fractalRendererProvider.setFractalSpecificParams(text);
+        repaint();
+    }
 }

@@ -124,7 +124,23 @@
                 <padding>
                     <Insets top="5" right="5" bottom="5" left="5"/>
                 </padding>
-                float precision:
+                Fractal specific params:
+            </Label>
+            <TextField fx:id="fractalSpecificParams">
+                <padding>
+                    <Insets top="5" right="0" bottom="5" left="0"/>
+                </padding>
+            </TextField>
+            <Button text="set" onAction="#fractalSpecificParamsSetClicked" />
+        </HBox>
+
+
+        <HBox>
+            <Label>
+                <padding>
+                    <Insets top="5" right="5" bottom="5" left="5"/>
+                </padding>
+                Params:
             </Label>
             <Label fx:id="precision" text="single">
                 <padding>
