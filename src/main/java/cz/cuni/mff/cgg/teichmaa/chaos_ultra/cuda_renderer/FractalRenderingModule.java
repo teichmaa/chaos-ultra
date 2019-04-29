@@ -6,6 +6,7 @@ import jcuda.driver.CUresult;
 import jcuda.driver.JCudaDriver;
 
 import java.io.Closeable;
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -22,15 +23,19 @@ abstract class FractalRenderingModule implements Closeable {
     static final String kernelUnderSampled = KernelUnderSampled.name;
     static final String kernelCompose = KernelCompose.name;
 
-    /**
-     * using an absolute path is a temporary workaround and should be fixed
-     */
-    private static final String pathAbsolutePrefix = "E:\\Tonda\\Desktop\\chaos-ultra\\";
-    private static final String pathLocalPrefix = "src\\main\\cuda\\";
-    private static final String pathSuffix = ".ptx";
+    private static final String CUDA_KERNELS_DIR_PROPERTY_NAME = "cudaKernelsDir";
+    private static final String CUDA_KERNELS_DIR_PROPERTY_DEFAULT_VALUE = "cudaKernels";
+    private static final String PATH_PREFIX;
+    private static final String PATH_SUFFIX = ".ptx";
 
     static {
         CudaHelpers.cudaInit();
+
+        if(System.getProperty(CUDA_KERNELS_DIR_PROPERTY_NAME) == null){
+            System.setProperty(CUDA_KERNELS_DIR_PROPERTY_NAME, CUDA_KERNELS_DIR_PROPERTY_DEFAULT_VALUE);
+            System.err.println("cudaKernelsDir property not specified, fallbacking to '" + CUDA_KERNELS_DIR_PROPERTY_DEFAULT_VALUE + "' (try starting java with -DcudaKernelsDir=<directory relative loaction>");
+        }
+        PATH_PREFIX =  System.getProperty("user.dir") + File.separator + System.getProperty(CUDA_KERNELS_DIR_PROPERTY_NAME);
     }
 
     /**
@@ -39,18 +44,18 @@ abstract class FractalRenderingModule implements Closeable {
      * @param fractalName name of the rendering that this module represents
      */
     FractalRenderingModule(String ptxFileName, String fractalName) {
-        this.ptxFileFullPath = pathAbsolutePrefix + pathLocalPrefix + ptxFileName + pathSuffix;
+        this.ptxFileFullPath = PATH_PREFIX + File.separator + ptxFileName + PATH_SUFFIX;
         this.fractalName = fractalName;
 
         //module load:
-        // Using absolute file path because I cannot make it working with relative paths
-        //      (this is because I deploy with maven, and run the app from jar, where the nvcc and other invoked proccesses cannot find the source files )
         try {
             module = new CUmodule();
             cuModuleLoad(module, ptxFileFullPath);
         } catch (CudaException e) {
             if (e.getMessage().contains(CUresult.stringFor(CUresult.CUDA_ERROR_FILE_NOT_FOUND))) {
-                throw new IllegalArgumentException("Invalid ptx file name: " + ptxFileFullPath, e);
+                String message = "Invalid ptx file name: " + ptxFileFullPath + System.lineSeparator() +
+                        "Have you set " + CUDA_KERNELS_DIR_PROPERTY_NAME + " properly?";
+                throw new IllegalArgumentException(message, e);
             } else if (e.getMessage().contains(CUresult.stringFor(CUresult.CUDA_ERROR_INVALID_CONTEXT))) {
                 throw new IllegalArgumentException("Invalid CUDA context", e);
             } else{
@@ -92,7 +97,7 @@ abstract class FractalRenderingModule implements Closeable {
     <T extends CudaKernel> T getKernel(Class<T> kernel) {
         if(module == null) throw new IllegalStateException("the module has been closed.");
         if (!kernels.containsKey(kernel)) {
-            throw new IllegalArgumentException("No such kernel available: " + kernel.getCanonicalName());
+            throw new IllegalArgumentException("No such kernel available: " + kernel.getSimpleName());
         }
         return (T) kernels.get(kernel); //this cast will always be successful
     }
