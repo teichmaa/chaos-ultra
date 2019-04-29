@@ -33,14 +33,14 @@ abstract class FractalRenderingModule implements Closeable {
 
         if(System.getProperty(CUDA_KERNELS_DIR_PROPERTY_NAME) == null){
             System.setProperty(CUDA_KERNELS_DIR_PROPERTY_NAME, CUDA_KERNELS_DIR_PROPERTY_DEFAULT_VALUE);
-            System.err.println("cudaKernelsDir property not specified, fallbacking to '" + CUDA_KERNELS_DIR_PROPERTY_DEFAULT_VALUE + "' (try starting java with -DcudaKernelsDir=<directory relative loaction>");
+            System.err.println(CUDA_KERNELS_DIR_PROPERTY_NAME + " property not specified, fallbacking to '" + CUDA_KERNELS_DIR_PROPERTY_DEFAULT_VALUE + "' (try starting java with -D" + CUDA_KERNELS_DIR_PROPERTY_NAME + "=<directory relative location>");
         }
         PATH_PREFIX =  System.getProperty("user.dir") + File.separator + System.getProperty(CUDA_KERNELS_DIR_PROPERTY_NAME);
     }
 
     /**
      *
-     * @param ptxFileName name of the cuda-compiled file containing the module, without '.ptx'
+     * @param ptxFileName name of the cuda-compiled file containing the module, without '.ptx' suffix
      * @param fractalName name of the rendering that this module represents
      */
     FractalRenderingModule(String ptxFileName, String fractalName) {
