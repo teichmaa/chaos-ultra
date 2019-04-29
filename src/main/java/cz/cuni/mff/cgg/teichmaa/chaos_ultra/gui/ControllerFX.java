@@ -1,4 +1,4 @@
-package cz.cuni.mff.cgg.teichmaa.chaos_ultra.view;
+package cz.cuni.mff.cgg.teichmaa.chaos_ultra.gui;
 
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.heuristicsParams.ChaosUltraRenderingParams;
 import javafx.application.Platform;

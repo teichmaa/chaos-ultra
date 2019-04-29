@@ -75,7 +75,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>cz.cuni.mff.cgg.teichmaa.chaos_ultra.view.Main</mainClass>
+                            <mainClass>cz.cuni.mff.cgg.teichmaa.chaos_ultra.gui.Main</mainClass>
                         </manifest>
                     </archive>
                     <descriptorRefs>

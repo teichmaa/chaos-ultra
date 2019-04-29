@@ -2,6 +2,7 @@ package cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering;
 
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.heuristicsParams.ChaosUltraRenderingParams;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.Helpers;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.OpenGLTexture;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.Point2DInt;
 
 public class FractalRendererNullObjectVerbose implements FractalRenderer {
@@ -15,7 +16,7 @@ public class FractalRendererNullObjectVerbose implements FractalRenderer {
     }
 
     @Override
-    public void registerOutputTexture(int outputTextureGLhandle, int GLtarget) {
+    public void registerOutputTexture(OpenGLTexture output) {
         printMethodName();
     }
 
@@ -25,7 +26,7 @@ public class FractalRendererNullObjectVerbose implements FractalRenderer {
     }
 
     @Override
-    public void resize(int width, int height, int outputTextureGLhandle, int GLtarget) {
+    public void resize(int width, int height, OpenGLTexture output) {
         printMethodName();
     }
 
@@ -73,6 +74,11 @@ public class FractalRendererNullObjectVerbose implements FractalRenderer {
 
     @Override
     public void bindParamsTo(ChaosUltraRenderingParams params) {
+        printMethodName();
+    }
+
+    @Override
+    public void setFractalSpecificParams(String text) {
         printMethodName();
     }
 }

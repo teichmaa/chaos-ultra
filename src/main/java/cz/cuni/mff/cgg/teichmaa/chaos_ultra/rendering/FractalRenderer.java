@@ -2,6 +2,7 @@ package cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering;
 
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.heuristicsParams.ChaosUltraRenderingParams;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.FloatPrecision;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.OpenGLTexture;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.Point2DInt;
 
 import java.io.Closeable;
@@ -10,11 +11,11 @@ public interface FractalRenderer extends Closeable {
     int SUPER_SAMPLING_MAX_LEVEL = 256;
 
     //todo dokumentacni komentar
-    void registerOutputTexture(int outputTextureGLhandle, int GLtarget);
+    void registerOutputTexture(OpenGLTexture output);
 
     void unregisterOutputTexture();
 
-    void resize(int width, int height, int outputTextureGLhandle, int GLtarget);
+    void resize(int width, int height, OpenGLTexture output);
 
     int getWidth();
 
@@ -35,4 +36,5 @@ public interface FractalRenderer extends Closeable {
 
     void bindParamsTo(ChaosUltraRenderingParams params);
 
+    void setFractalSpecificParams(String text);
 }

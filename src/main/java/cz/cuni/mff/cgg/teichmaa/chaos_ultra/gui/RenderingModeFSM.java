@@ -1,7 +1,7 @@
-package cz.cuni.mff.cgg.teichmaa.chaos_ultra.view;
+package cz.cuni.mff.cgg.teichmaa.chaos_ultra.gui;
 
 
-import static cz.cuni.mff.cgg.teichmaa.chaos_ultra.view.RenderingModeFSM.RenderingMode.*;
+import static cz.cuni.mff.cgg.teichmaa.chaos_ultra.gui.RenderingModeFSM.RenderingMode.*;
 
 /***
  * Finite State Machine for Rendering Mode transitions

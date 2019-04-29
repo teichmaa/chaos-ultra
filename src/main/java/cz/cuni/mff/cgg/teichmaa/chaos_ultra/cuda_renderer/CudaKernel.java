@@ -111,4 +111,11 @@ public abstract class CudaKernel {
      */
     public final NativePointerObject[] getKernelParams(){return params;}
 
+    public String getFunctionName() {
+        return functionName;
+    }
+
+    public CUmodule getOwnerModule() {
+        return ownerModule;
+    }
 }

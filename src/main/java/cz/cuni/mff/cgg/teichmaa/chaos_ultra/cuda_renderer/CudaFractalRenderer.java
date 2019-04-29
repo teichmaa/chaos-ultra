@@ -2,8 +2,10 @@ package cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer;
 
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.FractalRenderer;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.FractalRendererException;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.OpenGLParams;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.heuristicsParams.ChaosUltraRenderingParams;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.FloatPrecision;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.OpenGLTexture;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.Point2DInt;
 import jcuda.CudaException;
 import jcuda.NativePointerObject;
@@ -50,11 +52,11 @@ public class CudaFractalRenderer implements FractalRenderer {
     private cudaStream_t defaultStream = new cudaStream_t();
 
     //todo dokumentacni komentar k metode
-    public CudaFractalRenderer(FractalRenderingModule module, int outputTextureGLHandle, int outputTextureGLTarget, int paletteTextureGLHandle, int paletteTextureGLTarget, int paletteLength, ChaosUltraRenderingParams params) {
+    public CudaFractalRenderer(FractalRenderingModule module, OpenGLParams glParams, ChaosUltraRenderingParams params) {
         this.module = module;
-        this.paletteLength = paletteLength;
-        registerOutputTexture(outputTextureGLHandle, outputTextureGLTarget);
-        JCuda.cudaGraphicsGLRegisterImage(paletteTextureResource, paletteTextureGLHandle, paletteTextureGLTarget, cudaGraphicsRegisterFlagsReadOnly);
+        this.paletteLength = glParams.getPaletteLength();
+        registerOutputTexture(glParams.getOutput());
+        JCuda.cudaGraphicsGLRegisterImage(paletteTextureResource, glParams.getPalette().getHandle().getValue(), glParams.getPalette().getTarget(), cudaGraphicsRegisterFlagsReadOnly);
 
         kernelUndersampled = module.getKernel(KernelUnderSampled.class);
         //TODO tohle cislo 4 do konstanty
@@ -83,9 +85,9 @@ public class CudaFractalRenderer implements FractalRenderer {
 
     //todo dokumentacni komentar
     @Override
-    public void registerOutputTexture(int outputTextureGLhandle, int GLtarget) {
+    public void registerOutputTexture(OpenGLTexture outputTexture) {
         //documentation: http://www.jcuda.org/jcuda/doc/jcuda/runtime/JCuda.html#cudaGraphicsGLRegisterImage(jcuda.runtime.cudaGraphicsResource,%20int,%20int,%20int)
-        jcuda.runtime.JCuda.cudaGraphicsGLRegisterImage(outputTextureResource, outputTextureGLhandle, GLtarget, cudaGraphicsRegisterFlagsWriteDiscard);
+        jcuda.runtime.JCuda.cudaGraphicsGLRegisterImage(outputTextureResource, outputTexture.getHandle().getValue(), outputTexture.getTarget(), cudaGraphicsRegisterFlagsWriteDiscard);
     }
 
     @Override
@@ -112,10 +114,10 @@ public class CudaFractalRenderer implements FractalRenderer {
     }
 
     @Override
-    public void resize(int width, int height, int outputTextureGLhandle, int GLtarget) {
+    public void resize(int width, int height, OpenGLTexture output) {
         //System.out.println("resize: " +width + " x " + height);
         onAllRenderingKernels(k -> k.setOutputSize(width, height));
-        registerOutputTexture(outputTextureGLhandle, GLtarget);
+        registerOutputTexture(output);
         memory.reallocate(width, height);
     }
 
@@ -319,6 +321,11 @@ public class CudaFractalRenderer implements FractalRenderer {
     public void setBounds(double left_bottom_x, double left_bottom_y, double right_top_x, double right_top_y) {
         onAllRenderingKernels(k -> k.setBounds(left_bottom_x, left_bottom_y, right_top_x, right_top_y));
         updateFloatPrecision();
+    }
+
+    @Override
+    public void setFractalSpecificParams(String text) {
+        module.setFractalCustomParameters(text);
     }
 
     private void onAllRenderingKernels(Consumer<RenderingKernel> c) {

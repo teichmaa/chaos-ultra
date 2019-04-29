@@ -1,5 +1,6 @@
 package cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer;
 
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.*;
 import jcuda.CudaException;
 import jcuda.driver.CUmodule;
 import jcuda.driver.CUresult;
@@ -7,15 +8,18 @@ import jcuda.driver.JCudaDriver;
 
 import java.io.Closeable;
 import java.io.File;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static jcuda.driver.JCudaDriver.cuModuleLoad;
 
 /**
  * A structure of JCuda classes, together representing a CUDA module (=1 ptx file) used by CudaFractalRenderer class.
  */
-abstract class FractalRenderingModule implements Closeable {
+public abstract class FractalRenderingModule implements Closeable {
 
     static final String kernelInit = KernelInit.name;
     static final String kernelMainFloat = KernelMainFloat.name;
@@ -31,19 +35,18 @@ abstract class FractalRenderingModule implements Closeable {
     static {
         CudaHelpers.cudaInit();
 
-        if(System.getProperty(CUDA_KERNELS_DIR_PROPERTY_NAME) == null){
+        if (System.getProperty(CUDA_KERNELS_DIR_PROPERTY_NAME) == null) {
             System.setProperty(CUDA_KERNELS_DIR_PROPERTY_NAME, CUDA_KERNELS_DIR_PROPERTY_DEFAULT_VALUE);
             System.err.println(CUDA_KERNELS_DIR_PROPERTY_NAME + " property not specified, fallbacking to '" + CUDA_KERNELS_DIR_PROPERTY_DEFAULT_VALUE + "' (try starting java with -D" + CUDA_KERNELS_DIR_PROPERTY_NAME + "=<directory relative location>");
         }
-        PATH_PREFIX =  System.getProperty("user.dir") + File.separator + System.getProperty(CUDA_KERNELS_DIR_PROPERTY_NAME);
+        PATH_PREFIX = System.getProperty("user.dir") + File.separator + System.getProperty(CUDA_KERNELS_DIR_PROPERTY_NAME);
     }
 
     /**
-     *
      * @param ptxFileName name of the cuda-compiled file containing the module, without '.ptx' suffix
      * @param fractalName name of the rendering that this module represents
      */
-    FractalRenderingModule(String ptxFileName, String fractalName) {
+    protected FractalRenderingModule(String ptxFileName, String fractalName) {
         this.ptxFileFullPath = PATH_PREFIX + File.separator + ptxFileName + PATH_SUFFIX;
         this.fractalName = fractalName;
 
@@ -58,7 +61,7 @@ abstract class FractalRenderingModule implements Closeable {
                 throw new IllegalArgumentException(message, e);
             } else if (e.getMessage().contains(CUresult.stringFor(CUresult.CUDA_ERROR_INVALID_CONTEXT))) {
                 throw new IllegalArgumentException("Invalid CUDA context", e);
-            } else{
+            } else {
                 throw e;
             }
         }
@@ -82,11 +85,11 @@ abstract class FractalRenderingModule implements Closeable {
 
     private Map<Class<? extends CudaKernel>, CudaKernel> kernels = new HashMap<>();
 
-    String getPtxFileFullPath() {
+    protected String getPtxFileFullPath() {
         return ptxFileFullPath;
     }
 
-    String getFractalName() {
+    protected String getFractalName() {
         return fractalName;
     }
 
@@ -95,7 +98,7 @@ abstract class FractalRenderingModule implements Closeable {
     }
 
     <T extends CudaKernel> T getKernel(Class<T> kernel) {
-        if(module == null) throw new IllegalStateException("the module has been closed.");
+        if (module == null) throw new IllegalStateException("the module has been closed.");
         if (!kernels.containsKey(kernel)) {
             throw new IllegalArgumentException("No such kernel available: " + kernel.getSimpleName());
         }
@@ -109,9 +112,43 @@ abstract class FractalRenderingModule implements Closeable {
 
     @Override
     public void close() {
-        if(module != null){
+        if (module != null) {
             JCudaDriver.cuModuleUnload(module);
             module = null;
         }
+    }
+
+    public abstract void setFractalCustomParameters(String params);
+
+    /**
+     * @throws NumberFormatException
+     */
+    protected double[] parseParamsAsDoubles(String params) {
+        String[] tokens = params.split("[,;]");
+        List<Double> vals = Arrays.stream(tokens).map(Double::parseDouble).collect(Collectors.toList());
+        double[] result = new double[vals.size()];
+        for (int i = 0; i < result.length; i++) {
+            result[i] = vals.get(i);
+        }
+        return result;
+    }
+
+    /**
+     * @throws NumberFormatException
+     */
+
+    protected int[] parseParamsAsIntegers(String params) {
+        String[] tokens = params.split("[,;]");
+        List<Integer> vals = Arrays.stream(tokens).map(Integer::parseInt).collect(Collectors.toList());
+        int[] result = new int[vals.size()];
+        for (int i = 0; i < result.length; i++) {
+            result[i] = vals.get(i);
+        }
+        return result;
+    }
+
+    protected HashMap<String, String> parseParamsAsKeyValPairs(String params) {
+        return null;
+        //TODO impl
     }
 }

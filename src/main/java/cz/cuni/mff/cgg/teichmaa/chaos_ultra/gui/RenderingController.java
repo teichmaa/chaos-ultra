@@ -1,19 +1,19 @@
-package cz.cuni.mff.cgg.teichmaa.chaos_ultra.view;
+package cz.cuni.mff.cgg.teichmaa.chaos_ultra.gui;
 
 import com.jogamp.opengl.*;
 
 import com.jogamp.opengl.awt.GLCanvas;
 import com.jogamp.opengl.util.Animator;
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.CudaFractalRenderer;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.CudaInitializationException;
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.ModuleJulia;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.modules.ModuleJulia;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.FractalRenderer;
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.ModuleMandelbrot;
 
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.FractalRendererNullObjectVerbose;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.FractalRendererProvider;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.OpenGLParams;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.heuristicsParams.ChaosUltraRenderingParams;
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.Point2DDoubleImmutable;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.OpenGLTexture;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.OpenGLTextureHandle;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.Point2DInt;
 
 import javax.swing.*;
@@ -50,8 +50,8 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     //        |__|__|__|__|             y
     //        |__|__|__|__|           (0,0) x > .......
 
-    private int outputTextureGLhandle;
-    private int paletteTextureGLhandle;
+    private OpenGLTextureHandle outputTexture;
+    private OpenGLTextureHandle paletteTexture;
     private int paletteTextureLength;
     private FractalRenderer fractalRenderer = new FractalRendererNullObjectVerbose();
     private FractalRendererProvider fractalRendererProvider;
@@ -216,13 +216,13 @@ public class RenderingController extends MouseAdapter implements GLEventListener
 
         int[] GLHandles = new int[2];
         gl.glGenTextures(GLHandles.length, GLHandles, 0);
-        outputTextureGLhandle = GLHandles[0];
+        outputTexture = OpenGLTextureHandle.of(GLHandles[0]);
         registerOutputTexture(gl);
-        paletteTextureGLhandle = GLHandles[1];
+        paletteTexture = OpenGLTextureHandle.of(GLHandles[1]);
         {
             Buffer colorPalette = IntBuffer.wrap(ImageHelpers.createColorPalette());
             paletteTextureLength = colorPalette.limit();
-            gl.glBindTexture(GL_TEXTURE_2D, paletteTextureGLhandle);
+            gl.glBindTexture(GL_TEXTURE_2D, paletteTexture.getValue());
             {
                 gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
                 gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -231,10 +231,14 @@ public class RenderingController extends MouseAdapter implements GLEventListener
             gl.glBindTexture(GL_TEXTURE_2D, 0);
         }
 
-        fractalRendererProvider = new FractalRendererProvider(outputTextureGLhandle, GL_TEXTURE_2D, paletteTextureGLhandle, GL_TEXTURE_2D, paletteTextureLength,
+        fractalRendererProvider = new FractalRendererProvider(
+                OpenGLParams.of(
+                        OpenGLTexture.of(outputTexture, GL_TEXTURE_2D),
+                        OpenGLTexture.of(paletteTexture, GL_TEXTURE_2D),
+                        paletteTextureLength),
                 params);
         try {
-            fractalRenderer = fractalRendererProvider.getRenderer();
+            fractalRenderer = fractalRendererProvider.getRenderer(ModuleJulia.class.getSimpleName());
             //todo tohle prepsat. Zjistit, kdo je zodpovedny za chytani tech vyjimek.
         } catch (UnsatisfiedLinkError e) {
             if (e.getMessage().contains("Cuda")) {
@@ -252,7 +256,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     }
 
     private void registerOutputTexture(GL gl) {
-        gl.glBindTexture(GL_TEXTURE_2D, outputTextureGLhandle);
+        gl.glBindTexture(GL_TEXTURE_2D, outputTexture.getValue());
         {
             gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -363,7 +367,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         gl.glMatrixMode(GL_MODELVIEW);
         //gl.glPushMatrix();
         gl.glLoadIdentity();
-        gl.glBindTexture(GL_TEXTURE_2D, outputTextureGLhandle);
+        gl.glBindTexture(GL_TEXTURE_2D, outputTexture.getValue());
         gl.glBegin(GL_QUADS);
         {
             //map screen quad to texture quad and make it render
@@ -392,7 +396,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
 
         fractalRenderer.unregisterOutputTexture();
         registerOutputTexture(gl); //already using the new dimensions
-        fractalRenderer.resize(width, height, outputTextureGLhandle, GL_TEXTURE_2D);
+        fractalRenderer.resize(width, height, OpenGLTexture.of(outputTexture, GL_TEXTURE_2D));
 
         currentMode.startProgressiveRendering();
     }
@@ -453,7 +457,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     private void saveImageInternal(GL2 gl) {
         int[] data = new int[width_t * height_t];
         Buffer b = IntBuffer.wrap(data);
-        gl.glBindTexture(GL_TEXTURE_2D, outputTextureGLhandle);
+        gl.glBindTexture(GL_TEXTURE_2D, outputTexture.getValue());
         {
             //documentation: https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glGetTexImage.xhtml
             gl.glGetTexImage(GL_TEXTURE_2D, 0, GL_BGRA, GL_UNSIGNED_BYTE, b);
@@ -468,7 +472,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     }
 
     public void setFractalSpecificParams(String text) {
-        fractalRendererProvider.setFractalSpecificParams(text);
+        fractalRenderer.setFractalSpecificParams(text);
         repaint();
     }
 }

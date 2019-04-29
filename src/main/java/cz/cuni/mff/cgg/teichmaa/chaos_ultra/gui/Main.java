@@ -1,22 +1,11 @@
-package cz.cuni.mff.cgg.teichmaa.chaos_ultra.view;
+package cz.cuni.mff.cgg.teichmaa.chaos_ultra.gui;
 
 
 import com.jogamp.opengl.*;
 
-import com.jogamp.opengl.awt.GLCanvas;
-import javafx.application.Platform;
-import javafx.embed.swing.JFXPanel;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
 import jcuda.driver.CUcontext;
 import jcuda.driver.CUdevice;
 import jcuda.driver.JCudaDriver;
-
-import javax.swing.*;
-
-import java.awt.*;
-import java.io.IOException;
 
 import static jcuda.driver.JCudaDriver.*;
 

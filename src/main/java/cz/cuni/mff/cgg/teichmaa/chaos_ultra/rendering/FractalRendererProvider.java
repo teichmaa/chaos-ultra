@@ -2,44 +2,71 @@ package cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering;
 
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.CudaFractalRenderer;
 
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.ModuleJulia;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.FractalRenderingModule;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.modules.ModuleJulia;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.modules.ModuleMandelbrot;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.heuristicsParams.ChaosUltraRenderingParams;
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.Point2DDoubleImmutable;
 
-import static com.jogamp.opengl.GL.GL_TEXTURE_2D;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class FractalRendererProvider {
 
-    public FractalRendererProvider(int outputTextureGLHandle, int outputTextureGLTarget, int paletteTextureGLHandle, int paletteTextureGLTarget, int paletteLength, ChaosUltraRenderingParams params) {
-        this.outputTextureGLHandle = outputTextureGLHandle;
-        this.outputTextureGLTarget = outputTextureGLTarget;
-        this.paletteTextureGLHandle = paletteTextureGLHandle;
-        this.paletteTextureGLTarget = paletteTextureGLTarget;
-        this.paletteLength = paletteLength;
-        this.params = params;
+    private static final HashSet<Class<? extends FractalRenderingModule>> fractals = new HashSet<>();
+
+    //register new fractals here:
+    static {
+        fractals.add(ModuleJulia.class);
+        fractals.add(ModuleMandelbrot.class);
     }
 
-    private int outputTextureGLHandle;
-    private int outputTextureGLTarget;
-    private int paletteTextureGLHandle;
-    private int paletteTextureGLTarget;
-    private int paletteLength;
-    private ChaosUltraRenderingParams params;
+    private FractalRenderingModule currentModule;
+    private CudaFractalRenderer renderer;
+    private final HashMap<String, FractalRenderingModule> activeModules = new HashMap<>();
+    private final List<String> fractalsNames;
 
-    private ModuleJulia julia;
-    private FractalRenderer renderer;
+    public FractalRendererProvider(OpenGLParams glParams, ChaosUltraRenderingParams chaosParams) {
+        this.glParams = glParams;
+        this.chaosParams = chaosParams;
 
-    public FractalRenderer getRenderer() {
-        julia = new ModuleJulia(Point2DDoubleImmutable.of(0, 0.5));
-        renderer = new CudaFractalRenderer(julia, outputTextureGLHandle, outputTextureGLTarget, paletteTextureGLHandle, paletteTextureGLTarget, paletteLength,
-                params);
+        fractalsNames = fractals.stream().map(Class::getSimpleName).collect(Collectors.toList());
+    }
+
+    private OpenGLParams glParams;
+    private ChaosUltraRenderingParams chaosParams;
+
+
+    public FractalRenderer getRenderer(String fractalName) {
+        if (!fractalsNames.contains(fractalName)) {
+            throw new IllegalArgumentException("Unknown fractal: " + fractalName);
+        }
+        if (!activeModules.containsKey(fractalName)) {
+            createModule(fractalName);
+        }
+
+        currentModule = activeModules.get(fractalName);
+        if(renderer!=null){
+            renderer.close();
+        }
+        //TODO tohle je nejaky divny slozity, jak tu je vic rendereru a sdili spolu params. To je potreba jeste domyslet.
+        renderer = new CudaFractalRenderer(currentModule, glParams,
+                chaosParams);
         return renderer;
     }
 
-    public void setFractalSpecificParams(String text) {
-        String[] tokens = text.split(",");
-        double x = Double.parseDouble(tokens[0].trim());
-        double y = Double.parseDouble(tokens[1].trim());
-        julia.setC(Point2DDoubleImmutable.of(x, y));
+    private void createModule(String fractalName) {
+        if (!activeModules.containsKey(fractalName)) {
+            FractalRenderingModule module = null;
+            try {
+                module = fractals.stream().filter(f -> f.getSimpleName().equals(fractalName)).findFirst().orElseThrow(IllegalArgumentException::new).newInstance();
+            } catch (InstantiationException | IllegalAccessException e) {
+                e.printStackTrace();
+            }
+            activeModules.put(fractalName, module);
+        }
+    }
+
+    public List<String> getAvailableFractals() {
+        return fractalsNames;
     }
 }
