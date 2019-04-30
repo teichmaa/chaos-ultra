@@ -50,8 +50,8 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     //        |__|__|__|__|             y
     //        |__|__|__|__|           (0,0) x > .......
 
-    private OpenGLTextureHandle outputTexture;
-    private OpenGLTextureHandle paletteTexture;
+    private OpenGLTexture outputTexture;
+    private OpenGLTexture paletteTexture;
     private int paletteTextureLength;
     private FractalRenderer fractalRenderer = new FractalRendererNullObjectVerbose();
     private FractalRendererProvider fractalRendererProvider;
@@ -196,10 +196,12 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     }
 
     private void updateKernelParams() {
+        assert SwingUtilities.isEventDispatchThread();
         fractalRenderer.setBounds(plane_left_bottom_x, plane_left_bottom_y, plane_right_top_x, plane_right_top_y);
     }
 
     private void updateFXUI() {
+        assert SwingUtilities.isEventDispatchThread();
         controllerFX.setZoom(getZoom());
         controllerFX.setX(getCenterX());
         controllerFX.setY(getCenterY());
@@ -216,13 +218,13 @@ public class RenderingController extends MouseAdapter implements GLEventListener
 
         int[] GLHandles = new int[2];
         gl.glGenTextures(GLHandles.length, GLHandles, 0);
-        outputTexture = OpenGLTextureHandle.of(GLHandles[0]);
+        outputTexture = OpenGLTexture.of(OpenGLTextureHandle.of(GLHandles[0]), GL_TEXTURE_2D);
         registerOutputTexture(gl);
-        paletteTexture = OpenGLTextureHandle.of(GLHandles[1]);
+        paletteTexture = OpenGLTexture.of(OpenGLTextureHandle.of(GLHandles[1]), GL_TEXTURE_2D);
         {
             Buffer colorPalette = IntBuffer.wrap(ImageHelpers.createColorPalette());
             paletteTextureLength = colorPalette.limit();
-            gl.glBindTexture(GL_TEXTURE_2D, paletteTexture.getValue());
+            gl.glBindTexture(GL_TEXTURE_2D, paletteTexture.getHandle().getValue());
             {
                 gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
                 gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -233,12 +235,12 @@ public class RenderingController extends MouseAdapter implements GLEventListener
 
         fractalRendererProvider = new FractalRendererProvider(
                 OpenGLParams.of(
-                        OpenGLTexture.of(outputTexture, GL_TEXTURE_2D),
-                        OpenGLTexture.of(paletteTexture, GL_TEXTURE_2D),
+                        outputTexture,
+                        paletteTexture,
                         paletteTextureLength),
                 params);
         try {
-            fractalRenderer = fractalRendererProvider.getRenderer(ModuleJulia.class.getSimpleName());
+            fractalRenderer = fractalRendererProvider.getRenderer("mandelbrot");
             //todo tohle prepsat. Zjistit, kdo je zodpovedny za chytani tech vyjimek.
         } catch (UnsatisfiedLinkError e) {
             if (e.getMessage().contains("Cuda")) {
@@ -247,7 +249,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
                 e.printStackTrace();
             }
         } catch (CudaInitializationException e) {
-            controllerFX.showErrorMessage("Error while loading cuda: " + e.getMessage());
+            controllerFX.showErrorMessage("Error while loading CUDA: " + e.getMessage());
         }
 
         // fractalRenderer uses the null-object pattern, so even if not initialized properly to CudaFractalRenderer, we can still call its methods
@@ -256,7 +258,8 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     }
 
     private void registerOutputTexture(GL gl) {
-        gl.glBindTexture(GL_TEXTURE_2D, outputTexture.getValue());
+        assert SwingUtilities.isEventDispatchThread();
+        gl.glBindTexture(GL_TEXTURE_2D, outputTexture.getHandle().getValue());
         {
             gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -269,12 +272,14 @@ public class RenderingController extends MouseAdapter implements GLEventListener
 
     @Override
     public void dispose(GLAutoDrawable drawable) {
+        assert SwingUtilities.isEventDispatchThread();
         if (fractalRenderer == null) return;
         fractalRenderer.close();
     }
 
     @Override
     public void display(GLAutoDrawable drawable) {
+        assert SwingUtilities.isEventDispatchThread();
 
         long startTime = System.currentTimeMillis();
 
@@ -315,6 +320,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     private int lastFrameRenderTime = shortestFrameRenderTime;
 
     private void updateQuality() {
+        assert SwingUtilities.isEventDispatchThread();
         if (!params.isAutomaticQuality()) return;
         if (currentMode.isWaiting() && currentMode.wasProgressiveRendering()) {
             params.setSuperSamplingLevel(10); //todo lol proc zrovna deset, kde se to vzalo?
@@ -367,7 +373,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         gl.glMatrixMode(GL_MODELVIEW);
         //gl.glPushMatrix();
         gl.glLoadIdentity();
-        gl.glBindTexture(GL_TEXTURE_2D, outputTexture.getValue());
+        gl.glBindTexture(GL_TEXTURE_2D, outputTexture.getHandle().getValue());
         gl.glBegin(GL_QUADS);
         {
             //map screen quad to texture quad and make it render
@@ -396,7 +402,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
 
         fractalRenderer.unregisterOutputTexture();
         registerOutputTexture(gl); //already using the new dimensions
-        fractalRenderer.resize(width, height, OpenGLTexture.of(outputTexture, GL_TEXTURE_2D));
+        fractalRenderer.resize(width, height, outputTexture);
 
         currentMode.startProgressiveRendering();
     }
@@ -422,6 +428,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     }
 
     void setBounds(double center_x, double center_y, double zoom) {
+        assert SwingUtilities.isEventDispatchThread();
         double windowHeight = 1;
         double windowWidth = windowHeight / (double) height_t * width_t;
         plane_left_bottom_x = center_x - windowWidth * zoom / 2;
@@ -435,6 +442,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     }
 
     void setSuperSamplingLevel(int supSampLvl) {
+        assert SwingUtilities.isEventDispatchThread();
         //supSampLvl will be clamped to be >=1 and <= SUPER_SAMPLING_MAX_LEVEL
         params.setSuperSamplingLevel(Math.max(1, Math.min(supSampLvl, SUPER_SAMPLING_MAX_LEVEL)));
     }
@@ -444,6 +452,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     }
 
     public void saveImage(String fileName, String format) {
+        assert SwingUtilities.isEventDispatchThread();
         this.saveImageFileName = fileName;
         this.saveImageFormat = format;
         saveImageRequested = true;
@@ -457,7 +466,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     private void saveImageInternal(GL2 gl) {
         int[] data = new int[width_t * height_t];
         Buffer b = IntBuffer.wrap(data);
-        gl.glBindTexture(GL_TEXTURE_2D, outputTexture.getValue());
+        gl.glBindTexture(GL_TEXTURE_2D, outputTexture.getHandle().getValue());
         {
             //documentation: https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glGetTexImage.xhtml
             gl.glGetTexImage(GL_TEXTURE_2D, 0, GL_BGRA, GL_UNSIGNED_BYTE, b);
@@ -472,7 +481,19 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     }
 
     public void setFractalSpecificParams(String text) {
+        assert SwingUtilities.isEventDispatchThread();
         fractalRenderer.setFractalSpecificParams(text);
         repaint();
+    }
+
+    public void onFractalChanged(String fractalName){
+        assert SwingUtilities.isEventDispatchThread();
+        fractalRenderer = fractalRendererProvider.getRenderer(fractalName);
+        //reset:
+        animator.stop();
+        currentMode.reset();
+        updateKernelParams();
+        fractalRenderer.resize(width_t, height_t, outputTexture);
+//        repaint();
     }
 }

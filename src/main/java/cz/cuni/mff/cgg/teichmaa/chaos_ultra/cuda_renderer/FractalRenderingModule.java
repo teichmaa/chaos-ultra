@@ -1,11 +1,11 @@
 package cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer;
 
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.*;
 import jcuda.CudaException;
 import jcuda.driver.CUmodule;
 import jcuda.driver.CUresult;
 import jcuda.driver.JCudaDriver;
 
+import javax.swing.*;
 import java.io.Closeable;
 import java.io.File;
 import java.util.Arrays;
@@ -18,6 +18,8 @@ import static jcuda.driver.JCudaDriver.cuModuleLoad;
 
 /**
  * A structure of JCuda classes, together representing a CUDA module (=1 ptx file) used by CudaFractalRenderer class.
+ * Lifecycle:  Closed      --- initialize() --->   Initialized
+ *             Initialized  --- close() --->       Closed
  */
 public abstract class FractalRenderingModule implements Closeable {
 
@@ -33,8 +35,13 @@ public abstract class FractalRenderingModule implements Closeable {
     private static final String PATH_SUFFIX = ".ptx";
 
     static {
+        //This has to be called from the AWT GL-Thread
+        if(!SwingUtilities.isEventDispatchThread()){
+            throw new IllegalStateException("Cuda has to be initialized from Swing event dispatch thread.");
+        }
         CudaHelpers.cudaInit();
 
+        //locate directory with kernels:
         if (System.getProperty(CUDA_KERNELS_DIR_PROPERTY_NAME) == null) {
             System.setProperty(CUDA_KERNELS_DIR_PROPERTY_NAME, CUDA_KERNELS_DIR_PROPERTY_DEFAULT_VALUE);
             System.err.println(CUDA_KERNELS_DIR_PROPERTY_NAME + " property not specified, fallbacking to '" + CUDA_KERNELS_DIR_PROPERTY_DEFAULT_VALUE + "' (try starting java with -D" + CUDA_KERNELS_DIR_PROPERTY_NAME + "=<directory relative location>");
@@ -50,7 +57,15 @@ public abstract class FractalRenderingModule implements Closeable {
         this.ptxFileFullPath = PATH_PREFIX + File.separator + ptxFileName + PATH_SUFFIX;
         this.fractalName = fractalName;
 
-        //module load:
+//        initialize();
+    }
+
+    /**
+     * @throws IllegalArgumentException if file with cuda module has not been found
+     * @throws CudaInitializationException when other problem with cuda loading occurs
+     */
+    public void initialize(){
+        if(initialized) throw new IllegalStateException("Module already initialized.");
         try {
             module = new CUmodule();
             cuModuleLoad(module, ptxFileFullPath);
@@ -60,9 +75,9 @@ public abstract class FractalRenderingModule implements Closeable {
                         "Have you set " + CUDA_KERNELS_DIR_PROPERTY_NAME + " properly?";
                 throw new IllegalArgumentException(message, e);
             } else if (e.getMessage().contains(CUresult.stringFor(CUresult.CUDA_ERROR_INVALID_CONTEXT))) {
-                throw new IllegalArgumentException("Invalid CUDA context", e);
+                throw new CudaInitializationException("Invalid CUDA context", e);
             } else {
-                throw e;
+                throw new CudaInitializationException(e);
             }
         }
 
@@ -76,8 +91,14 @@ public abstract class FractalRenderingModule implements Closeable {
         kernels.put(KernelCompose.class, new KernelCompose(module));
         kernels.put(KernelDebug.class, new KernelDebug(module));
 
+        initialized = true;
     }
 
+    public boolean isInitialized() {
+        return initialized;
+    }
+
+    private boolean initialized = false;
     private final String ptxFileFullPath;
     private final String fractalName;
 
@@ -89,16 +110,17 @@ public abstract class FractalRenderingModule implements Closeable {
         return ptxFileFullPath;
     }
 
-    protected String getFractalName() {
+    public String getFractalName() {
         return fractalName;
     }
 
     protected CUmodule getModule() {
+        if(!initialized) throw new IllegalStateException("Module has not been initialized.");
         return module;
     }
 
     <T extends CudaKernel> T getKernel(Class<T> kernel) {
-        if (module == null) throw new IllegalStateException("the module has been closed.");
+        if(!initialized) throw new IllegalStateException("Module has not been initialized or has been closed.");
         if (!kernels.containsKey(kernel)) {
             throw new IllegalArgumentException("No such kernel available: " + kernel.getSimpleName());
         }
@@ -116,6 +138,7 @@ public abstract class FractalRenderingModule implements Closeable {
             JCudaDriver.cuModuleUnload(module);
             module = null;
         }
+        initialized = false;
     }
 
     public abstract void setFractalCustomParameters(String params);

@@ -76,4 +76,9 @@ public class FractalRendererNullObject implements FractalRenderer {
     public void setFractalSpecificParams(String text) {
 
     }
+
+    @Override
+    public String getFractalName() {
+        return "null object fractal";
+    }
 }

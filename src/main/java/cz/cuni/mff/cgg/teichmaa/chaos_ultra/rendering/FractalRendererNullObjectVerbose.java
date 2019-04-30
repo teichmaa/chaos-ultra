@@ -81,4 +81,10 @@ public class FractalRendererNullObjectVerbose implements FractalRenderer {
     public void setFractalSpecificParams(String text) {
         printMethodName();
     }
+
+    @Override
+    public String getFractalName() {
+        printMethodName();
+        return "null object fractal";
+    }
 }

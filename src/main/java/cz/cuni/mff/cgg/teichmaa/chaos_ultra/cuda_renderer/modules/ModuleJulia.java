@@ -18,9 +18,14 @@ public class ModuleJulia extends FractalRenderingModule {
 
     public ModuleJulia() {
         super("julia", "julia");
+    }
 
+    @Override
+    public void initialize(){
+        super.initialize();
+
+        //initialize juliaCParamSizeArray to point to device memory containing the Julia-C-parameter
         //from https://github.com/jcuda/jcuda/issues/17
-        juliaCParamPtr = new CUdeviceptr();
         long[] juliaCParamSizeArray = {0};
         cuModuleGetGlobal(juliaCParamPtr, juliaCParamSizeArray, getModule(), JULIA_C_PARAM_NAME);
         int juliaCParamSize = (int) juliaCParamSizeArray[0];
@@ -32,6 +37,7 @@ public class ModuleJulia extends FractalRenderingModule {
         setC(Point2DDoubleImmutable.of(0,0));
     }
 
+    private final CUdeviceptr juliaCParamPtr = new CUdeviceptr();
     private Point2DDoubleImmutable c;
 
     public Point2DDoubleImmutable getC() {
@@ -44,8 +50,6 @@ public class ModuleJulia extends FractalRenderingModule {
         double[] source = new double[]{c.getX(), c.getY()};
         cudaMemcpy(juliaCParamPtr, Pointer.to(source), JULIA_C_PARAM_SIZE, cudaMemcpyKind.cudaMemcpyHostToDevice);
     }
-
-    private final CUdeviceptr juliaCParamPtr;
 
     @Override
     public void setFractalCustomParameters(String params) {

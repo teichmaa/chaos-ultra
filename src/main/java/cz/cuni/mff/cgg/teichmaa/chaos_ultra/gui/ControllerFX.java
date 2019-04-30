@@ -1,16 +1,21 @@
 package cz.cuni.mff.cgg.teichmaa.chaos_ultra.gui;
 
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.FractalRendererProvider;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.heuristicsParams.ChaosUltraRenderingParams;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.util.converter.NumberStringConverter;
+import sun.net.www.content.image.png;
 
 
 import javax.swing.*;
+import java.io.File;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -19,6 +24,8 @@ import java.util.ResourceBundle;
 public class ControllerFX implements Initializable {
 
     static final int SUPER_SAMPLING_MAX_LEVEL = RenderingController.SUPER_SAMPLING_MAX_LEVEL;
+    @FXML
+    private ChoiceBox<String> fractalChoiceBox;
     @FXML
     private TextField fractalSpecificParams;
     @FXML
@@ -60,6 +67,10 @@ public class ControllerFX implements Initializable {
     public void initialize(URL location, ResourceBundle resources) {
         if (singleton == null)
             singleton = this;
+
+        //todo do this properly
+        fractalChoiceBox.setItems(FXCollections.observableArrayList("mandelbrot","julia"));
+        fractalChoiceBox.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> SwingUtilities.invokeLater(() -> renderingController.onFractalChanged(newValue)));
     }
 
     void setRenderingController(RenderingController renderingController) {
@@ -71,7 +82,8 @@ public class ControllerFX implements Initializable {
         Platform.runLater(() -> new Alert(Alert.AlertType.ERROR, message).showAndWait());
     }
 
-    void bindParamsTo(ChaosUltraRenderingParams params){
+    void bindParamsTo(ChaosUltraRenderingParams params) {
+        //TODO tohle je bohuzel asi radikalni blbost, vhzledem k tomu, ze to bezi v ruznych vlaknech
         Bindings.bindBidirectional(maxIterations.textProperty(), params.maxIterationsProperty(), new NumberStringConverter());
         Bindings.bindBidirectional(superSamplingLevel.textProperty(), params.superSamplingLevelProperty(), new NumberStringConverter());
         params.useAdaptiveSupersamplingProperty().bindBidirectional(useAdaptiveSS.selectedProperty());
@@ -200,7 +212,7 @@ public class ControllerFX implements Initializable {
     @FXML
     private void saveImageClicked(ActionEvent actionEvent) {
         String time = new SimpleDateFormat("dd-MM-YY_HH-mm-ss").format(new Date());
-        SwingUtilities.invokeLater(() -> renderingController.saveImage("E:\\Tonda\\Desktop\\rendering-out\\fractal_" + time + ".png", "png"));
+        SwingUtilities.invokeLater(() -> renderingController.saveImage(System.getProperty("user.dir")  + File.separator + "fractal_" + time + ".png", "png"));
         // todo vybiratko na soubory
     }
 
@@ -216,6 +228,7 @@ public class ControllerFX implements Initializable {
 
     @FXML
     private void fractalSpecificParamsSetClicked(ActionEvent actionEvent) {
-        renderingController.setFractalSpecificParams(fractalSpecificParams.getText().trim());
+        SwingUtilities.invokeLater(() -> renderingController.setFractalSpecificParams(fractalSpecificParams.getText().trim()));
     }
+
 }

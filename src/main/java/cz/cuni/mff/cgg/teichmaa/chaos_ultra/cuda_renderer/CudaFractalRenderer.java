@@ -396,4 +396,9 @@ public class CudaFractalRenderer implements FractalRenderer {
         }
         onAllMainKernels(k -> k.setVisualiseSampleCount(visualiseAdaptiveSS));
     }
+
+    @Override
+    public String getFractalName() {
+        return module.getFractalName();
+    }
 }

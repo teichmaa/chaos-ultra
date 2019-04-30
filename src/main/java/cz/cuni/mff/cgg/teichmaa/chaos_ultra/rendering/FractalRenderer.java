@@ -37,4 +37,6 @@ public interface FractalRenderer extends Closeable {
     void bindParamsTo(ChaosUltraRenderingParams params);
 
     void setFractalSpecificParams(String text);
+
+    String getFractalName();
 }
