@@ -16,3 +16,10 @@ log/
 target/
 lib/
 out/
+
+#Java
+hs_err_*
+
+#Code
+.vscode/
+*/.vscode/
