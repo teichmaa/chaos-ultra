@@ -4,6 +4,7 @@ import jcuda.Pointer;
 import jcuda.driver.CUcontext;
 import jcuda.driver.CUdevice;
 import jcuda.driver.JCudaDriver;
+import jcuda.runtime.JCuda;
 
 public class CudaHelpers {
     private static boolean already = false;
@@ -28,6 +29,7 @@ public class CudaHelpers {
 
         // Enable exceptions and omit all subsequent error checks:
         JCudaDriver.setExceptionsEnabled(true);
+        JCuda.setExceptionsEnabled(true);
 
         JCudaDriver.cuInit(0);
 

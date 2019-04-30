@@ -6,6 +6,7 @@ import com.jogamp.opengl.*;
 import jcuda.driver.CUcontext;
 import jcuda.driver.CUdevice;
 import jcuda.driver.JCudaDriver;
+import jcuda.runtime.JCuda;
 
 import static jcuda.driver.JCudaDriver.*;
 
@@ -31,6 +32,7 @@ public class Main {
         int breakpoint = 0;
 
         JCudaDriver.setExceptionsEnabled(true);
+        JCuda.setExceptionsEnabled(true);
 
         cuInit(0);
 

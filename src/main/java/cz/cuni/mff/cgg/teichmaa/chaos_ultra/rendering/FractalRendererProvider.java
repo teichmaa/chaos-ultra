@@ -53,6 +53,7 @@ public class FractalRendererProvider {
             if (julia == null) {
                 FractalRenderingModule module = moduleInstances.get(fractalName);
                 module.initialize();
+//                julia = new CudaFractalRenderer(module, glParams, chaosParams, mandelbrot.getOutputTextureResource(), mandelbrot.getOutputTextureResource());
                 julia = new CudaFractalRenderer(module, glParams, chaosParams);
             }
             return julia;

@@ -19,8 +19,7 @@ import java.security.InvalidParameterException;
 import java.util.function.Consumer;
 
 import static jcuda.driver.JCudaDriver.*;
-import static jcuda.runtime.cudaGraphicsRegisterFlags.cudaGraphicsRegisterFlagsReadOnly;
-import static jcuda.runtime.cudaGraphicsRegisterFlags.cudaGraphicsRegisterFlagsWriteDiscard;
+import static jcuda.runtime.cudaGraphicsRegisterFlags.*;
 import static jcuda.runtime.cudaResourceType.cudaResourceTypeArray;
 
 public class CudaFractalRenderer implements FractalRenderer {
@@ -53,10 +52,37 @@ public class CudaFractalRenderer implements FractalRenderer {
 
     //todo dokumentacni komentar k metode
     public CudaFractalRenderer(FractalRenderingModule module, OpenGLParams glParams, ChaosUltraRenderingParams params) {
+        this(module, glParams, params, null, null);
+
+        //moduleInit();
+    }
+
+    public cudaGraphicsResource getOutputTextureResource() {
+        return outputTextureResource;
+    }
+
+    public cudaGraphicsResource getPaletteTextureResource() {
+        return paletteTextureResource;
+    }
+
+    public CudaFractalRenderer(FractalRenderingModule module, OpenGLParams glParams, ChaosUltraRenderingParams params, cudaGraphicsResource existingOutput, cudaGraphicsResource existingPalette) {
         this.module = module;
         this.paletteLength = glParams.getPaletteLength();
-        registerOutputTexture(glParams.getOutput());
-        JCuda.cudaGraphicsGLRegisterImage(paletteTextureResource, glParams.getPalette().getHandle().getValue(), glParams.getPalette().getTarget(), cudaGraphicsRegisterFlagsReadOnly);
+
+        if(existingOutput == null)
+        {
+            registerOutputTexture(glParams.getOutput());
+        } else {
+            outputTextureResource = existingOutput;
+        }
+
+        if(existingPalette == null)
+        {
+            JCuda.cudaGraphicsGLRegisterImage(paletteTextureResource, glParams.getPalette().getHandle().getValue(), glParams.getPalette().getTarget(), cudaGraphicsRegisterFlagsReadOnly);
+        } else {
+            paletteTextureResource = existingPalette;
+        }
+
 
         kernelUndersampled = module.getKernel(KernelUnderSampled.class);
         //TODO tohle cislo 4 do konstanty
@@ -71,7 +97,6 @@ public class CudaFractalRenderer implements FractalRenderer {
 
         bindParamsTo(params);
 
-        //moduleInit();
     }
 
     private void moduleInit() {
@@ -92,6 +117,7 @@ public class CudaFractalRenderer implements FractalRenderer {
 
     @Override
     public void unregisterOutputTexture() {
+        //using this call-me-approach rather than unregistering the resource every time a frame is rendered is for performance reasons, see https://devtalk.nvidia.com/default/topic/747242/cuda-opengl-interop-performance/
         jcuda.runtime.JCuda.cudaGraphicsUnregisterResource(outputTextureResource);
     }
 

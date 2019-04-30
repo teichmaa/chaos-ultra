@@ -60,6 +60,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     private Animator animator;
     private RenderingModeFSM currentMode = new RenderingModeFSM();
 
+
     private int width_t;
     private int height_t;
 
@@ -216,9 +217,14 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         gl.glLoadIdentity();
         gl.glEnable(GL_TEXTURE_2D);
 
+        //documentation for GL texture handling and lifecycle: https://www.khronos.org/opengl/wiki/Texture_Storage#Direct_creation
         int[] GLHandles = new int[2];
         gl.glGenTextures(GLHandles.length, GLHandles, 0);
         outputTexture = OpenGLTexture.of(OpenGLTextureHandle.of(GLHandles[0]), GL_TEXTURE_2D);
+        // TODO hovno
+        width_t = 1024;
+        height_t = 1024;
+        //TODO end
         registerOutputTexture(gl);
         paletteTexture = OpenGLTexture.of(OpenGLTextureHandle.of(GLHandles[1]), GL_TEXTURE_2D);
         {
@@ -275,6 +281,12 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         assert SwingUtilities.isEventDispatchThread();
         if (fractalRenderer == null) return;
         fractalRenderer.close();
+
+        final GL2 gl = drawable.getGL().getGL2();
+        int[] textures = new int[2];
+        textures[0] = outputTexture.getHandle().getValue();
+        textures[1] = paletteTexture.getHandle().getValue();
+        gl.glDeleteTextures(textures.length, textures, 0);
     }
 
     @Override
@@ -488,12 +500,15 @@ public class RenderingController extends MouseAdapter implements GLEventListener
 
     public void onFractalChanged(String fractalName){
         assert SwingUtilities.isEventDispatchThread();
-        fractalRenderer = fractalRendererProvider.getRenderer(fractalName);
-        //reset:
+        updateKernelParams();
         animator.stop();
         currentMode.reset();
-        updateKernelParams();
-        fractalRenderer.resize(width_t, height_t, outputTexture);
+
+
+        //fractalRenderer.unregisterOutputTexture();
+        fractalRenderer = fractalRendererProvider.getRenderer(fractalName);
+        //fractalRenderer.resize(width_t, height_t, outputTexture);
+
 //        repaint();
     }
 }
