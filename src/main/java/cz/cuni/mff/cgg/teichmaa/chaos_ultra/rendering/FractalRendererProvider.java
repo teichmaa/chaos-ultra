@@ -2,6 +2,7 @@ package cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering;
 
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.CudaFractalRenderer;
 
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.CudaInitializationException;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.FractalRenderingModule;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.modules.ModuleJulia;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.modules.ModuleMandelbrot;
@@ -81,12 +82,23 @@ public class FractalRendererProvider {
 //        return activeRenderer;
     }
 
+    /**
+     * @throws cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.CudaInitializationException
+     */
     private static FractalRenderingModule createInstance(Class<? extends FractalRenderingModule> c) {
-        FractalRenderingModule instance = null;
+        FractalRenderingModule instance;
         try {
             instance = c.newInstance();
         } catch (InstantiationException | IllegalAccessException e) {
-            e.printStackTrace();
+            throw new CudaInitializationException(e);
+        } catch (UnsatisfiedLinkError e) {
+            //TODO jak jinak tohle zobrazit uzivateli?
+            if (e.getMessage().contains("Cuda")) {
+                String message = "Error while loading the Cuda native library. Do you have CUDA installed?";
+                throw new CudaInitializationException(message, e);
+            } else {
+                throw new CudaInitializationException(e);
+            }
         }
         return instance;
     }

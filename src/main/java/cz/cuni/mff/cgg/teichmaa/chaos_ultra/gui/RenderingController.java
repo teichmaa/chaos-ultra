@@ -5,13 +5,13 @@ import com.jogamp.opengl.*;
 import com.jogamp.opengl.awt.GLCanvas;
 import com.jogamp.opengl.util.Animator;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.CudaInitializationException;
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.modules.ModuleJulia;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.FractalRenderer;
 
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.FractalRendererNullObjectVerbose;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.FractalRendererProvider;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.OpenGLParams;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.heuristicsParams.ChaosUltraRenderingParams;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.GLHelpers;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.OpenGLTexture;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.OpenGLTextureHandle;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.Point2DInt;
@@ -213,31 +213,17 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     public void init(GLAutoDrawable drawable) {
         final GL2 gl = drawable.getGL().getGL2();
 
-        gl.glMatrixMode(GL_MODELVIEW);
-        gl.glLoadIdentity();
-        gl.glEnable(GL_TEXTURE_2D);
-
         //documentation for GL texture handling and lifecycle: https://www.khronos.org/opengl/wiki/Texture_Storage#Direct_creation
         int[] GLHandles = new int[2];
         gl.glGenTextures(GLHandles.length, GLHandles, 0);
+
         outputTexture = OpenGLTexture.of(OpenGLTextureHandle.of(GLHandles[0]), GL_TEXTURE_2D);
-        // TODO hovno
-        width_t = 1024;
-        height_t = 1024;
-        //TODO end
-        registerOutputTexture(gl);
+        GLHelpers.specifyTextureSize(gl, outputTexture, 800, 800); //some todo other size?
+
         paletteTexture = OpenGLTexture.of(OpenGLTextureHandle.of(GLHandles[1]), GL_TEXTURE_2D);
-        {
-            Buffer colorPalette = IntBuffer.wrap(ImageHelpers.createColorPalette());
-            paletteTextureLength = colorPalette.limit();
-            gl.glBindTexture(GL_TEXTURE_2D, paletteTexture.getHandle().getValue());
-            {
-                gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-                gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-                gl.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, colorPalette.limit(), 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, colorPalette);
-            }
-            gl.glBindTexture(GL_TEXTURE_2D, 0);
-        }
+        Buffer colorPalette = IntBuffer.wrap(ImageHelpers.createColorPalette());
+        paletteTextureLength = colorPalette.limit();
+        GLHelpers.specifyTextureSizeAndData(gl, paletteTexture, paletteTextureLength, 1, colorPalette);
 
         fractalRendererProvider = new FractalRendererProvider(
                 OpenGLParams.of(
@@ -245,35 +231,13 @@ public class RenderingController extends MouseAdapter implements GLEventListener
                         paletteTexture,
                         paletteTextureLength),
                 params);
-        try {
-            fractalRenderer = fractalRendererProvider.getRenderer("mandelbrot");
-            //todo tohle prepsat. Zjistit, kdo je zodpovedny za chytani tech vyjimek.
-        } catch (UnsatisfiedLinkError e) {
-            if (e.getMessage().contains("Cuda")) {
-                controllerFX.showErrorMessage("Error while loading the Cuda native library. Do you have CUDA installed?");
-            } else {
-                e.printStackTrace();
-            }
-        } catch (CudaInitializationException e) {
-            controllerFX.showErrorMessage("Error while loading CUDA: " + e.getMessage());
-        }
+
+        fractalRenderer = fractalRendererProvider.getRenderer("mandelbrot");
 
         // fractalRenderer uses the null-object pattern, so even if not initialized properly to CudaFractalRenderer, we can still call its methods
+        //todo domyslet jak je to s tim null objectem a kdo vlastne vyhazuje jakou vyjimku kdy (modul vs renderer) a jak ji zobrazovat a kdo je zopovedny za ten null object a tyhle shity
         controllerFX.showDefaultView();
         fractalRenderer.launchDebugKernel();
-    }
-
-    private void registerOutputTexture(GL gl) {
-        assert SwingUtilities.isEventDispatchThread();
-        gl.glBindTexture(GL_TEXTURE_2D, outputTexture.getHandle().getValue());
-        {
-            gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            gl.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width_t, height_t, 0, GL_RGBA, GL_UNSIGNED_BYTE, null);
-            //glTexImage2D params: target, level, internalFormat, width, height, border (must 0), format, type, data (may be null)
-            //documentation: https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glTexImage2D.xhtml
-        }
-        gl.glBindTexture(GL_TEXTURE_2D, 0);
     }
 
     @Override
@@ -380,28 +344,8 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         } else {
             fractalRenderer.renderFast(focus, currentMode.isZooming());
         }
-        //fractalRenderer.renderQuality();
 
-        gl.glMatrixMode(GL_MODELVIEW);
-        //gl.glPushMatrix();
-        gl.glLoadIdentity();
-        gl.glBindTexture(GL_TEXTURE_2D, outputTexture.getHandle().getValue());
-        gl.glBegin(GL_QUADS);
-        {
-            //map screen quad to texture quad and make it render
-            gl.glTexCoord2f(0f, 1f);
-            gl.glVertex2f(-1f, -1f);
-            gl.glTexCoord2f(1f, 1f);
-            gl.glVertex2f(+1f, -1f);
-            gl.glTexCoord2f(1f, 0f);
-            gl.glVertex2f(+1f, +1f);
-            gl.glTexCoord2f(0f, 0f);
-            gl.glVertex2f(-1f, +1f);
-        }
-        gl.glEnd();
-        //gl.glBindTexture(GL_TEXTURE_2D, 0);
-        //gl.glPopMatrix();
-        //gl.glFinish();
+        GLHelpers.drawRectangle(gl, outputTexture);
     }
 
     @Override
@@ -413,7 +357,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         setBounds(getCenterX(), getCenterY(), getZoom() * height / (double) oldHeight);
 
         fractalRenderer.unregisterOutputTexture();
-        registerOutputTexture(gl); //already using the new dimensions
+        GLHelpers.specifyTextureSize(gl, outputTexture, width, height);
         fractalRenderer.resize(width, height, outputTexture);
 
         currentMode.startProgressiveRendering();
