@@ -16,8 +16,8 @@ import java.io.Closeable;
  */
 class DeviceMemoryDoubleBuffer2D implements Closeable {
 
-    private CUdeviceptr array1 = new CUdeviceptr();
-    private CUdeviceptr array2 = new CUdeviceptr();
+    private CUdeviceptr array1;
+    private CUdeviceptr array2;
     private long array1Pitch;
     private long array2Pitch;
 
@@ -27,16 +27,30 @@ class DeviceMemoryDoubleBuffer2D implements Closeable {
      * @param h nw height
      */
     void reallocate(int w, int h){
+        memoryFree();
         reallocatePrimary2DBuffer(w, h);
         reallocateSecondary2DBuffer(w, h);
     }
 
     private void reallocatePrimary2DBuffer(int w, int h){
+        array1 = new CUdeviceptr();
         array1Pitch = allocateDevice2DBuffer(w, h, 2, array1);
         setPrimary2DBufferDirty(true);
     }
     private void reallocateSecondary2DBuffer(int w, int h){
+        array2 = new CUdeviceptr();
         array2Pitch = allocateDevice2DBuffer(w, h, 2, array2);
+    }
+
+    void memoryFree(){
+        if(array1 != null) {
+            JCuda.cudaFree(array1);
+            array1 = null;
+        }
+        if(array2 != null) {
+            JCuda.cudaFree(array2);
+            array2 = null;
+        }
     }
 
     CUdeviceptr getPrimary2DBuffer(){
@@ -126,9 +140,6 @@ class DeviceMemoryDoubleBuffer2D implements Closeable {
 
     @Override
     public void close() {
-        if(array1 != null)
-            JCuda.cudaFree(array1);
-        if(array2 != null)
-            JCuda.cudaFree(array2);
+        memoryFree();
     }
 }

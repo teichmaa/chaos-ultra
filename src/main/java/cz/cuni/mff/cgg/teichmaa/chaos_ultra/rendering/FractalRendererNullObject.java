@@ -5,25 +5,14 @@ import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.OpenGLTexture;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.Point2DInt;
 
 public class FractalRendererNullObject implements FractalRenderer {
-    //todo, tohle by cele melo  byt designovane jinak:
-    // rendering renderer je interface, ve vlastnim baliku (rendering), v nem je i tahle implementace
-    // cuda balik dodava implementaci pro CudaFractalRenderer a Module
-    // novy CudaFractalRenderer se dela pomoci builderu, rekne se mu, ktery fraktal a ktera platforma (CUDA) a on to podle toho zkonstruuje
-    // nekde v baliku rendering tedy bude nejaky katalog fraktalu a platforem
-
 
     @Override
-    public void registerOutputTexture(OpenGLTexture output) {
+    public void initializeRendering(OpenGLParams glParams) {
 
     }
 
     @Override
-    public void unregisterOutputTexture() {
-
-    }
-
-    @Override
-    public void resize(int width, int height, OpenGLTexture output) {
+    public void freeRenderingResources() {
 
     }
 
@@ -80,5 +69,10 @@ public class FractalRendererNullObject implements FractalRenderer {
     @Override
     public String getFractalName() {
         return "null object fractal";
+    }
+
+    @Override
+    public FractalRendererState getState() {
+        return FractalRendererState.notInitialized;
     }
 }

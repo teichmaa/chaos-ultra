@@ -30,12 +30,10 @@ public class FractalRendererProvider {
     }
 
 
-    public FractalRendererProvider(OpenGLParams glParams, ChaosUltraRenderingParams chaosParams) {
-        this.glParams = glParams;
+    public FractalRendererProvider(ChaosUltraRenderingParams chaosParams) {
         this.chaosParams = chaosParams;
     }
 
-    private OpenGLParams glParams;
     private ChaosUltraRenderingParams chaosParams;
 
     //    private CudaFractalRenderer activeRenderer;
@@ -47,15 +45,14 @@ public class FractalRendererProvider {
             if (mandelbrot == null) {
                 FractalRenderingModule module = moduleInstances.get(fractalName);
                 module.initialize();
-                mandelbrot = new CudaFractalRenderer(module, glParams, chaosParams);
+                mandelbrot = new CudaFractalRenderer(module, chaosParams);
             }
             return mandelbrot;
         } else if (fractalName.equals("julia")) {
             if (julia == null) {
                 FractalRenderingModule module = moduleInstances.get(fractalName);
                 module.initialize();
-//                julia = new CudaFractalRenderer(module, glParams, chaosParams, mandelbrot.getOutputTextureResource(), mandelbrot.getOutputTextureResource());
-                julia = new CudaFractalRenderer(module, glParams, chaosParams);
+                julia = new CudaFractalRenderer(module, chaosParams);
             }
             return julia;
         }

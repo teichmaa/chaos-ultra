@@ -11,11 +11,12 @@ public interface FractalRenderer extends Closeable {
     int SUPER_SAMPLING_MAX_LEVEL = 256;
 
     //todo dokumentacni komentar
-    void registerOutputTexture(OpenGLTexture output);
+    //using this call-me-approach rather than unregistering the resource every time a frame is rendered is for performance reasons, see https://devtalk.nvidia.com/default/topic/747242/cuda-opengl-interop-performance/
+    void initializeRendering(OpenGLParams glParams);
 
-    void unregisterOutputTexture();
+    void freeRenderingResources();
 
-    void resize(int width, int height, OpenGLTexture output);
+    FractalRendererState getState();
 
     int getWidth();
 

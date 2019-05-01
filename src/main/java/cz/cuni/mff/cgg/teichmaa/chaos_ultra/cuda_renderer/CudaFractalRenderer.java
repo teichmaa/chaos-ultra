@@ -2,6 +2,7 @@ package cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer;
 
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.FractalRenderer;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.FractalRendererException;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.FractalRendererState;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.OpenGLParams;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.heuristicsParams.ChaosUltraRenderingParams;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.FloatPrecision;
@@ -22,11 +23,17 @@ import static jcuda.driver.JCudaDriver.*;
 import static jcuda.runtime.cudaGraphicsRegisterFlags.*;
 import static jcuda.runtime.cudaResourceType.cudaResourceTypeArray;
 
+/**
+ *
+ * Lifecycle:  notInitialized      --- initializeRendering() --->   readyToRender
+ *             readyToRender    --- freeRenderingResources() --->   notInitialized
+ */
 public class CudaFractalRenderer implements FractalRenderer {
 
-    int CUDA_MAX_GRID_DIM = 65536 - 1;
-
+    private static final int CUDA_MAX_GRID_DIM = 65536 - 1;
     private static final Pointer NULLPTR = CudaHelpers.pointerTo(0);
+    private static final int BLOCK_DIM_X = 32;
+    private static final int BLOCK_DIM_Y = 32;
 
     static {
         CudaHelpers.cudaInit();
@@ -41,48 +48,15 @@ public class CudaFractalRenderer implements FractalRenderer {
 
     private DeviceMemoryDoubleBuffer2D memory = new DeviceMemoryDoubleBuffer2D();
     private FractalRenderingModule module;
-
-    private int blockDimX = 32;
-    private int blockDimY = 32;
-    private int paletteLength;
-
-    private cudaGraphicsResource outputTextureResource = new cudaGraphicsResource();
-    private cudaGraphicsResource paletteTextureResource = new cudaGraphicsResource();
     private cudaStream_t defaultStream = new cudaStream_t();
 
+    private OpenGLParams glParams;
+    private cudaGraphicsResource outputTextureResource = new cudaGraphicsResource();
+    private cudaGraphicsResource paletteTextureResource = new cudaGraphicsResource();
+
     //todo dokumentacni komentar k metode
-    public CudaFractalRenderer(FractalRenderingModule module, OpenGLParams glParams, ChaosUltraRenderingParams params) {
-        this(module, glParams, params, null, null);
-
-        //moduleInit();
-    }
-
-    public cudaGraphicsResource getOutputTextureResource() {
-        return outputTextureResource;
-    }
-
-    public cudaGraphicsResource getPaletteTextureResource() {
-        return paletteTextureResource;
-    }
-
-    public CudaFractalRenderer(FractalRenderingModule module, OpenGLParams glParams, ChaosUltraRenderingParams params, cudaGraphicsResource existingOutput, cudaGraphicsResource existingPalette) {
+    public CudaFractalRenderer(FractalRenderingModule module, ChaosUltraRenderingParams params) {
         this.module = module;
-        this.paletteLength = glParams.getPaletteLength();
-
-        if(existingOutput == null)
-        {
-            registerOutputTexture(glParams.getOutput());
-        } else {
-            outputTextureResource = existingOutput;
-        }
-
-        if(existingPalette == null)
-        {
-            JCuda.cudaGraphicsGLRegisterImage(paletteTextureResource, glParams.getPalette().getHandle().getValue(), glParams.getPalette().getTarget(), cudaGraphicsRegisterFlagsReadOnly);
-        } else {
-            paletteTextureResource = existingPalette;
-        }
-
 
         kernelUndersampled = module.getKernel(KernelUnderSampled.class);
         //TODO tohle cislo 4 do konstanty
@@ -96,7 +70,6 @@ public class CudaFractalRenderer implements FractalRenderer {
         memory.reallocate(getWidth(), getHeight());
 
         bindParamsTo(params);
-
     }
 
     private void moduleInit() {
@@ -108,19 +81,42 @@ public class CudaFractalRenderer implements FractalRenderer {
         cuCtxSynchronize();
     }
 
-    //todo dokumentacni komentar
+    private FractalRendererState state = FractalRendererState.notInitialized;
+
     @Override
-    public void registerOutputTexture(OpenGLTexture outputTexture) {
+    public void initializeRendering(OpenGLParams glParams) {
+        if(state == FractalRendererState.readyToRender) throw new IllegalStateException("Already initialized.");
+
+        this.glParams = glParams;
+        OpenGLTexture outputTexture = glParams.getOutput();
+        int width = outputTexture.getWidth();
+        int height = outputTexture.getHeight();
+
+        onAllRenderingKernels(k -> k.setOutputSize(width, height));
+        memory.reallocate(width, height);
+
         //documentation: http://www.jcuda.org/jcuda/doc/jcuda/runtime/JCuda.html#cudaGraphicsGLRegisterImage(jcuda.runtime.cudaGraphicsResource,%20int,%20int,%20int)
-        jcuda.runtime.JCuda.cudaGraphicsGLRegisterImage(outputTextureResource, outputTexture.getHandle().getValue(), outputTexture.getTarget(), cudaGraphicsRegisterFlagsWriteDiscard);
+        JCuda.cudaGraphicsGLRegisterImage(outputTextureResource, outputTexture.getHandle().getValue(), outputTexture.getTarget(), cudaGraphicsRegisterFlagsWriteDiscard);
+        JCuda.cudaGraphicsGLRegisterImage(paletteTextureResource, glParams.getPalette().getHandle().getValue(), glParams.getPalette().getTarget(), cudaGraphicsRegisterFlagsReadOnly);
+
+        state = FractalRendererState.readyToRender;
     }
 
     @Override
-    public void unregisterOutputTexture() {
-        //using this call-me-approach rather than unregistering the resource every time a frame is rendered is for performance reasons, see https://devtalk.nvidia.com/default/topic/747242/cuda-opengl-interop-performance/
-        jcuda.runtime.JCuda.cudaGraphicsUnregisterResource(outputTextureResource);
+    public void freeRenderingResources() {
+        if(state == FractalRendererState.notInitialized) throw new IllegalStateException("Already free.");
+
+        memory.memoryFree();
+        glParams = null;
+        JCuda.cudaGraphicsUnregisterResource(outputTextureResource);
+        JCuda.cudaGraphicsUnregisterResource(paletteTextureResource);
+        state = FractalRendererState.notInitialized;
     }
 
+    @Override
+    public FractalRendererState getState() {
+        return state;
+    }
 
     private void copy2DFromDevToHost(IntBuffer hostOut, int width, int height, long pitch, CUdeviceptr deviceOut) {
         if (hostOut.capacity() < width * height)
@@ -140,14 +136,6 @@ public class CudaFractalRenderer implements FractalRenderer {
     }
 
     @Override
-    public void resize(int width, int height, OpenGLTexture output) {
-        //System.out.println("resize: " +width + " x " + height);
-        onAllRenderingKernels(k -> k.setOutputSize(width, height));
-        registerOutputTexture(output);
-        memory.reallocate(width, height);
-    }
-
-    @Override
     public int getWidth() {
         return kernelMainFloat.getWidth();
     }
@@ -159,6 +147,7 @@ public class CudaFractalRenderer implements FractalRenderer {
 
     @Override
     public void launchDebugKernel() {
+        if(state != FractalRendererState.readyToRender) throw new IllegalStateException("Renderer has to be initialized first");
 
         CudaKernel k = module.getKernel(KernelDebug.class);
         cuLaunchKernel(k.getFunction(),
@@ -172,6 +161,8 @@ public class CudaFractalRenderer implements FractalRenderer {
 
     @Override
     public void renderFast(Point2DInt focus, boolean isZooming) {
+        if(state != FractalRendererState.readyToRender) throw new IllegalStateException("Renderer has to be initialized first");
+
         if (memory.isPrimary2DBufferDirty()) {
             //if there is nothing to reuse, then create it
             renderQuality();
@@ -192,6 +183,8 @@ public class CudaFractalRenderer implements FractalRenderer {
 
     @Override
     public void renderQuality() {
+        if(state != FractalRendererState.readyToRender) throw new IllegalStateException("Renderer has to be initialized first");
+
         KernelMain kernelMain = kernelMainFloat.isBoundsAtFloatLimit() ? kernelMainDouble : kernelMainFloat;
         memory.resetBufferOrder();
         kernelMain.setOutput(memory.getPrimary2DBuffer(), memory.getPrimary2DBufferPitch());
@@ -208,15 +201,15 @@ public class CudaFractalRenderer implements FractalRenderer {
         // Following the Jcuda API, kernel heuristicsParams is a pointer to an array of pointers which point to the actual values.
         Pointer kernelParams = Pointer.to(kernel.getKernelParams());
         CUfunction kernelFunction = kernel.getFunction();
-        int gridDimX = width / blockDimX;
-        int gridDimY = height / blockDimY;
+        int gridDimX = width / BLOCK_DIM_X;
+        int gridDimY = height / BLOCK_DIM_Y;
 
         if (gridDimX <= 0 || gridDimY <= 0) return;
         if (gridDimX > CUDA_MAX_GRID_DIM) {
-            throw new FractalRendererException("Unsupported input parameter: width must be smaller than " + CUDA_MAX_GRID_DIM * blockDimX);
+            throw new FractalRendererException("Unsupported input parameter: width must be smaller than " + CUDA_MAX_GRID_DIM * BLOCK_DIM_X);
         }
         if (gridDimY > CUDA_MAX_GRID_DIM) {
-            throw new FractalRendererException("Unsupported input parameter: height must be smaller than " + CUDA_MAX_GRID_DIM * blockDimY);
+            throw new FractalRendererException("Unsupported input parameter: height must be smaller than " + CUDA_MAX_GRID_DIM * BLOCK_DIM_Y);
         }
         try {
             cuLaunchKernel(kernelFunction,
@@ -269,8 +262,8 @@ public class CudaFractalRenderer implements FractalRenderer {
                 try {
                     // Set up the kernel parameters: A pointer to an array
                     // of pointers which point to the actual values.
-                    int gridDimX = getWidth() / blockDimX;
-                    int gridDimY = getHeight() / blockDimY;
+                    int gridDimX = getWidth() / BLOCK_DIM_X;
+                    int gridDimY = getHeight() / BLOCK_DIM_Y;
 
                     NativePointerObject[] composeParamsArr = kernel.getKernelParams();
                     {
@@ -283,15 +276,15 @@ public class CudaFractalRenderer implements FractalRenderer {
                         composeParamsArr[kernel.PARAM_IDX_INPUT_MAIN_PITCH] = CudaHelpers.pointerTo(memory.getPrimary2DBufferPitch());
                         composeParamsArr[kernel.PARAM_IDX_INPUT_BCG_PITCH] = CudaHelpers.pointerTo(memory.getSecondary2DBufferPitch());
                         composeParamsArr[kernel.PARAM_IDX_SURFACE_PALETTE] = Pointer.to(surfacePalette);
-                        composeParamsArr[kernel.PARAM_IDX_PALETTE_LENGTH] = CudaHelpers.pointerTo(paletteLength);
+                        composeParamsArr[kernel.PARAM_IDX_PALETTE_LENGTH] = CudaHelpers.pointerTo(glParams.getPaletteLength());
                     }
 
                     if (gridDimX <= 0 || gridDimY <= 0) return;
                     if (gridDimX > CUDA_MAX_GRID_DIM) {
-                        throw new FractalRendererException("Unsupported input parameter: width must be smaller than " + CUDA_MAX_GRID_DIM * blockDimX);
+                        throw new FractalRendererException("Unsupported input parameter: width must be smaller than " + CUDA_MAX_GRID_DIM * BLOCK_DIM_X);
                     }
                     if (gridDimY > CUDA_MAX_GRID_DIM) {
-                        throw new FractalRendererException("Unsupported input parameter: height must be smaller than " + CUDA_MAX_GRID_DIM * blockDimY);
+                        throw new FractalRendererException("Unsupported input parameter: height must be smaller than " + CUDA_MAX_GRID_DIM * BLOCK_DIM_Y);
                     }
                     try {
                         cuLaunchKernel(kernel.getFunction(),
@@ -329,7 +322,7 @@ public class CudaFractalRenderer implements FractalRenderer {
     private void cuLaunchKernel(CUfunction kernelFunction, int gridDimX, int gridDimY, Pointer kernelParams) {
         JCudaDriver.cuLaunchKernel(kernelFunction,
                 gridDimX, gridDimY, 1,
-                blockDimX, blockDimY, 1,
+                BLOCK_DIM_X, BLOCK_DIM_Y, 1,
                 0, null,           // Shared memory size and defaultStream
                 kernelParams, null // Kernel- and extra parameters
         );
@@ -337,9 +330,7 @@ public class CudaFractalRenderer implements FractalRenderer {
 
     @Override
     public void close() {
-        unregisterOutputTexture();
-        memory.close();
-        module.close();
+        freeRenderingResources();
     }
 
 
@@ -410,7 +401,6 @@ public class CudaFractalRenderer implements FractalRenderer {
                 onAllAdvancedKernels(k -> k.setUseFoveation(newVal)));
         params.useSampleReuseProperty().addListener((__, ___, newVal) ->
                 onAllAdvancedKernels(k -> k.setUseSampleReuse(newVal)));
-
 
     }
 

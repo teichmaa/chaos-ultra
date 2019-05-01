@@ -4,12 +4,8 @@ import com.jogamp.opengl.*;
 
 import com.jogamp.opengl.awt.GLCanvas;
 import com.jogamp.opengl.util.Animator;
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.CudaInitializationException;
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.FractalRenderer;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.*;
 
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.FractalRendererNullObjectVerbose;
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.FractalRendererProvider;
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.OpenGLParams;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.heuristicsParams.ChaosUltraRenderingParams;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.GLHelpers;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.OpenGLTexture;
@@ -24,8 +20,6 @@ import java.nio.Buffer;
 import java.nio.IntBuffer;
 
 import static com.jogamp.opengl.GL.*;
-import static com.jogamp.opengl.GL2.GL_QUADS;
-import static com.jogamp.opengl.fixedfunc.GLMatrixFunc.GL_MODELVIEW;
 
 public class RenderingController extends MouseAdapter implements GLEventListener {
 
@@ -52,7 +46,6 @@ public class RenderingController extends MouseAdapter implements GLEventListener
 
     private OpenGLTexture outputTexture;
     private OpenGLTexture paletteTexture;
-    private int paletteTextureLength;
     private FractalRenderer fractalRenderer = new FractalRendererNullObjectVerbose();
     private FractalRendererProvider fractalRendererProvider;
     private GLCanvas target;
@@ -69,7 +62,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     private double plane_right_top_x;
     private double plane_right_top_y;
 
-    private ChaosUltraRenderingParams params = new ChaosUltraRenderingParams();
+    private ChaosUltraRenderingParams chaosParams = new ChaosUltraRenderingParams();
 
     public RenderingController(GLCanvas target, ControllerFX controllerFX) {
         this.width_t = target.getWidth();
@@ -81,8 +74,8 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         animator.stop();
         renderInFuture.setRepeats(false);
 
-        controllerFX.bindParamsTo(params);
-        params.visualiseSampleCountProperty().addListener((__) -> target.repaint());
+        controllerFX.bindParamsTo(chaosParams);
+        chaosParams.visualiseSampleCountProperty().addListener((__) -> target.repaint());
 
 //        for(RenderingModeFSM.RenderingMode mode : RenderingModeFSM.RenderingMode.values()){
 //            lastFramesRenderTime.put(mode, new CyclicBuffer(lastFramesRenderTimeBufferLength, shortestFrameRenderTime));
@@ -97,6 +90,8 @@ public class RenderingController extends MouseAdapter implements GLEventListener
 
     @Override
     public void mouseWheelMoved(MouseWheelEvent e) {
+        assert SwingUtilities.isEventDispatchThread();
+
         lastMousePosition = e;
         focus.setXYFrom(e);
         currentMode.doZoomingManualOnce(e.getWheelRotation() < 0);
@@ -105,6 +100,8 @@ public class RenderingController extends MouseAdapter implements GLEventListener
 
     @Override
     public void mouseDragged(MouseEvent e) {
+        assert SwingUtilities.isEventDispatchThread();
+
         if (SwingUtilities.isLeftMouseButton(e)) {
             if (lastMousePosition == null) {
                 return;
@@ -126,6 +123,8 @@ public class RenderingController extends MouseAdapter implements GLEventListener
 
     @Override
     public void mousePressed(MouseEvent e) {
+        assert SwingUtilities.isEventDispatchThread();
+
         lastMousePosition = e;
         focus.setXYFrom(e);
         if (SwingUtilities.isRightMouseButton(e) && SwingUtilities.isLeftMouseButton(e)) {
@@ -148,6 +147,8 @@ public class RenderingController extends MouseAdapter implements GLEventListener
 
     @Override
     public void mouseReleased(MouseEvent e) {
+        assert SwingUtilities.isEventDispatchThread();
+
         animator.stop();
         if (SwingUtilities.isLeftMouseButton(e) && currentMode.isMoving()) {
             currentMode.stopMoving();
@@ -211,33 +212,36 @@ public class RenderingController extends MouseAdapter implements GLEventListener
 
     @Override
     public void init(GLAutoDrawable drawable) {
+        assert SwingUtilities.isEventDispatchThread();
         final GL2 gl = drawable.getGL().getGL2();
 
         //documentation for GL texture handling and lifecycle: https://www.khronos.org/opengl/wiki/Texture_Storage#Direct_creation
         int[] GLHandles = new int[2];
         gl.glGenTextures(GLHandles.length, GLHandles, 0);
 
-        outputTexture = OpenGLTexture.of(OpenGLTextureHandle.of(GLHandles[0]), GL_TEXTURE_2D);
-        GLHelpers.specifyTextureSize(gl, outputTexture, 800, 800); //some todo other size?
+        outputTexture = OpenGLTexture.of(
+                OpenGLTextureHandle.of(GLHandles[0]),
+                GL_TEXTURE_2D,
+                0,
+                0
+        );
 
-        paletteTexture = OpenGLTexture.of(OpenGLTextureHandle.of(GLHandles[1]), GL_TEXTURE_2D);
         Buffer colorPalette = IntBuffer.wrap(ImageHelpers.createColorPalette());
-        paletteTextureLength = colorPalette.limit();
-        GLHelpers.specifyTextureSizeAndData(gl, paletteTexture, paletteTextureLength, 1, colorPalette);
+        paletteTexture = OpenGLTexture.of(
+                OpenGLTextureHandle.of(GLHandles[1]),
+                GL_TEXTURE_2D,
+                colorPalette.limit(),
+                1
+        );
+        GLHelpers.specifyTextureSizeAndData(gl, paletteTexture, colorPalette);
 
-        fractalRendererProvider = new FractalRendererProvider(
-                OpenGLParams.of(
-                        outputTexture,
-                        paletteTexture,
-                        paletteTextureLength),
-                params);
+        fractalRendererProvider = new FractalRendererProvider(chaosParams);
 
         fractalRenderer = fractalRendererProvider.getRenderer("mandelbrot");
-
         // fractalRenderer uses the null-object pattern, so even if not initialized properly to CudaFractalRenderer, we can still call its methods
         //todo domyslet jak je to s tim null objectem a kdo vlastne vyhazuje jakou vyjimku kdy (modul vs renderer) a jak ji zobrazovat a kdo je zopovedny za ten null object a tyhle shity
+
         controllerFX.showDefaultView();
-        fractalRenderer.launchDebugKernel();
     }
 
     @Override
@@ -256,6 +260,12 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     @Override
     public void display(GLAutoDrawable drawable) {
         assert SwingUtilities.isEventDispatchThread();
+        assert width_t == outputTexture.getWidth();
+        assert height_t == outputTexture.getHeight();
+        if(width_t == 0 || height_t == 0){
+            System.err.printf("Warning, RenderingController.display() called with width=%d, height=%d. Skipping the operation.\n", width_t, height_t); //todo make a logger for this
+            return;
+        }
 
         long startTime = System.currentTimeMillis();
 
@@ -297,9 +307,9 @@ public class RenderingController extends MouseAdapter implements GLEventListener
 
     private void updateQuality() {
         assert SwingUtilities.isEventDispatchThread();
-        if (!params.isAutomaticQuality()) return;
+        if (!chaosParams.isAutomaticQuality()) return;
         if (currentMode.isWaiting() && currentMode.wasProgressiveRendering()) {
-            params.setSuperSamplingLevel(10); //todo lol proc zrovna deset, kde se to vzalo?
+            chaosParams.setSuperSamplingLevel(10); //todo lol proc zrovna deset, kde se to vzalo?
             return;
         }
 
@@ -319,7 +329,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
             //pridat sem currentMode.getHighQualityIteration()
             //   a do RenderingMode::step dat highQIteration++
         }
-        if (params.getSuperSamplingLevel() == SUPER_SAMPLING_MAX_LEVEL)
+        if (chaosParams.getSuperSamplingLevel() == SUPER_SAMPLING_MAX_LEVEL)
             currentMode.reset();
     }
 
@@ -333,7 +343,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
 //        System.out.println();
 
         //int mean = Math.round(lastFramesRenderTime.get(currentMode.getCurrent()).getMeanValue());
-        int newSS = Math.round(params.getSuperSamplingLevel() * ms / (float) Math.max(1, lastFrameRenderTime));
+        int newSS = Math.round(chaosParams.getSuperSamplingLevel() * ms / (float) Math.max(1, lastFrameRenderTime));
         //System.out.println("newSS = " + newSS);
         setSuperSamplingLevel(newSS);
     }
@@ -351,14 +361,17 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     @Override
     public void reshape(GLAutoDrawable drawable, int x, int y, int width, int height) {
         final GL2 gl = drawable.getGL().getGL2();
-        int oldHeight = height_t;
+        final int oldHeight = height_t;
         this.width_t = width;
         this.height_t = height;
+
         setBounds(getCenterX(), getCenterY(), getZoom() * height / (double) oldHeight);
 
-        fractalRenderer.unregisterOutputTexture();
-        GLHelpers.specifyTextureSize(gl, outputTexture, width, height);
-        fractalRenderer.resize(width, height, outputTexture);
+        if(fractalRenderer.getState() == FractalRendererState.readyToRender)
+            fractalRenderer.freeRenderingResources();
+        outputTexture = outputTexture.withNewSize(width, height);
+        GLHelpers.specifyTextureSize(gl, outputTexture);
+        fractalRenderer.initializeRendering(OpenGLParams.of(outputTexture, paletteTexture));
 
         currentMode.startProgressiveRendering();
     }
@@ -394,13 +407,13 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     }
 
     void setMaxIterations(int maxIterations) {
-        params.setMaxIterations(maxIterations);
+        chaosParams.setMaxIterations(maxIterations);
     }
 
     void setSuperSamplingLevel(int supSampLvl) {
         assert SwingUtilities.isEventDispatchThread();
         //supSampLvl will be clamped to be >=1 and <= SUPER_SAMPLING_MAX_LEVEL
-        params.setSuperSamplingLevel(Math.max(1, Math.min(supSampLvl, SUPER_SAMPLING_MAX_LEVEL)));
+        chaosParams.setSuperSamplingLevel(Math.max(1, Math.min(supSampLvl, SUPER_SAMPLING_MAX_LEVEL)));
     }
 
     void repaint() {
@@ -442,14 +455,14 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         repaint();
     }
 
-    public void onFractalChanged(String fractalName){
+    public void onFractalChanged(String fractalName) {
         assert SwingUtilities.isEventDispatchThread();
         updateKernelParams();
         animator.stop();
         currentMode.reset();
 
 
-        //fractalRenderer.unregisterOutputTexture();
+        //fractalRenderer.freeRenderingResources();
         fractalRenderer = fractalRendererProvider.getRenderer(fractalName);
         //fractalRenderer.resize(width_t, height_t, outputTexture);
 

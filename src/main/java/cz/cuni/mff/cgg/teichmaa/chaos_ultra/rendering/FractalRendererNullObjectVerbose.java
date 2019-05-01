@@ -16,17 +16,12 @@ public class FractalRendererNullObjectVerbose implements FractalRenderer {
     }
 
     @Override
-    public void registerOutputTexture(OpenGLTexture output) {
+    public void initializeRendering(OpenGLParams glParams) {
         printMethodName();
     }
 
     @Override
-    public void unregisterOutputTexture() {
-        printMethodName();
-    }
-
-    @Override
-    public void resize(int width, int height, OpenGLTexture output) {
+    public void freeRenderingResources() {
         printMethodName();
     }
 
@@ -86,5 +81,11 @@ public class FractalRendererNullObjectVerbose implements FractalRenderer {
     public String getFractalName() {
         printMethodName();
         return "null object fractal";
+    }
+
+    @Override
+    public FractalRendererState getState() {
+        printMethodName();
+        return FractalRendererState.notInitialized;
     }
 }

@@ -59,7 +59,7 @@ class CudaFractalRendererTest {
 //                int[] GLHandles = new int[2];
 //                gl.glGenTextures(GLHandles.length, GLHandles, 0);
 //                outputTexture = OpenGLTexture.of(OpenGLTextureHandle.of(GLHandles[0]), GL_TEXTURE_2D);
-//                registerOutputTexture(gl);
+//                initializeRendering(gl);
 //                paletteTexture = OpenGLTexture.of(OpenGLTextureHandle.of(GLHandles[1]), GL_TEXTURE_2D);
 
             }
@@ -89,6 +89,6 @@ class CudaFractalRendererTest {
         m.initialize();
         OpenGLParams glParams = null; //todo
         ChaosUltraRenderingParams chaosParams = null; //todo
-        CudaFractalRenderer r = new CudaFractalRenderer(m, glParams, chaosParams);
+        CudaFractalRenderer r = new CudaFractalRenderer(m, chaosParams);
     }
 }
