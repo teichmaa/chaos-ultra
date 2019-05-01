@@ -212,7 +212,8 @@ public class ControllerFX implements Initializable {
     @FXML
     private void saveImageClicked(ActionEvent actionEvent) {
         String time = new SimpleDateFormat("dd-MM-YY_HH-mm-ss").format(new Date());
-        SwingUtilities.invokeLater(() -> renderingController.saveImage(System.getProperty("user.dir")  + File.separator + "fractal_" + time + ".png", "png"));
+        SwingUtilities.invokeLater(() -> renderingController.saveImage(System.getProperty("user.dir")  + File.separator + "saved_images" + File.separator +
+                "fractal_" + time + ".png", "png"));
         // todo vybiratko na soubory
     }
 
@@ -224,6 +225,7 @@ public class ControllerFX implements Initializable {
 
     @FXML
     private void debugButton1Clicked(ActionEvent actionEvent) {
+        SwingUtilities.invokeLater(renderingController::debugFractal);
     }
 
     @FXML

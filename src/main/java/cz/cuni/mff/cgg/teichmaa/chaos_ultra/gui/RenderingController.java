@@ -18,6 +18,10 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 import java.nio.Buffer;
 import java.nio.IntBuffer;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 import static com.jogamp.opengl.GL.*;
 
@@ -53,7 +57,6 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     private Animator animator;
     private RenderingModeFSM currentMode = new RenderingModeFSM();
 
-
     private int width_t;
     private int height_t;
 
@@ -63,6 +66,8 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     private double plane_right_top_y;
 
     private ChaosUltraRenderingParams chaosParams = new ChaosUltraRenderingParams();
+    private List<Consumer<GL2>> doBeforeDisplay = new ArrayList<>();
+    private boolean doNotRenderRequested = false;
 
     public RenderingController(GLCanvas target, ControllerFX controllerFX) {
         this.width_t = target.getWidth();
@@ -237,7 +242,8 @@ public class RenderingController extends MouseAdapter implements GLEventListener
 
         fractalRendererProvider = new FractalRendererProvider(chaosParams);
 
-        fractalRenderer = fractalRendererProvider.getRenderer("mandelbrot");
+//        fractalRenderer = fractalRendererProvider.getRenderer("mandelbrot");
+        fractalRenderer = fractalRendererProvider.getRenderer("julia");
         // fractalRenderer uses the null-object pattern, so even if not initialized properly to CudaFractalRenderer, we can still call its methods
         //todo domyslet jak je to s tim null objectem a kdo vlastne vyhazuje jakou vyjimku kdy (modul vs renderer) a jak ji zobrazovat a kdo je zopovedny za ten null object a tyhle shity
 
@@ -267,17 +273,19 @@ public class RenderingController extends MouseAdapter implements GLEventListener
             return;
         }
 
+        final GL2 gl = drawable.getGL().getGL2();
+        doBeforeDisplay.forEach(c -> c.accept(gl));
+        doBeforeDisplay.clear();
+        if(doNotRenderRequested){
+            doNotRenderRequested = false;
+            return;
+        }
+
         long startTime = System.currentTimeMillis();
 
         //todo tohle cele by asi ocenilo lepsi navrh. Inspiruj se u her a u Update smycky atd
         //  ve finale by kernel launch asi mohl nebyt blocking
         //      trivialni napad: double buffering, GL vzdy vykresli tu druhou, nez cuda zrovna pocita
-
-        if (saveImageRequested) {
-            saveImageInternal(drawable.getGL().getGL2());
-            saveImageRequested = false;
-            return;
-        }
 
         if (currentMode.isZooming()) {
             zoomAt(lastMousePosition, currentMode.getZoomingDirection());
@@ -422,31 +430,20 @@ public class RenderingController extends MouseAdapter implements GLEventListener
 
     public void saveImage(String fileName, String format) {
         assert SwingUtilities.isEventDispatchThread();
-        this.saveImageFileName = fileName;
-        this.saveImageFormat = format;
-        saveImageRequested = true;
+        doBeforeDisplay.add(gl -> {
+            int[] data = new int[width_t * height_t];
+            Buffer b = IntBuffer.wrap(data);
+            gl.glBindTexture(GL_TEXTURE_2D, outputTexture.getHandle().getValue());
+            {
+                //documentation: https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glGetTexImage.xhtml
+                gl.glGetTexImage(GL_TEXTURE_2D, 0, GL_BGRA, GL_UNSIGNED_BYTE, b);
+            }
+            gl.glBindTexture(GL_TEXTURE_2D, 0);
+            ImageHelpers.createImage(data, width_t, height_t, fileName, format);
+            System.out.println("Image saved to " + fileName);
+            doNotRenderRequested = true;
+        });
         repaint();
-    }
-
-    private String saveImageFileName;
-    private String saveImageFormat;
-    private boolean saveImageRequested = false;
-
-    private void saveImageInternal(GL2 gl) {
-        int[] data = new int[width_t * height_t];
-        Buffer b = IntBuffer.wrap(data);
-        gl.glBindTexture(GL_TEXTURE_2D, outputTexture.getHandle().getValue());
-        {
-            //documentation: https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glGetTexImage.xhtml
-            gl.glGetTexImage(GL_TEXTURE_2D, 0, GL_BGRA, GL_UNSIGNED_BYTE, b);
-        }
-        gl.glBindTexture(GL_TEXTURE_2D, 0);
-        ImageHelpers.createImage(data, width_t, height_t, saveImageFileName, saveImageFormat);
-        System.out.println("Image saved to " + saveImageFileName);
-    }
-
-    public void debugRightBottomPixel() {
-        fractalRenderer.debugRightBottomPixel();
     }
 
     public void setFractalSpecificParams(String text) {
@@ -457,15 +454,25 @@ public class RenderingController extends MouseAdapter implements GLEventListener
 
     public void onFractalChanged(String fractalName) {
         assert SwingUtilities.isEventDispatchThread();
-        updateKernelParams();
-        animator.stop();
-        currentMode.reset();
+        doBeforeDisplay.add(gl -> {
+            animator.stop();
+            currentMode.reset();
+
+            fractalRenderer.freeRenderingResources();
+            fractalRenderer = fractalRendererProvider.getRenderer(fractalName);
+            updateKernelParams();
+            fractalRenderer.initializeRendering(OpenGLParams.of(outputTexture, paletteTexture));
+            fractalRenderer.bindParamsTo(chaosParams);
+        });
+        repaint();
+    }
+
+    public void debugRightBottomPixel() {
+        fractalRenderer.debugRightBottomPixel();
+    }
 
 
-        //fractalRenderer.freeRenderingResources();
-        fractalRenderer = fractalRendererProvider.getRenderer(fractalName);
-        //fractalRenderer.resize(width_t, height_t, outputTexture);
-
-//        repaint();
+    public void debugFractal() {
+        fractalRenderer.launchDebugKernel();
     }
 }

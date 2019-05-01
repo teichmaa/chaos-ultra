@@ -12,6 +12,7 @@ public interface FractalRenderer extends Closeable {
 
     //todo dokumentacni komentar
     //using this call-me-approach rather than unregistering the resource every time a frame is rendered is for performance reasons, see https://devtalk.nvidia.com/default/topic/747242/cuda-opengl-interop-performance/
+    //may be called only when a corresponding OpenGL context is active (e.g. during GLEventListener events). Otherwise cudaErrorInvalidGraphicsContext or some other errors are to expect.
     void initializeRendering(OpenGLParams glParams);
 
     void freeRenderingResources();

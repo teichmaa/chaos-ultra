@@ -172,7 +172,7 @@
             Other functions:
         </Label>
         <Button text="save as image" onAction="#saveImageClicked"/>
-        <Button text="dbg1: empty" onAction="#debugButton1Clicked"/>
+        <Button text="dbg1: fractal" onAction="#debugButton1Clicked"/>
         <Button text="dbg2: right btm pixel" onAction="#debugButton2Clicked"/>
 
     </VBox>

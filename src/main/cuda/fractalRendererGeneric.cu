@@ -386,5 +386,6 @@ void debug(){
   const uint idx_y = blockDim.y * blockIdx.y + threadIdx.y;
   if(idx_x == 0 && idx_y == 0){
     // printf("aa:\t%u\n",a.a);
+    debugFractal();
   }
 }

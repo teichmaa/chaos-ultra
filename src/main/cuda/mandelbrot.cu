@@ -21,3 +21,7 @@ unsigned int escape(unsigned int maxIterations, Point<Real> c){
   }
   return i;
 }
+
+__device__ void debugFractal(){
+  printf("hello from mandelbrot\n");
+}

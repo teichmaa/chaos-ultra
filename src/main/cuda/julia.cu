@@ -15,3 +15,7 @@ unsigned int escape(unsigned int maxIterations, Point<Real> z){
   }
   return i;
 }
+
+__device__ void debugFractal(){
+  printf("hello from julia\n");
+}

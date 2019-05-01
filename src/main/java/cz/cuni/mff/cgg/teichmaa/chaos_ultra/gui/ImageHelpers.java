@@ -4,6 +4,7 @@ import javax.imageio.ImageIO;
 import java.awt.image.*;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 
 public class ImageHelpers {
 
@@ -104,7 +105,9 @@ public class ImageHelpers {
 
         //System.out.println("writing image to " + fileName);
         try {
-            ImageIO.write(img, formatName, new File(fileName));
+            File f = new File(fileName);
+            Files.createDirectories(f.getParentFile().toPath());
+            ImageIO.write(img, formatName, f);
         } catch (IOException e) {
             e.printStackTrace();
         }

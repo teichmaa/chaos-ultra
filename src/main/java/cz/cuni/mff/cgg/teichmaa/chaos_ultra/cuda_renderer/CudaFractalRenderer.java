@@ -147,8 +147,6 @@ public class CudaFractalRenderer implements FractalRenderer {
 
     @Override
     public void launchDebugKernel() {
-        if(state != FractalRendererState.readyToRender) throw new IllegalStateException("Renderer has to be initialized first");
-
         CudaKernel k = module.getKernel(KernelDebug.class);
         cuLaunchKernel(k.getFunction(),
                 1, 1,

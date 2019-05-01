@@ -11,6 +11,12 @@
 .address_size 64
 
 	// .globl	init
+.extern .func  (.param .b32 func_retval0) vprintf
+(
+	.param .b64 vprintf_param_0,
+	.param .b64 vprintf_param_1
+)
+;
 .extern .func __assertfail
 (
 	.param .b64 __assertfail_param_0,
@@ -32,14 +38,15 @@
 .global .align 4 .u32 IS_ZOOMING_FLAG_MASK = 16;
 .global .align 4 .u32 visualityAmplifyCoeff = 10;
 .global .align 4 .f32 screenDistance = 0f42700000;
-.global .align 16 .b8 $str[34] = {98, 0, 108, 0, 111, 0, 99, 0, 107, 0, 68, 0, 105, 0, 109, 0, 46, 0, 120, 0, 32, 0, 61, 0, 61, 0, 32, 0, 51, 0, 50, 0, 0, 0};
-.global .align 16 .b8 $str1[138] = {101, 0, 58, 0, 92, 0, 116, 0, 111, 0, 110, 0, 100, 0, 97, 0, 92, 0, 100, 0, 101, 0, 115, 0, 107, 0, 116, 0, 111, 0, 112, 0, 92, 0, 99, 0, 104, 0, 97, 0, 111, 0, 115, 0, 45, 0, 117, 0, 108, 0, 116, 0, 114, 0, 97, 0, 92, 0, 115, 0, 114, 0, 99, 0, 92, 0, 109, 0, 97, 0, 105, 0, 110, 0, 92, 0, 99, 0, 117, 0, 100, 0, 97, 0, 92, 0, 102, 0, 114, 0, 97, 0, 99, 0, 116, 0, 97, 0, 108, 0, 82, 0, 101, 0, 110, 0, 100, 0, 101, 0, 114, 0, 101, 0, 114, 0, 71, 0, 101, 0, 110, 0, 101, 0, 114, 0, 105, 0, 99, 0, 46, 0, 99, 0, 117, 0, 0, 0};
-.global .align 16 .b8 $str2[40] = {112, 0, 79, 0, 117, 0, 116, 0, 112, 0, 117, 0, 116, 0, 45, 0, 62, 0, 119, 0, 101, 0, 105, 0, 103, 0, 104, 0, 116, 0, 32, 0, 62, 0, 32, 0, 48, 0, 0, 0};
-.global .align 16 .b8 $str5[34] = {118, 0, 105, 0, 115, 0, 117, 0, 97, 0, 108, 0, 65, 0, 110, 0, 103, 0, 108, 0, 101, 0, 32, 0, 62, 0, 61, 0, 32, 0, 48, 0, 0, 0};
-.global .align 16 .b8 $str6[66] = {114, 0, 101, 0, 117, 0, 115, 0, 105, 0, 110, 0, 103, 0, 83, 0, 97, 0, 109, 0, 112, 0, 108, 0, 101, 0, 32, 0, 124, 0, 124, 0, 32, 0, 115, 0, 97, 0, 109, 0, 112, 0, 108, 0, 101, 0, 67, 0, 111, 0, 117, 0, 110, 0, 116, 0, 32, 0, 62, 0, 32, 0, 48, 0, 0, 0};
-.global .align 16 .b8 $str7[34] = {114, 0, 101, 0, 115, 0, 117, 0, 108, 0, 116, 0, 87, 0, 101, 0, 105, 0, 103, 0, 104, 0, 116, 0, 32, 0, 62, 0, 32, 0, 48, 0, 0, 0};
-.global .align 16 .b8 $str8[56] = {115, 0, 97, 0, 109, 0, 112, 0, 108, 0, 101, 0, 67, 0, 111, 0, 117, 0, 110, 0, 116, 0, 32, 0, 60, 0, 61, 0, 32, 0, 77, 0, 65, 0, 88, 0, 95, 0, 83, 0, 83, 0, 95, 0, 76, 0, 69, 0, 86, 0, 69, 0, 76, 0, 0, 0};
-.global .align 16 .b8 $str9[54] = {112, 0, 97, 0, 108, 0, 101, 0, 116, 0, 116, 0, 101, 0, 73, 0, 100, 0, 120, 0, 32, 0, 60, 0, 32, 0, 112, 0, 97, 0, 108, 0, 101, 0, 116, 0, 116, 0, 101, 0, 76, 0, 101, 0, 110, 0, 103, 0, 116, 0, 104, 0, 0, 0};
+.global .align 16 .b8 $str[23] = {104, 101, 108, 108, 111, 32, 102, 114, 111, 109, 32, 109, 97, 110, 100, 101, 108, 98, 114, 111, 116, 10, 0};
+.global .align 16 .b8 $str1[34] = {98, 0, 108, 0, 111, 0, 99, 0, 107, 0, 68, 0, 105, 0, 109, 0, 46, 0, 120, 0, 32, 0, 61, 0, 61, 0, 32, 0, 51, 0, 50, 0, 0, 0};
+.global .align 16 .b8 $str2[138] = {101, 0, 58, 0, 92, 0, 116, 0, 111, 0, 110, 0, 100, 0, 97, 0, 92, 0, 100, 0, 101, 0, 115, 0, 107, 0, 116, 0, 111, 0, 112, 0, 92, 0, 99, 0, 104, 0, 97, 0, 111, 0, 115, 0, 45, 0, 117, 0, 108, 0, 116, 0, 114, 0, 97, 0, 92, 0, 115, 0, 114, 0, 99, 0, 92, 0, 109, 0, 97, 0, 105, 0, 110, 0, 92, 0, 99, 0, 117, 0, 100, 0, 97, 0, 92, 0, 102, 0, 114, 0, 97, 0, 99, 0, 116, 0, 97, 0, 108, 0, 82, 0, 101, 0, 110, 0, 100, 0, 101, 0, 114, 0, 101, 0, 114, 0, 71, 0, 101, 0, 110, 0, 101, 0, 114, 0, 105, 0, 99, 0, 46, 0, 99, 0, 117, 0, 0, 0};
+.global .align 16 .b8 $str3[40] = {112, 0, 79, 0, 117, 0, 116, 0, 112, 0, 117, 0, 116, 0, 45, 0, 62, 0, 119, 0, 101, 0, 105, 0, 103, 0, 104, 0, 116, 0, 32, 0, 62, 0, 32, 0, 48, 0, 0, 0};
+.global .align 16 .b8 $str6[34] = {118, 0, 105, 0, 115, 0, 117, 0, 97, 0, 108, 0, 65, 0, 110, 0, 103, 0, 108, 0, 101, 0, 32, 0, 62, 0, 61, 0, 32, 0, 48, 0, 0, 0};
+.global .align 16 .b8 $str7[66] = {114, 0, 101, 0, 117, 0, 115, 0, 105, 0, 110, 0, 103, 0, 83, 0, 97, 0, 109, 0, 112, 0, 108, 0, 101, 0, 32, 0, 124, 0, 124, 0, 32, 0, 115, 0, 97, 0, 109, 0, 112, 0, 108, 0, 101, 0, 67, 0, 111, 0, 117, 0, 110, 0, 116, 0, 32, 0, 62, 0, 32, 0, 48, 0, 0, 0};
+.global .align 16 .b8 $str8[34] = {114, 0, 101, 0, 115, 0, 117, 0, 108, 0, 116, 0, 87, 0, 101, 0, 105, 0, 103, 0, 104, 0, 116, 0, 32, 0, 62, 0, 32, 0, 48, 0, 0, 0};
+.global .align 16 .b8 $str9[56] = {115, 0, 97, 0, 109, 0, 112, 0, 108, 0, 101, 0, 67, 0, 111, 0, 117, 0, 110, 0, 116, 0, 32, 0, 60, 0, 61, 0, 32, 0, 77, 0, 65, 0, 88, 0, 95, 0, 83, 0, 83, 0, 95, 0, 76, 0, 69, 0, 86, 0, 69, 0, 76, 0, 0, 0};
+.global .align 16 .b8 $str10[54] = {112, 0, 97, 0, 108, 0, 101, 0, 116, 0, 116, 0, 101, 0, 73, 0, 100, 0, 120, 0, 32, 0, 60, 0, 32, 0, 112, 0, 97, 0, 108, 0, 101, 0, 116, 0, 116, 0, 101, 0, 76, 0, 101, 0, 110, 0, 103, 0, 116, 0, 104, 0, 0, 0};
 
 .visible .entry init(
 
@@ -88,9 +95,9 @@
 	setp.eq.s32	%p1, %r1, 32;
 	@%p1 bra 	BB1_2;
 
-	mov.u64 	%rd3, $str;
+	mov.u64 	%rd3, $str1;
 	cvta.global.u64 	%rd4, %rd3;
-	mov.u64 	%rd5, $str1;
+	mov.u64 	%rd5, $str2;
 	cvta.global.u64 	%rd6, %rd5;
 	mov.u32 	%r32, 88;
 	mov.u64 	%rd7, 0;
@@ -152,9 +159,9 @@ BB1_3:
 	setp.lt.u32	%p5, %r92, 257;
 	@%p5 bra 	BB1_5;
 
-	mov.u64 	%rd9, $str8;
+	mov.u64 	%rd9, $str9;
 	cvta.global.u64 	%rd10, %rd9;
-	mov.u64 	%rd11, $str1;
+	mov.u64 	%rd11, $str2;
 	cvta.global.u64 	%rd12, %rd11;
 	mov.u32 	%r50, 118;
 	mov.u64 	%rd13, 0;
@@ -387,9 +394,9 @@ BB1_25:
 	setp.gt.f32	%p25, %f80, 0f00000000;
 	@%p25 bra 	BB1_27;
 
-	mov.u64 	%rd43, $str2;
+	mov.u64 	%rd43, $str3;
 	cvta.global.u64 	%rd44, %rd43;
-	mov.u64 	%rd45, $str1;
+	mov.u64 	%rd45, $str2;
 	cvta.global.u64 	%rd46, %rd45;
 	mov.u32 	%r82, 188;
 	mov.u64 	%rd47, 0;
@@ -463,9 +470,9 @@ BB1_27:
 	setp.eq.s32	%p1, %r1, 32;
 	@%p1 bra 	BB2_2;
 
-	mov.u64 	%rd3, $str;
+	mov.u64 	%rd3, $str1;
 	cvta.global.u64 	%rd4, %rd3;
-	mov.u64 	%rd5, $str1;
+	mov.u64 	%rd5, $str2;
 	cvta.global.u64 	%rd6, %rd5;
 	mov.u32 	%r32, 88;
 	mov.u64 	%rd7, 0;
@@ -527,9 +534,9 @@ BB2_3:
 	setp.lt.u32	%p5, %r30, 257;
 	@%p5 bra 	BB2_5;
 
-	mov.u64 	%rd9, $str8;
+	mov.u64 	%rd9, $str9;
 	cvta.global.u64 	%rd10, %rd9;
-	mov.u64 	%rd11, $str1;
+	mov.u64 	%rd11, $str2;
 	cvta.global.u64 	%rd12, %rd11;
 	mov.u32 	%r50, 118;
 	mov.u64 	%rd13, 0;
@@ -760,9 +767,9 @@ BB2_24:
 	setp.gt.f32	%p25, %f1, 0f00000000;
 	@%p25 bra 	BB2_26;
 
-	mov.u64 	%rd43, $str2;
+	mov.u64 	%rd43, $str3;
 	cvta.global.u64 	%rd44, %rd43;
-	mov.u64 	%rd45, $str1;
+	mov.u64 	%rd45, $str2;
 	cvta.global.u64 	%rd46, %rd45;
 	mov.u32 	%r82, 188;
 	mov.u64 	%rd47, 0;
@@ -848,9 +855,9 @@ BB2_26:
 	setp.eq.s32	%p1, %r1, 32;
 	@%p1 bra 	BB3_2;
 
-	mov.u64 	%rd4, $str;
+	mov.u64 	%rd4, $str1;
 	cvta.global.u64 	%rd5, %rd4;
-	mov.u64 	%rd6, $str1;
+	mov.u64 	%rd6, $str2;
 	cvta.global.u64 	%rd7, %rd6;
 	mov.u32 	%r46, 88;
 	mov.u64 	%rd8, 0;
@@ -1043,9 +1050,9 @@ BB3_13:
 	setp.ge.f32	%p21, %f19, 0f00000000;
 	@%p21 bra 	BB3_15;
 
-	mov.u64 	%rd15, $str5;
+	mov.u64 	%rd15, $str6;
 	cvta.global.u64 	%rd16, %rd15;
-	mov.u64 	%rd17, $str1;
+	mov.u64 	%rd17, $str2;
 	cvta.global.u64 	%rd18, %rd17;
 	mov.u32 	%r81, 229;
 	mov.u64 	%rd19, 0;
@@ -1106,9 +1113,9 @@ BB3_17:
 	setp.lt.u32	%p29, %r13, 257;
 	@%p29 bra 	BB3_19;
 
-	mov.u64 	%rd21, $str8;
+	mov.u64 	%rd21, $str9;
 	cvta.global.u64 	%rd22, %rd21;
-	mov.u64 	%rd23, $str1;
+	mov.u64 	%rd23, $str2;
 	cvta.global.u64 	%rd24, %rd23;
 	mov.u32 	%r83, 118;
 	mov.u64 	%rd25, 0;
@@ -1322,9 +1329,9 @@ BB3_38:
 	or.pred  	%p50, %p49, %p48;
 	@%p50 bra 	BB3_40;
 
-	mov.u64 	%rd50, $str6;
+	mov.u64 	%rd50, $str7;
 	cvta.global.u64 	%rd51, %rd50;
-	mov.u64 	%rd52, $str1;
+	mov.u64 	%rd52, $str2;
 	cvta.global.u64 	%rd53, %rd52;
 	mov.u32 	%r110, 279;
 	mov.u64 	%rd54, 0;
@@ -1399,9 +1406,9 @@ BB3_45:
 	setp.gt.f32	%p55, %f164, 0f00000000;
 	@%p55 bra 	BB3_47;
 
-	mov.u64 	%rd61, $str7;
+	mov.u64 	%rd61, $str8;
 	cvta.global.u64 	%rd62, %rd61;
-	mov.u64 	%rd63, $str1;
+	mov.u64 	%rd63, $str2;
 	cvta.global.u64 	%rd64, %rd63;
 	mov.u32 	%r117, 312;
 	mov.u64 	%rd65, 0;
@@ -1488,9 +1495,9 @@ BB3_47:
 	setp.eq.s32	%p1, %r1, 32;
 	@%p1 bra 	BB4_2;
 
-	mov.u64 	%rd4, $str;
+	mov.u64 	%rd4, $str1;
 	cvta.global.u64 	%rd5, %rd4;
-	mov.u64 	%rd6, $str1;
+	mov.u64 	%rd6, $str2;
 	cvta.global.u64 	%rd7, %rd6;
 	mov.u32 	%r46, 88;
 	mov.u64 	%rd8, 0;
@@ -1703,9 +1710,9 @@ BB4_13:
 	setp.ge.f32	%p21, %f7, 0f00000000;
 	@%p21 bra 	BB4_15;
 
-	mov.u64 	%rd15, $str5;
+	mov.u64 	%rd15, $str6;
 	cvta.global.u64 	%rd16, %rd15;
-	mov.u64 	%rd17, $str1;
+	mov.u64 	%rd17, $str2;
 	cvta.global.u64 	%rd18, %rd17;
 	mov.u32 	%r85, 229;
 	mov.u64 	%rd19, 0;
@@ -1766,9 +1773,9 @@ BB4_17:
 	setp.lt.u32	%p29, %r13, 257;
 	@%p29 bra 	BB4_19;
 
-	mov.u64 	%rd21, $str8;
+	mov.u64 	%rd21, $str9;
 	cvta.global.u64 	%rd22, %rd21;
-	mov.u64 	%rd23, $str1;
+	mov.u64 	%rd23, $str2;
 	cvta.global.u64 	%rd24, %rd23;
 	mov.u32 	%r87, 118;
 	mov.u64 	%rd25, 0;
@@ -1982,9 +1989,9 @@ BB4_38:
 	or.pred  	%p50, %p49, %p48;
 	@%p50 bra 	BB4_40;
 
-	mov.u64 	%rd50, $str6;
+	mov.u64 	%rd50, $str7;
 	cvta.global.u64 	%rd51, %rd50;
-	mov.u64 	%rd52, $str1;
+	mov.u64 	%rd52, $str2;
 	cvta.global.u64 	%rd53, %rd52;
 	mov.u32 	%r114, 279;
 	mov.u64 	%rd54, 0;
@@ -2059,9 +2066,9 @@ BB4_45:
 	setp.gt.f32	%p55, %f56, 0f00000000;
 	@%p55 bra 	BB4_47;
 
-	mov.u64 	%rd61, $str7;
+	mov.u64 	%rd61, $str8;
 	cvta.global.u64 	%rd62, %rd61;
-	mov.u64 	%rd63, $str1;
+	mov.u64 	%rd63, $str2;
 	cvta.global.u64 	%rd64, %rd63;
 	mov.u32 	%r121, 312;
 	mov.u64 	%rd65, 0;
@@ -2148,9 +2155,9 @@ BB4_47:
 	setp.lt.u32	%p4, %r3, %r5;
 	@%p4 bra 	BB5_3;
 
-	mov.u64 	%rd9, $str9;
+	mov.u64 	%rd9, $str10;
 	cvta.global.u64 	%rd10, %rd9;
-	mov.u64 	%rd11, $str1;
+	mov.u64 	%rd11, $str2;
 	cvta.global.u64 	%rd12, %rd11;
 	mov.u32 	%r18, 349;
 	mov.u64 	%rd13, 0;
@@ -2389,9 +2396,52 @@ BB6_17:
 
 )
 {
+	.reg .pred 	%p<4>;
+	.reg .b32 	%r<12>;
+	.reg .b64 	%rd<4>;
 
 
+	mov.u32 	%r1, %ntid.x;
+	mov.u32 	%r2, %ctaid.x;
+	mul.lo.s32 	%r3, %r2, %r1;
+	mov.u32 	%r4, %ctaid.y;
+	mov.u32 	%r5, %ntid.y;
+	mul.lo.s32 	%r6, %r4, %r5;
+	mov.u32 	%r7, %tid.x;
+	neg.s32 	%r8, %r7;
+	setp.eq.s32	%p1, %r3, %r8;
+	mov.u32 	%r9, %tid.y;
+	neg.s32 	%r10, %r9;
+	setp.eq.s32	%p2, %r6, %r10;
+	and.pred  	%p3, %p1, %p2;
+	@!%p3 bra 	BB7_2;
+	bra.uni 	BB7_1;
 
+BB7_1:
+	mov.u64 	%rd1, $str;
+	cvta.global.u64 	%rd2, %rd1;
+	mov.u64 	%rd3, 0;
+	// Callseq Start 17
+	{
+	.reg .b32 temp_param_reg;
+	// <end>}
+	.param .b64 param0;
+	st.param.b64	[param0+0], %rd2;
+	.param .b64 param1;
+	st.param.b64	[param1+0], %rd3;
+	.param .b32 retval0;
+	call.uni (retval0), 
+	vprintf, 
+	(
+	param0, 
+	param1
+	);
+	ld.param.b32	%r11, [retval0+0];
+	
+	//{
+	}// Callseq End 17
+
+BB7_2:
 	ret;
 }
 
