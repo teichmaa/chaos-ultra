@@ -1,6 +1,6 @@
 package cz.cuni.mff.cgg.teichmaa.chaos_ultra.util;
 
-public class Helpers {
+public class JavaHelpers {
     public static void printCallingMethodName(){
         System.out.println(getCallingMethodName(1));
     }

@@ -1,8 +1,6 @@
 package cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering;
 
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.heuristicsParams.ChaosUltraRenderingParams;
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.OpenGLTexture;
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.Point2DInt;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.rendering_params.RenderingModel;
 
 public class FractalRendererNullObject implements FractalRenderer {
 
@@ -32,12 +30,12 @@ public class FractalRendererNullObject implements FractalRenderer {
     }
 
     @Override
-    public void renderFast(Point2DInt focus, boolean isZooming) {
+    public void renderFast(RenderingModel model) {
 
     }
 
     @Override
-    public void renderQuality() {
+    public void renderQuality(RenderingModel model) {
 
     }
 
@@ -47,17 +45,7 @@ public class FractalRendererNullObject implements FractalRenderer {
     }
 
     @Override
-    public void setBounds(double left_bottom_x, double left_bottom_y, double right_top_x, double right_top_y) {
-
-    }
-
-    @Override
     public void debugRightBottomPixel() {
-
-    }
-
-    @Override
-    public void bindParamsTo(ChaosUltraRenderingParams params) {
 
     }
 

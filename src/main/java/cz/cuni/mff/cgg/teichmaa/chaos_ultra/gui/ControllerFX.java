@@ -1,17 +1,12 @@
 package cz.cuni.mff.cgg.teichmaa.chaos_ultra.gui;
 
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.FractalRendererProvider;
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.heuristicsParams.ChaosUltraRenderingParams;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.rendering_params.RenderingModel;
 import javafx.application.Platform;
-import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
-import javafx.util.converter.NumberStringConverter;
-import sun.net.www.content.image.png;
 
 
 import javax.swing.*;
@@ -23,7 +18,8 @@ import java.util.ResourceBundle;
 
 public class ControllerFX implements Initializable {
 
-    static final int SUPER_SAMPLING_MAX_LEVEL = RenderingController.SUPER_SAMPLING_MAX_LEVEL;
+    private static final char UNICODE_TIMES_CHAR = '\u00D7';
+
     @FXML
     private ChoiceBox<String> fractalChoiceBox;
     @FXML
@@ -71,6 +67,8 @@ public class ControllerFX implements Initializable {
         //todo do this properly
         fractalChoiceBox.setItems(FXCollections.observableArrayList("mandelbrot","julia"));
         fractalChoiceBox.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> SwingUtilities.invokeLater(() -> renderingController.onFractalChanged(newValue)));
+
+        visualiseSampleCount.selectedProperty().addListener((__) -> SwingUtilities.invokeLater(() -> renderingController.repaint()));
     }
 
     void setRenderingController(RenderingController renderingController) {
@@ -80,17 +78,6 @@ public class ControllerFX implements Initializable {
 
     void showErrorMessage(String message) {
         Platform.runLater(() -> new Alert(Alert.AlertType.ERROR, message).showAndWait());
-    }
-
-    void bindParamsTo(ChaosUltraRenderingParams params) {
-        //TODO tohle je bohuzel asi radikalni blbost, vhzledem k tomu, ze to bezi v ruznych vlaknech
-        Bindings.bindBidirectional(maxIterations.textProperty(), params.maxIterationsProperty(), new NumberStringConverter());
-        Bindings.bindBidirectional(superSamplingLevel.textProperty(), params.superSamplingLevelProperty(), new NumberStringConverter());
-        params.useAdaptiveSupersamplingProperty().bindBidirectional(useAdaptiveSS.selectedProperty());
-        params.useFoveatedRenderingProperty().bindBidirectional(useFoveation.selectedProperty());
-        params.useSampleReuseProperty().bindBidirectional(useSampleReuse.selectedProperty());
-        params.visualiseSampleCountProperty().bindBidirectional(visualiseSampleCount.selectedProperty());
-        params.automaticQualityProperty().bindBidirectional(useAutomaticQuality.selectedProperty());
     }
 
     void setX(double x) {
@@ -105,26 +92,6 @@ public class ControllerFX implements Initializable {
         Platform.runLater(() -> this.zoom.setText("" + zoom));
     }
 
-    public void setDimensions(int width, int height) {
-        Platform.runLater(() -> dimensions.setText("" + width + " x " + height));
-    }
-
-    void showDefaultView() {
-        Platform.runLater(() -> {
-            center_x.setText("-0.5");
-            center_y.setText("0");
-            zoom.setText("2");
-            maxIterations.setText("1400");
-            superSamplingLevel.setText("5");
-            useAdaptiveSS.setSelected(true);
-            useFoveation.setSelected(true);
-            useSampleReuse.setSelected(true);
-            useAutomaticQuality.setSelected(true);
-            visualiseSampleCount.setSelected(false);
-            render();
-        });
-    }
-
     @FXML
     private void renderClicked(ActionEvent actionEvent) {
         useAutomaticQuality.setSelected(false);
@@ -137,31 +104,21 @@ public class ControllerFX implements Initializable {
             double y = Double.parseDouble(center_y.getText());
             double zoom = Double.parseDouble(this.zoom.getText());
             int maxIterations = Integer.parseInt(this.maxIterations.getText());
-            int supsamp_tmp = Integer.parseInt(superSamplingLevel.getText());
-            if (supsamp_tmp >= SUPER_SAMPLING_MAX_LEVEL) {
-                supsamp_tmp = SUPER_SAMPLING_MAX_LEVEL;
-                System.out.println("Warning: super sampling level clamped to " + supsamp_tmp + ", higher is not supported");
-                superSamplingLevel.setText("" + supsamp_tmp);
-            } else if (supsamp_tmp < 1) {
-                supsamp_tmp = 1;
-                superSamplingLevel.setText("1");
-            }
-            int supsamp = supsamp_tmp; //for lambda, to pass effectively final value
-
+            int supSamp = Integer.parseInt(superSamplingLevel.getText());
             SwingUtilities.invokeLater(() -> {
-                renderingController.setBounds(x, y, zoom);
-                renderingController.setMaxIterations(maxIterations);
-                renderingController.setSuperSamplingLevel(supsamp);
+                renderingController.setBoundsRequested(x, y, zoom);
+                renderingController.setMaxIterationsRequested(maxIterations);
+                renderingController.setSuperSamplingLevelRequested(supSamp);
                 renderingController.repaint();
             });
         } catch (NumberFormatException e) {
-            System.out.println("Warning: number in a text field could not be parsed.");
+            showErrorMessage("Number in a text field could not be parsed.");
         }
     }
 
     @FXML
     private void example0Clicked(ActionEvent actionEvent) {
-        showDefaultView();
+        renderingController.showDefaultView();
     }
 
     @FXML
@@ -233,4 +190,15 @@ public class ControllerFX implements Initializable {
         SwingUtilities.invokeLater(() -> renderingController.setFractalSpecificParams(fractalSpecificParams.getText().trim()));
     }
 
+    public void onModelUpdated(RenderingModel model) {
+        Platform.runLater(() -> {
+            center_x.setText(Double.toString(model.getSegment().getCenterX()));
+            center_y.setText(Double.toString(model.getSegment().getCenterY()));
+            zoom.setText(Double.toString(model.getSegment().getZoom()));
+            precision.setText(model.getFloatingPointPrecision().toString());
+            superSamplingLevel.setText(Integer.toString(model.getSuperSamplingLevel()));
+            maxIterations.setText(Integer.toString(model.getMaxIterations()));
+            dimensions.setText("" + model.getCanvasWidth() + " " + UNICODE_TIMES_CHAR + " " + model.getCanvasHeight());
+        });
+    }
 }

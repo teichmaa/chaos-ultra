@@ -2,7 +2,7 @@ package cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.modules;
 
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.CudaInitializationException;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.FractalRenderingModule;
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.Point2DDoubleImmutable;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.PointDoubleImmutable;
 import jcuda.Pointer;
 import jcuda.Sizeof;
 import jcuda.driver.CUdeviceptr;
@@ -34,17 +34,17 @@ public class ModuleJulia extends FractalRenderingModule {
             throw new CudaInitializationException(message);
         }
 
-        setC(Point2DDoubleImmutable.of(0,0));
+        setC(PointDoubleImmutable.of(0,0));
     }
 
     private final CUdeviceptr juliaCParamPtr = new CUdeviceptr();
-    private Point2DDoubleImmutable c;
+    private PointDoubleImmutable c;
 
-    public Point2DDoubleImmutable getC() {
+    public PointDoubleImmutable getC() {
         return c;
     }
 
-    public void setC(Point2DDoubleImmutable c) {
+    public void setC(PointDoubleImmutable c) {
         this.c = c;
 
         double[] source = new double[]{c.getX(), c.getY()};
@@ -54,6 +54,6 @@ public class ModuleJulia extends FractalRenderingModule {
     @Override
     public void setFractalCustomParameters(String params) {
         double[] vals = parseParamsAsDoubles(params);
-        setC(Point2DDoubleImmutable.of(vals[0], vals[1]));
+        setC(PointDoubleImmutable.of(vals[0], vals[1]));
     }
 }

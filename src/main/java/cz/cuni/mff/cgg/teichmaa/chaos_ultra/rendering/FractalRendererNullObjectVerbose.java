@@ -1,9 +1,7 @@
 package cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering;
 
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.heuristicsParams.ChaosUltraRenderingParams;
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.Helpers;
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.OpenGLTexture;
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.Point2DInt;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.rendering_params.RenderingModel;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.JavaHelpers;
 
 public class FractalRendererNullObjectVerbose implements FractalRenderer {
 
@@ -11,7 +9,7 @@ public class FractalRendererNullObjectVerbose implements FractalRenderer {
 
     private void printMethodName() {
         if (!verbose) return;
-        System.out.println("FractalRendererNullObjectVerbose." + Helpers.getCallingMethodName(1));
+        System.out.println("FractalRendererNullObjectVerbose." + JavaHelpers.getCallingMethodName(1));
 
     }
 
@@ -43,12 +41,12 @@ public class FractalRendererNullObjectVerbose implements FractalRenderer {
     }
 
     @Override
-    public void renderFast(Point2DInt focus, boolean isZooming) {
+    public void renderFast(RenderingModel model) {
         printMethodName();
     }
 
     @Override
-    public void renderQuality() {
+    public void renderQuality(RenderingModel model) {
         printMethodName();
     }
 
@@ -58,17 +56,7 @@ public class FractalRendererNullObjectVerbose implements FractalRenderer {
     }
 
     @Override
-    public void setBounds(double left_bottom_x, double left_bottom_y, double right_top_x, double right_top_y) {
-        printMethodName();
-    }
-
-    @Override
     public void debugRightBottomPixel() {
-        printMethodName();
-    }
-
-    @Override
-    public void bindParamsTo(ChaosUltraRenderingParams params) {
         printMethodName();
     }
 

@@ -6,11 +6,11 @@ import com.jogamp.opengl.awt.GLCanvas;
 import com.jogamp.opengl.util.Animator;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.*;
 
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.heuristicsParams.ChaosUltraRenderingParams;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.rendering_params.RenderingModel;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.GLHelpers;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.OpenGLTexture;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.OpenGLTextureHandle;
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.Point2DInt;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.PointInt;
 
 import javax.swing.*;
 import java.awt.event.MouseAdapter;
@@ -21,15 +21,13 @@ import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 import static com.jogamp.opengl.GL.*;
+import static cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.FractalRenderer.SUPER_SAMPLING_MAX_LEVEL;
 
 public class RenderingController extends MouseAdapter implements GLEventListener {
 
     private static RenderingController singleton = null;
-
-    public static final int SUPER_SAMPLING_MAX_LEVEL = FractalRenderer.SUPER_SAMPLING_MAX_LEVEL;
 
     // terminology of private fields:
     //   texture: {int x int} discrete set, representing the surface that we draw on
@@ -57,15 +55,10 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     private Animator animator;
     private RenderingModeFSM currentMode = new RenderingModeFSM();
 
-    private int width_t;
+    private int width_t; //todo toto je mozna obsolete, protoze ty hodnoty jsou v modelu
     private int height_t;
 
-    private double plane_left_bottom_x;
-    private double plane_left_bottom_y;
-    private double plane_right_top_x;
-    private double plane_right_top_y;
-
-    private ChaosUltraRenderingParams chaosParams = new ChaosUltraRenderingParams();
+    private RenderingModel model = new RenderingModel();
     private List<Consumer<GL2>> doBeforeDisplay = new ArrayList<>();
     private boolean doNotRenderRequested = false;
 
@@ -79,9 +72,6 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         animator.stop();
         renderInFuture.setRepeats(false);
 
-        controllerFX.bindParamsTo(chaosParams);
-        chaosParams.visualiseSampleCountProperty().addListener((__) -> target.repaint());
-
 //        for(RenderingModeFSM.RenderingMode mode : RenderingModeFSM.RenderingMode.values()){
 //            lastFramesRenderTime.put(mode, new CyclicBuffer(lastFramesRenderTimeBufferLength, shortestFrameRenderTime));
 //        }
@@ -91,7 +81,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     }
 
     private MouseEvent lastMousePosition;
-    private Point2DInt focus = new Point2DInt();
+    private PointInt focus = new PointInt();
 
     @Override
     public void mouseWheelMoved(MouseWheelEvent e) {
@@ -111,13 +101,12 @@ public class RenderingController extends MouseAdapter implements GLEventListener
             if (lastMousePosition == null) {
                 return;
             }
-            double textureToZoomCoeff = getPlaneHeight() / height_t;
+            double textureToZoomCoeff = model.getSegment().getSegmentHeight() / height_t;
             double dx = (lastMousePosition.getX() - e.getX()) * textureToZoomCoeff;
             double dy = -(lastMousePosition.getY() - e.getY()) * textureToZoomCoeff;
-            plane_right_top_x += dx;
-            plane_right_top_y += dy;
-            plane_left_bottom_x += dx;
-            plane_left_bottom_y += dy;
+            model.getSegment().increaseXsBy(dx);
+            model.getSegment().increaseYsBy(dy);
+
             currentMode.startMoving();
             target.repaint();
         }
@@ -177,42 +166,26 @@ public class RenderingController extends MouseAdapter implements GLEventListener
      * @param into      whether to zoom in or out
      */
     private void zoomAt(int texture_x, int texture_y, boolean into) {
-        double plane_width = getPlaneWidth();
-        double plane_height = getPlaneHeight();
+        double segment_width = model.getSegment().getSegmentWidth();
+        double segment_height = model.getSegment().getSegmentHeight();
 
         double relTop = texture_y / (double) height_t; //relative distance from zoomingCenter to border, \in (0,1)
         double relBtm = 1 - relTop;
         double relLeft = texture_x / (double) width_t;
         double relRght = 1 - relLeft;
 
-        double plane_x = plane_left_bottom_x + plane_width * relLeft;
-        double plane_y = plane_left_bottom_y + plane_height * relBtm;
+        double center_x = model.getSegment().getLeftBottom().getX() + segment_width * relLeft;
+        double center_y = model.getSegment().getLeftBottom().getY() + segment_height * relBtm;
 
         double zoom_coeff = this.ZOOM_COEFF;
-        if (!into) zoom_coeff = 2f - this.ZOOM_COEFF;
+        if (!into) zoom_coeff = 2f - this.ZOOM_COEFF; //todo refactor
 
-        double l_b_new_x = plane_x - plane_width * relLeft * zoom_coeff;
-        double l_b_new_y = plane_y - plane_height * relBtm * zoom_coeff;
-        double r_t_new_x = plane_x + plane_width * relRght * zoom_coeff;
-        double r_t_new_y = plane_y + plane_height * relTop * zoom_coeff;
+        double l_b_new_x = center_x - segment_width * relLeft * zoom_coeff;
+        double l_b_new_y = center_y - segment_height * relBtm * zoom_coeff;
+        double r_t_new_x = center_x + segment_width * relRght * zoom_coeff;
+        double r_t_new_y = center_y + segment_height * relTop * zoom_coeff;
 
-        this.plane_left_bottom_x = l_b_new_x;
-        this.plane_left_bottom_y = l_b_new_y;
-        this.plane_right_top_x = r_t_new_x;
-        this.plane_right_top_y = r_t_new_y;
-    }
-
-    private void updateKernelParams() {
-        assert SwingUtilities.isEventDispatchThread();
-        fractalRenderer.setBounds(plane_left_bottom_x, plane_left_bottom_y, plane_right_top_x, plane_right_top_y);
-    }
-
-    private void updateFXUI() {
-        assert SwingUtilities.isEventDispatchThread();
-        controllerFX.setZoom(getZoom());
-        controllerFX.setX(getCenterX());
-        controllerFX.setY(getCenterY());
-        controllerFX.setDimensions(width_t, height_t);
+        model.getSegment().setAll(l_b_new_x, l_b_new_y, r_t_new_x, r_t_new_y);
     }
 
     @Override
@@ -240,14 +213,31 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         );
         GLHelpers.specifyTextureSizeAndData(gl, paletteTexture, colorPalette);
 
-        fractalRendererProvider = new FractalRendererProvider(chaosParams);
+        fractalRendererProvider = new FractalRendererProvider(model);
 
 //        fractalRenderer = fractalRendererProvider.getRenderer("mandelbrot");
         fractalRenderer = fractalRendererProvider.getRenderer("julia");
         // fractalRenderer uses the null-object pattern, so even if not initialized properly to CudaFractalRenderer, we can still call its methods
         //todo domyslet jak je to s tim null objectem a kdo vlastne vyhazuje jakou vyjimku kdy (modul vs renderer) a jak ji zobrazovat a kdo je zopovedny za ten null object a tyhle shity
 
-        controllerFX.showDefaultView();
+        showDefaultView();
+    }
+
+    public void showDefaultView() {
+        animator.stop();
+        currentMode.reset();
+
+        updateSegment(-0.5, 0, 2);
+        model.setMaxIterations(800);
+        model.setSuperSamplingLevel(5);
+        model.setUseAdaptiveSuperSampling(true);
+        model.setUseFoveatedRendering(true);
+        model.setUseSampleReuse(true);
+        model.setAutomaticQuality(true);
+        model.setVisualiseSampleCount(false);
+        controllerFX.onModelUpdated(model);
+
+        repaint();
     }
 
     @Override
@@ -268,7 +258,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         assert SwingUtilities.isEventDispatchThread();
         assert width_t == outputTexture.getWidth();
         assert height_t == outputTexture.getHeight();
-        if(width_t == 0 || height_t == 0){
+        if (width_t == 0 || height_t == 0) {
             System.err.printf("Warning, RenderingController.display() called with width=%d, height=%d. Skipping the operation.\n", width_t, height_t); //todo make a logger for this
             return;
         }
@@ -276,7 +266,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         final GL2 gl = drawable.getGL().getGL2();
         doBeforeDisplay.forEach(c -> c.accept(gl));
         doBeforeDisplay.clear();
-        if(doNotRenderRequested){
+        if (doNotRenderRequested) {
             doNotRenderRequested = false;
             return;
         }
@@ -292,16 +282,15 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         }
 
         updateQuality();
-        updateKernelParams();
-        updateFXUI();
         render(drawable.getGL().getGL2());
 
         currentMode.step();
         if (currentMode.isProgressiveRendering())
             this.repaint();
 
-        long endTime = System.currentTimeMillis();
+        controllerFX.onModelUpdated(model.copy());
 
+        long endTime = System.currentTimeMillis();
         lastFrameRenderTime = (int) (endTime - startTime);
         //lastFramesRenderTime.get(currentMode.getCurrent()).add((int) (endTime - startTime));
 //        System.out.println("" + lastFrameRenderTime + " ms (frame total render time)");
@@ -315,9 +304,9 @@ public class RenderingController extends MouseAdapter implements GLEventListener
 
     private void updateQuality() {
         assert SwingUtilities.isEventDispatchThread();
-        if (!chaosParams.isAutomaticQuality()) return;
+        if (!model.isAutomaticQuality()) return;
         if (currentMode.isWaiting() && currentMode.wasProgressiveRendering()) {
-            chaosParams.setSuperSamplingLevel(10); //todo lol proc zrovna deset, kde se to vzalo?
+            model.setSuperSamplingLevel(10); //todo lol proc zrovna deset, kde se to vzalo?
             return;
         }
 
@@ -337,7 +326,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
             //pridat sem currentMode.getHighQualityIteration()
             //   a do RenderingMode::step dat highQIteration++
         }
-        if (chaosParams.getSuperSamplingLevel() == SUPER_SAMPLING_MAX_LEVEL)
+        if (model.getSuperSamplingLevel() == SUPER_SAMPLING_MAX_LEVEL)
             currentMode.reset();
     }
 
@@ -351,16 +340,18 @@ public class RenderingController extends MouseAdapter implements GLEventListener
 //        System.out.println();
 
         //int mean = Math.round(lastFramesRenderTime.get(currentMode.getCurrent()).getMeanValue());
-        int newSS = Math.round(chaosParams.getSuperSamplingLevel() * ms / (float) Math.max(1, lastFrameRenderTime));
-        //System.out.println("newSS = " + newSS);
-        setSuperSamplingLevel(newSS);
+        int newSS = Math.round(model.getSuperSamplingLevel() * ms / (float) Math.max(1, lastFrameRenderTime));
+        newSS = Math.max(1, Math.min(newSS, SUPER_SAMPLING_MAX_LEVEL));
+        model.setSuperSamplingLevel(newSS);
     }
 
     private void render(final GL2 gl) {
         if (currentMode.wasProgressiveRendering()) {
-            fractalRenderer.renderQuality();
+            fractalRenderer.renderQuality(model);
         } else {
-            fractalRenderer.renderFast(focus, currentMode.isZooming());
+            model.setFocus(focus);
+            model.setZooming(currentMode.isZooming());
+            fractalRenderer.renderFast(model);
         }
 
         GLHelpers.drawRectangle(gl, outputTexture);
@@ -372,10 +363,15 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         final int oldHeight = height_t;
         this.width_t = width;
         this.height_t = height;
+        model.setCanvasWidth(width);
+        model.setCanvasHeight(height);
 
-        setBounds(getCenterX(), getCenterY(), getZoom() * height / (double) oldHeight);
+        updateSegment(
+                model.getSegment().getCenterX(),
+                model.getSegment().getCenterY(),
+                model.getSegment().getZoom() * height / (double) oldHeight);
 
-        if(fractalRenderer.getState() == FractalRendererState.readyToRender)
+        if (fractalRenderer.getState() == FractalRendererState.readyToRender)
             fractalRenderer.freeRenderingResources();
         outputTexture = outputTexture.withNewSize(width, height);
         GLHelpers.specifyTextureSize(gl, outputTexture);
@@ -384,44 +380,39 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         currentMode.startProgressiveRendering();
     }
 
-    private double getPlaneWidth() {
-        return plane_right_top_x - plane_left_bottom_x;
-    }
-
-    private double getPlaneHeight() {
-        return plane_right_top_y - plane_left_bottom_y;
-    }
-
-    double getCenterX() {
-        return plane_left_bottom_x + getPlaneWidth() / 2;
-    }
-
-    double getCenterY() {
-        return plane_left_bottom_y + getPlaneHeight() / 2;
-    }
-
-    double getZoom() {
-        return plane_right_top_y - plane_left_bottom_y;
-    }
-
-    void setBounds(double center_x, double center_y, double zoom) {
+    public void setBoundsRequested(double center_x, double center_y, double zoom) {
         assert SwingUtilities.isEventDispatchThread();
+        //todo change automatic quality state?
+        updateSegment(center_x, center_y, zoom);
+        controllerFX.onModelUpdated(model.copy());
+    }
+
+    private void updateSegment(double center_x, double center_y, double zoom) {
         double windowHeight = 1;
         double windowWidth = windowHeight / (double) height_t * width_t;
-        plane_left_bottom_x = center_x - windowWidth * zoom / 2;
-        plane_left_bottom_y = center_y - windowHeight * zoom / 2;
-        plane_right_top_x = center_x + windowWidth * zoom / 2;
-        plane_right_top_y = center_y + windowHeight * zoom / 2;
+        double segment_left_bottom_x = center_x - windowWidth * zoom / 2;
+        double segment_left_bottom_y = center_y - windowHeight * zoom / 2;
+        double segment_right_top_x = center_x + windowWidth * zoom / 2;
+        double segment_right_top_y = center_y + windowHeight * zoom / 2;
+        model.getSegment().setAll(segment_left_bottom_x, segment_left_bottom_y, segment_right_top_x, segment_right_top_y);
     }
 
-    void setMaxIterations(int maxIterations) {
-        chaosParams.setMaxIterations(maxIterations);
+    void setMaxIterationsRequested(int maxIterations) {
+        assert SwingUtilities.isEventDispatchThread();
+        //todo does this affect automatic quality?
+        model.setMaxIterations(maxIterations);
+        controllerFX.onModelUpdated(model.copy());
     }
 
-    void setSuperSamplingLevel(int supSampLvl) {
+    void setSuperSamplingLevelRequested(int supSampLvl) {
         assert SwingUtilities.isEventDispatchThread();
         //supSampLvl will be clamped to be >=1 and <= SUPER_SAMPLING_MAX_LEVEL
-        chaosParams.setSuperSamplingLevel(Math.max(1, Math.min(supSampLvl, SUPER_SAMPLING_MAX_LEVEL)));
+        int newValue = Math.max(1, Math.min(supSampLvl, SUPER_SAMPLING_MAX_LEVEL));
+        if(newValue != supSampLvl){
+            System.out.println("Warning: super sampling level clamped to " + newValue + ", higher is not supported");
+        }
+        model.setSuperSamplingLevel(newValue);
+        controllerFX.onModelUpdated(model.copy());
     }
 
     void repaint() {
@@ -460,10 +451,9 @@ public class RenderingController extends MouseAdapter implements GLEventListener
 
             fractalRenderer.freeRenderingResources();
             fractalRenderer = fractalRendererProvider.getRenderer(fractalName);
-            updateKernelParams();
             fractalRenderer.initializeRendering(OpenGLParams.of(outputTexture, paletteTexture));
-            fractalRenderer.bindParamsTo(chaosParams);
         });
+        showDefaultView();
         repaint();
     }
 

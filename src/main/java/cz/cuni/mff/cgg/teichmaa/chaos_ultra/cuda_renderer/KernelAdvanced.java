@@ -2,9 +2,7 @@ package cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer;
 
 
 
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.heuristicsParams.DynamicFloatingPointPrecision;
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.heuristicsParams.FoveatedRendering;
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.heuristicsParams.IterationLimit;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.rendering_params.*;
 import jcuda.Pointer;
 import jcuda.driver.CUdeviceptr;
 import jcuda.driver.CUmodule;
@@ -30,10 +28,25 @@ abstract class KernelAdvanced extends KernelMain {
         PARAM_IDX_FOCUS = registerParam(0);
     }
 
-    private int focus_x;
-    private int focus_y;
+    @Override
+    public void setParamsFromModel(RenderingModel model) {
+        super.setParamsFromModel(model);
+        setFocus(model.getFocus().getX(), model.getFocus().getY());
+        setIsZooming(model.isZooming());
+        setUseFoveation(model.isUseFoveatedRendering());
+        setUseSampleReuse(model.isUseSampleReuse());
+    }
 
-    public void setOriginBounds(double left_bottom_x, double left_bottom_y, double right_top_x, double right_top_y){
+    public void setOriginSegment(PlaneSegment segment){
+        setOriginSegment(
+                segment.getLeftBottom().getX(),
+                segment.getLeftBottom().getY(),
+                segment.getRightTop().getX(),
+                segment.getRightTop().getY()
+        );
+    }
+
+    void setOriginSegment(double left_bottom_x, double left_bottom_y, double right_top_x, double right_top_y){
         params[PARAM_IDX_IMAGE_REUSED] = pointerToAbstractReal(left_bottom_x, left_bottom_y, right_top_x, right_top_y);
     }
 
@@ -44,23 +57,12 @@ abstract class KernelAdvanced extends KernelMain {
 
     public void setFocus(int x, int y){
         params[PARAM_IDX_FOCUS] = CudaHelpers.pointerTo(x, y);
-        this.focus_x = x;
-        this.focus_y = y;
-    }
-
-    public int getFocusX() {
-        return focus_x;
-    }
-
-    public int getFocusY() {
-        return focus_y;
     }
 
     public void setIsZooming(boolean zooming){
         flags.setBit(IS_ZOOMING_FLAG_IDX, zooming);
         params[PARAM_IDX_FLAGS] = CudaHelpers.pointerTo(flags.getValue());
     }
-
 
     public void setUseFoveation(boolean value) {
         flags.setBit(USE_FOVEATION_FLAG_IDX, value);

@@ -23,7 +23,6 @@ import static jcuda.driver.JCudaDriver.cuModuleLoad;
  */
 public abstract class FractalRenderingModule implements Closeable {
 
-    static final String kernelInit = KernelInit.name;
     static final String kernelMainFloat = KernelMainFloat.name;
     static final String kernelMainDouble = KernelMainDouble.name;
     static final String kernelUnderSampled = KernelUnderSampled.name;
@@ -82,7 +81,6 @@ public abstract class FractalRenderingModule implements Closeable {
         }
 
         //add known kernels:
-        kernels.put(KernelInit.class, new KernelInit(module));
         kernels.put(KernelMainFloat.class, new KernelMainFloat(module));
         kernels.put(KernelMainDouble.class, new KernelMainDouble(module));
         kernels.put(KernelAdvancedFloat.class, new KernelAdvancedFloat(module));

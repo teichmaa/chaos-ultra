@@ -4,10 +4,9 @@ import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.FractalRenderer;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.FractalRendererException;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.FractalRendererState;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.OpenGLParams;
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.heuristicsParams.ChaosUltraRenderingParams;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.rendering_params.RenderingModel;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.FloatPrecision;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.OpenGLTexture;
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.Point2DInt;
 import jcuda.CudaException;
 import jcuda.NativePointerObject;
 import jcuda.Pointer;
@@ -34,6 +33,7 @@ public class CudaFractalRenderer implements FractalRenderer {
     private static final Pointer NULLPTR = CudaHelpers.pointerTo(0);
     private static final int BLOCK_DIM_X = 32;
     private static final int BLOCK_DIM_Y = 32;
+    private static final int DEFAULT_UNDER_SAMPLING_LEVEL = 4;
 
     static {
         CudaHelpers.cudaInit();
@@ -55,12 +55,11 @@ public class CudaFractalRenderer implements FractalRenderer {
     private cudaGraphicsResource paletteTextureResource = new cudaGraphicsResource();
 
     //todo dokumentacni komentar k metode
-    public CudaFractalRenderer(FractalRenderingModule module, ChaosUltraRenderingParams params) {
+    public CudaFractalRenderer(FractalRenderingModule module) {
         this.module = module;
 
         kernelUndersampled = module.getKernel(KernelUnderSampled.class);
-        //TODO tohle cislo 4 do konstanty
-        kernelUndersampled.setUnderSamplingLevel(4);
+        kernelUndersampled.setUnderSamplingLevel(DEFAULT_UNDER_SAMPLING_LEVEL);
         kernelMainFloat = module.getKernel(KernelMainFloat.class);
         kernelMainDouble = module.getKernel(KernelMainDouble.class);
         kernelCompose = module.getKernel(KernelCompose.class);
@@ -68,17 +67,6 @@ public class CudaFractalRenderer implements FractalRenderer {
         kernelAdvancedDouble = module.getKernel(KernelAdvancedDouble.class);
 
         memory.reallocate(getWidth(), getHeight());
-
-        bindParamsTo(params);
-    }
-
-    private void moduleInit() {
-
-        KernelInit kernel = module.getKernel(KernelInit.class);
-
-        Pointer kernelParams = Pointer.to(kernel.getKernelParams());
-        cuLaunchKernel(kernel.getFunction(), 1, 1, kernelParams);
-        cuCtxSynchronize();
     }
 
     private FractalRendererState state = FractalRendererState.notInitialized;
@@ -155,40 +143,72 @@ public class CudaFractalRenderer implements FractalRenderer {
         JCudaDriver.cuCtxSynchronize();
     }
 
-    RenderingKernelParamsInfo lastRendering = new RenderingKernelParamsInfo();
+    private RenderingModel lastRendering = new RenderingModel();
 
     @Override
-    public void renderFast(Point2DInt focus, boolean isZooming) {
+    public void renderFast(RenderingModel model) {
         if(state != FractalRendererState.readyToRender) throw new IllegalStateException("Renderer has to be initialized first");
 
+        if(lastRendering.isVisualiseSampleCount() && ! model.isVisualiseSampleCount()){
+            //if last time was "visualise sample count", don't reuse the texture
+            memory.setPrimary2DBufferDirty(true);
+        }
         if (memory.isPrimary2DBufferDirty()) {
             //if there is nothing to reuse, then create it
-            renderQuality();
+            renderQuality(model);
             return;
         }
-        KernelAdvanced k = kernelAdvancedFloat.isBoundsAtFloatLimit() ? kernelAdvancedDouble : kernelAdvancedFloat;
-        k.setOriginBounds(lastRendering.left_bottom_x, lastRendering.left_bottom_y, lastRendering.right_top_x, lastRendering.right_top_y);
-        k.setFocus(focus.getX(), focus.getY());
+
+        updateFloatPrecision(model);
+        KernelAdvanced k;
+        switch (model.getFloatingPointPrecision()){
+            case doublePrecision:
+                k = kernelAdvancedDouble;
+                break;
+            case singlePrecision:
+                k = kernelAdvancedFloat;
+                break;
+            default:
+                throw new IllegalStateException("Precision not supported: " + model.getFloatingPointPrecision());
+        }
+
+        k.setOriginSegment(lastRendering.getSegment());
+        k.setParamsFromModel(model);
         k.setInput(memory.getPrimary2DBuffer(), memory.getPrimary2DBufferPitch());
         k.setOutput(memory.getSecondary2DBuffer(), memory.getSecondary2DBufferPitch());
-        k.setIsZooming(isZooming);
 
         launchRenderingKernel(false, k);
         memory.switch2DBuffers();
-        lastRendering.setFrom(k);
         launchDrawingKernel(false, kernelCompose);
+
+        lastRendering = model.copy();
     }
 
     @Override
-    public void renderQuality() {
+    public void renderQuality(RenderingModel model) {
         if(state != FractalRendererState.readyToRender) throw new IllegalStateException("Renderer has to be initialized first");
 
-        KernelMain kernelMain = kernelMainFloat.isBoundsAtFloatLimit() ? kernelMainDouble : kernelMainFloat;
+        updateFloatPrecision(model);
+        KernelMain kernelMain;
+        switch (model.getFloatingPointPrecision()){
+            case doublePrecision:
+                kernelMain = kernelMainDouble;
+                break;
+            case singlePrecision:
+                kernelMain = kernelMainFloat;
+                break;
+            default:
+                throw new IllegalStateException("Precision not supported: " + model.getFloatingPointPrecision());
+        }
+
         memory.resetBufferOrder();
+        kernelMain.setParamsFromModel(model);
         kernelMain.setOutput(memory.getPrimary2DBuffer(), memory.getPrimary2DBufferPitch());
+
         launchRenderingKernel(false, kernelMain);
         launchDrawingKernel(false, kernelCompose);
-        lastRendering.setFrom(kernelMain);
+
+        lastRendering = model.copy();
         memory.setPrimary2DBufferDirty(false);
     }
 
@@ -331,13 +351,6 @@ public class CudaFractalRenderer implements FractalRenderer {
         freeRenderingResources();
     }
 
-
-    @Override
-    public void setBounds(double left_bottom_x, double left_bottom_y, double right_top_x, double right_top_y) {
-        onAllRenderingKernels(k -> k.setBounds(left_bottom_x, left_bottom_y, right_top_x, right_top_y));
-        updateFloatPrecision();
-    }
-
     @Override
     public void setFractalSpecificParams(String text) {
         module.setFractalCustomParameters(text);
@@ -373,42 +386,8 @@ public class CudaFractalRenderer implements FractalRenderer {
     }
 
 
-    private void updateFloatPrecision() {
-        heuristicsParams.floatingPointPrecisionProperty().setValue(kernelMainDouble.isBoundsAtFloatLimit() ? FloatPrecision.doublePrecision : FloatPrecision.singlePrecision);
-    }
-
-    ChaosUltraRenderingParams heuristicsParams;
-
-    @Override
-    public void bindParamsTo(ChaosUltraRenderingParams params) {
-        this.heuristicsParams = params;
-
-        //todo in future, this pattern could go further and delegate this binding to the kernels (where each kernel would decide which heuristics they support and hence bind to). But that would be too much for now.
-
-        params.maxIterationsProperty().addListener((__, ___, newVal) ->
-                onAllMainKernels(k -> k.setMaxIterations(newVal.intValue())));
-        params.superSamplingLevelProperty().addListener((__, ___, newVal) ->
-                onAllMainKernels(k -> k.setSuperSamplingLevel(newVal.intValue())));
-
-        params.useAdaptiveSupersamplingProperty().addListener((__, ___, newVal) ->
-                onAllMainKernels(k -> k.setAdaptiveSS(newVal)));
-        params.visualiseSampleCountProperty().addListener((__, ___, newVal) ->
-                updateVisualiseSampleCount(newVal));
-
-        params.useFoveatedRenderingProperty().addListener((__, ___, newVal) ->
-                onAllAdvancedKernels(k -> k.setUseFoveation(newVal)));
-        params.useSampleReuseProperty().addListener((__, ___, newVal) ->
-                onAllAdvancedKernels(k -> k.setUseSampleReuse(newVal)));
-
-    }
-
-    private void updateVisualiseSampleCount(boolean visualiseAdaptiveSS) {
-        //when switching from "visualiseAdaptiveSS" mode back to normal, don't reuse the texture for sampleReuse
-        if (kernelAdvancedFloat.isVisualiseSampleCount() &&
-                !visualiseAdaptiveSS) {
-            memory.setPrimary2DBufferDirty(true);
-        }
-        onAllMainKernels(k -> k.setVisualiseSampleCount(visualiseAdaptiveSS));
+    private void updateFloatPrecision(RenderingModel model) {
+        model.setFloatingPointPrecision(kernelMainFloat.isBoundsAtFloatLimit() ? FloatPrecision.doublePrecision : FloatPrecision.singlePrecision);
     }
 
     @Override

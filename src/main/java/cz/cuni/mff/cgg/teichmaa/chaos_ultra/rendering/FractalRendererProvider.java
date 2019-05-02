@@ -6,7 +6,7 @@ import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.CudaInitializationExce
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.FractalRenderingModule;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.modules.ModuleJulia;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.modules.ModuleMandelbrot;
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.heuristicsParams.ChaosUltraRenderingParams;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.rendering_params.RenderingModel;
 
 import java.util.*;
 import java.util.function.Function;
@@ -30,11 +30,11 @@ public class FractalRendererProvider {
     }
 
 
-    public FractalRendererProvider(ChaosUltraRenderingParams chaosParams) {
+    public FractalRendererProvider(RenderingModel chaosParams) {
         this.chaosParams = chaosParams;
     }
 
-    private ChaosUltraRenderingParams chaosParams;
+    private RenderingModel chaosParams;
 
     //    private CudaFractalRenderer activeRenderer;
     private CudaFractalRenderer mandelbrot;
@@ -45,14 +45,14 @@ public class FractalRendererProvider {
             if (mandelbrot == null) {
                 FractalRenderingModule module = moduleInstances.get(fractalName);
                 module.initialize();
-                mandelbrot = new CudaFractalRenderer(module, chaosParams);
+                mandelbrot = new CudaFractalRenderer(module);
             }
             return mandelbrot;
         } else if (fractalName.equals("julia")) {
             if (julia == null) {
                 FractalRenderingModule module = moduleInstances.get(fractalName);
                 module.initialize();
-                julia = new CudaFractalRenderer(module, chaosParams);
+                julia = new CudaFractalRenderer(module);
             }
             return julia;
         }

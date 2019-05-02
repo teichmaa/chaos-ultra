@@ -1,9 +1,6 @@
 package cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering;
 
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.heuristicsParams.ChaosUltraRenderingParams;
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.FloatPrecision;
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.OpenGLTexture;
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.Point2DInt;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.rendering_params.RenderingModel;
 
 import java.io.Closeable;
 
@@ -25,18 +22,18 @@ public interface FractalRenderer extends Closeable {
 
     void launchDebugKernel();
 
-    void renderFast(Point2DInt focus, boolean isZooming);
+    void renderFast(RenderingModel model);
 
-    void renderQuality();
+    void renderQuality(RenderingModel model);
 
     @Override
     void close();
 
-    void setBounds(double left_bottom_x, double left_bottom_y, double right_top_x, double right_top_y);
+//    void setBounds(double left_bottom_x, double left_bottom_y, double right_top_x, double right_top_y);
 
     void debugRightBottomPixel();
 
-    void bindParamsTo(ChaosUltraRenderingParams params);
+//    void bindParamsTo(RenderingModel params);
 
     void setFractalSpecificParams(String text);
 

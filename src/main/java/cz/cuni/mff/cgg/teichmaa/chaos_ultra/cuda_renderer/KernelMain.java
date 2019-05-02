@@ -1,13 +1,10 @@
 package cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer;
 
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.rendering_params.RenderingModel;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.BitField;
 import jcuda.driver.CUmodule;
 
 abstract class KernelMain extends RenderingKernel {
-
-    // uint maxSuperSampling,
-    // Pointi focus, bool adaptiveSS, bool visualiseSS,
-
 
     private final short PARAM_IDX_MAX_SUPER_SAMPLING;
     protected final short PARAM_IDX_FLAGS;
@@ -24,16 +21,20 @@ abstract class KernelMain extends RenderingKernel {
         PARAM_IDX_FLAGS = registerParam(1);
 
         setSuperSamplingLevel(1);
-        setAdaptiveSS(true);
+        setUseAdaptiveSuperSampling(true);
+    }
+
+    @Override
+    public void setParamsFromModel(RenderingModel model) {
+        super.setParamsFromModel(model);
+        setVisualiseSampleCount(model.isVisualiseSampleCount());
+        setUseAdaptiveSuperSampling(model.isUseAdaptiveSuperSampling());
+        setSuperSamplingLevel(model.getSuperSamplingLevel());
     }
 
     private int superSamplingLevel;
-    private boolean adaptiveSS;
+    private boolean useAdaptiveSuperSampling;
     protected BitField flags = new BitField();
-
-    boolean getAdaptiveSS() {
-        return adaptiveSS;
-    }
 
     boolean isVisualiseSampleCount(){
         return flags.getBit(VISUALISE_SAMPLE_COUNT_FLAG_IDX);
@@ -44,9 +45,13 @@ abstract class KernelMain extends RenderingKernel {
         params[PARAM_IDX_FLAGS] = CudaHelpers.pointerTo(flags.getValue());
     }
 
-    void setAdaptiveSS(boolean adaptiveSS) {
-        this.adaptiveSS = adaptiveSS;
-        flags.setBit(USE_ADAPTIVE_SS_FLAG_IDX, adaptiveSS);
+    boolean getUseAdaptiveSuperSampling() {
+        return useAdaptiveSuperSampling;
+    }
+
+    void setUseAdaptiveSuperSampling(boolean useAdaptiveSuperSampling) {
+        this.useAdaptiveSuperSampling = useAdaptiveSuperSampling;
+        flags.setBit(USE_ADAPTIVE_SS_FLAG_IDX, useAdaptiveSuperSampling);
         params[PARAM_IDX_FLAGS] = CudaHelpers.pointerTo(flags.getValue());
     }
 
@@ -58,6 +63,5 @@ abstract class KernelMain extends RenderingKernel {
     int getSuperSamplingLevel() {
         return superSamplingLevel;
     }
-
 
 }

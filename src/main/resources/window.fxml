@@ -141,7 +141,7 @@
                 <padding>
                     <Insets top="5" right="5" bottom="5" left="5"/>
                 </padding>
-                Params:
+                Floating point precision:
             </Label>
             <Label fx:id="precision" text="single">
                 <padding>

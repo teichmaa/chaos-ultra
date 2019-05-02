@@ -2,16 +2,16 @@ package cz.cuni.mff.cgg.teichmaa.chaos_ultra.util;
 
 import java.awt.event.MouseEvent;
 
-public class Point2DInt {
-    int x;
-    int y;
+public class PointInt {
+    private int x;
+    private int y;
 
-    public Point2DInt(int x, int y) {
+    public PointInt(int x, int y) {
         this.x = x;
         this.y = y;
     }
 
-    public Point2DInt() {
+    public PointInt() {
     }
 
     public int getX() {
@@ -33,5 +33,9 @@ public class Point2DInt {
     public void setXYFrom(MouseEvent e){
         setX(e.getX());
         setY(e.getY());
+    }
+
+    public PointInt copy() {
+        return new PointInt(x, y);
     }
 }
