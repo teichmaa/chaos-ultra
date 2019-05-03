@@ -80,15 +80,15 @@ public class RenderingController extends MouseAdapter implements GLEventListener
             singleton = this;
     }
 
-    private MouseEvent lastMousePosition;
-    private PointInt focus = new PointInt();
+    private PointInt lastMousePosition = new PointInt();
+    private PointInt mouseFocus = new PointInt();
 
     @Override
     public void mouseWheelMoved(MouseWheelEvent e) {
         assert SwingUtilities.isEventDispatchThread();
 
-        lastMousePosition = e;
-        focus.setXYFrom(e);
+        lastMousePosition.setXYFrom(e);
+        mouseFocus.setXYFrom(e);
         currentMode.doZoomingManualOnce(e.getWheelRotation() < 0);
         target.repaint();
     }
@@ -98,9 +98,6 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         assert SwingUtilities.isEventDispatchThread();
 
         if (SwingUtilities.isLeftMouseButton(e)) {
-            if (lastMousePosition == null) {
-                return;
-            }
             double textureToZoomCoeff = model.getSegment().getSegmentHeight() / height_t;
             double dx = (lastMousePosition.getX() - e.getX()) * textureToZoomCoeff;
             double dy = -(lastMousePosition.getY() - e.getY()) * textureToZoomCoeff;
@@ -111,16 +108,16 @@ public class RenderingController extends MouseAdapter implements GLEventListener
             target.repaint();
         }
         if (!currentMode.isMoving())
-            focus.setXYFrom(e);
-        lastMousePosition = e;
+            mouseFocus.setXYFrom(e);
+        lastMousePosition.setXYFrom(e);
     }
 
     @Override
     public void mousePressed(MouseEvent e) {
         assert SwingUtilities.isEventDispatchThread();
 
-        lastMousePosition = e;
-        focus.setXYFrom(e);
+        lastMousePosition.setXYFrom(e);
+        mouseFocus.setXYFrom(e);
         if (SwingUtilities.isRightMouseButton(e) && SwingUtilities.isLeftMouseButton(e)) {
             currentMode.startZoomingAndMoving(true);
             animator.start();
@@ -156,8 +153,8 @@ public class RenderingController extends MouseAdapter implements GLEventListener
 
     private static final double ZOOM_COEFF = 0.977f;
 
-    private void zoomAt(MouseEvent e, boolean into) {
-        zoomAt(e.getX(), e.getY(), into);
+    private void zoomAt(PointInt where, boolean into) {
+        zoomAt(where.getX(), where.getY(), into);
     }
 
     /**
@@ -281,7 +278,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
             zoomAt(lastMousePosition, currentMode.getZoomingDirection());
         }
 
-        updateQuality();
+        determineRenderingModeQuality();
         render(drawable.getGL().getGL2());
 
         currentMode.step();
@@ -302,7 +299,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
     //private Map<RenderingModeFSM.RenderingMode, CyclicBuffer> lastFramesRenderTime = new HashMap<>();
     private int lastFrameRenderTime = shortestFrameRenderTime;
 
-    private void updateQuality() {
+    private void determineRenderingModeQuality() {
         assert SwingUtilities.isEventDispatchThread();
         if (!model.isAutomaticQuality()) return;
         if (currentMode.isWaiting() && currentMode.wasProgressiveRendering()) {
@@ -339,6 +336,8 @@ public class RenderingController extends MouseAdapter implements GLEventListener
 //        }
 //        System.out.println();
 
+        //TODO tahle funkce potrebuje jeste hodne dotahnout
+
         //int mean = Math.round(lastFramesRenderTime.get(currentMode.getCurrent()).getMeanValue());
         int newSS = Math.round(model.getSuperSamplingLevel() * ms / (float) Math.max(1, lastFrameRenderTime));
         newSS = Math.max(1, Math.min(newSS, SUPER_SAMPLING_MAX_LEVEL));
@@ -349,7 +348,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
         if (currentMode.wasProgressiveRendering()) {
             fractalRenderer.renderQuality(model);
         } else {
-            model.setFocus(focus);
+            model.setFocus(mouseFocus);
             model.setZooming(currentMode.isZooming());
             fractalRenderer.renderFast(model);
         }
@@ -454,6 +453,7 @@ public class RenderingController extends MouseAdapter implements GLEventListener
             fractalRenderer.initializeRendering(OpenGLParams.of(outputTexture, paletteTexture));
         });
         showDefaultView();
+        model.setSampleReuseCacheDirty(true);
         repaint();
     }
 
@@ -464,5 +464,29 @@ public class RenderingController extends MouseAdapter implements GLEventListener
 
     public void debugFractal() {
         fractalRenderer.launchDebugKernel();
+    }
+
+    public void setVisualiseSampleCount(boolean value) {
+        model.setVisualiseSampleCount(value);
+        repaint();
+        currentMode.startProgressiveRendering();
+
+    }
+
+    public void setUseAdaptiveSuperSampling(boolean value) {
+        model.setUseAdaptiveSuperSampling(value);
+        //todo overit ze tato metoda a dalsi se opravdu deji
+    }
+
+    public void setAutomaticQuality(boolean value) {
+        model.setAutomaticQuality(value);
+    }
+
+    public void setUseFoveatedRendering(boolean value) {
+        model.setUseFoveatedRendering(value);
+    }
+
+    public void setUseSampleReuse(boolean value) {
+        model.setUseSampleReuse(value);
     }
 }

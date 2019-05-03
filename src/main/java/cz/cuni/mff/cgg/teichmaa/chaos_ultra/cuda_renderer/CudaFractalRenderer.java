@@ -149,11 +149,7 @@ public class CudaFractalRenderer implements FractalRenderer {
     public void renderFast(RenderingModel model) {
         if(state != FractalRendererState.readyToRender) throw new IllegalStateException("Renderer has to be initialized first");
 
-        if(lastRendering.isVisualiseSampleCount() && ! model.isVisualiseSampleCount()){
-            //if last time was "visualise sample count", don't reuse the texture
-            memory.setPrimary2DBufferDirty(true);
-        }
-        if (memory.isPrimary2DBufferDirty()) {
+        if (model.isSampleReuseCacheDirty() || memory.isPrimary2DBufferDirty()) {
             //if there is nothing to reuse, then create it
             renderQuality(model);
             return;
@@ -210,6 +206,7 @@ public class CudaFractalRenderer implements FractalRenderer {
 
         lastRendering = model.copy();
         memory.setPrimary2DBufferDirty(false);
+        model.setSampleReuseCacheDirty(false);
     }
 
     private void launchRenderingKernel(boolean async, RenderingKernel kernel) {

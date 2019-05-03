@@ -45,7 +45,7 @@ public class ControllerFX implements Initializable {
     @FXML
     private CheckBox useAutomaticQuality;
     @FXML
-    private CheckBox useFoveation;
+    private CheckBox useFoveatedRendering;
     @FXML
     private CheckBox useSampleReuse;
     @FXML
@@ -68,7 +68,21 @@ public class ControllerFX implements Initializable {
         fractalChoiceBox.setItems(FXCollections.observableArrayList("mandelbrot","julia"));
         fractalChoiceBox.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> SwingUtilities.invokeLater(() -> renderingController.onFractalChanged(newValue)));
 
-        visualiseSampleCount.selectedProperty().addListener((__) -> SwingUtilities.invokeLater(() -> renderingController.repaint()));
+        visualiseSampleCount.selectedProperty().addListener((__,___,value) -> SwingUtilities.invokeLater(
+                () -> renderingController.setVisualiseSampleCount(value))
+        );
+        useAdaptiveSS.selectedProperty().addListener((__,___,value) -> SwingUtilities.invokeLater(
+                () -> renderingController.setUseAdaptiveSuperSampling(value))
+        );
+        useAutomaticQuality.selectedProperty().addListener((__,___,value) -> SwingUtilities.invokeLater(
+                () -> renderingController.setAutomaticQuality(value))
+        );
+        useFoveatedRendering.selectedProperty().addListener((__, ___, value) -> SwingUtilities.invokeLater(
+                () -> renderingController.setUseFoveatedRendering(value))
+        );
+        useSampleReuse.selectedProperty().addListener((__,___,value) -> SwingUtilities.invokeLater(
+                () -> renderingController.setUseSampleReuse(value))
+        );
     }
 
     void setRenderingController(RenderingController renderingController) {

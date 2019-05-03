@@ -121,6 +121,7 @@ public class RenderingModel implements FoveatedRendering, IterationLimit, Sample
     @Override
     public void setVisualiseSampleCount(boolean visualiseSampleCount) {
         this.visualiseSampleCount = visualiseSampleCount;
+        setSampleReuseCacheDirty(true);
     }
 
     @Override

@@ -8,6 +8,7 @@ import static cz.cuni.mff.cgg.teichmaa.chaos_ultra.gui.RenderingModeFSM.Renderin
  */
 class RenderingModeFSM {
 
+
     enum RenderingMode {
         Waiting,
         ZoomingAuto,
@@ -31,6 +32,7 @@ class RenderingModeFSM {
 
     private boolean zoomingAndMoving = false;
     private boolean zoomingDirection = false;
+    private boolean repeat = false;
 
     void reset() {
         last = current;
@@ -39,6 +41,10 @@ class RenderingModeFSM {
     }
 
     void step() {
+        if(repeat){
+            repeat = false;
+            return;
+        }
         RenderingMode newValue = current;
         if ((current == Waiting && (last == ZoomingAuto || last == Moving))
                 || current == ZoomingOnce
@@ -121,6 +127,9 @@ class RenderingModeFSM {
         if (!isProgressiveRendering())
             throw new IllegalStateException("cannot ask for Progressive rendering level when not Progressive rendering");
         return PRlvl;
+    }
+
+    public void repeat() {
     }
 
     boolean isProgressiveRendering() {

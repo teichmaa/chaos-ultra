@@ -78,7 +78,7 @@
                 </padding>
                 foveation:
             </Label>
-            <CheckBox fx:id="useFoveation" selected="true"/>
+            <CheckBox fx:id="useFoveatedRendering" selected="true"/>
         </HBox>
         <HBox>
             <Label>
