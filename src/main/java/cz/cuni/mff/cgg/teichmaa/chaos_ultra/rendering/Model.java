@@ -1,6 +1,7 @@
 package cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering;
 
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.gui.GUIModel;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.model.DefaultFractalModel;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.model.PlaneSegment;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.model.RenderingModel;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.FloatPrecision;
@@ -8,7 +9,6 @@ import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.PointInt;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 
 import static cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.FractalRenderer.SUPER_SAMPLING_MAX_LEVEL;
 
@@ -16,7 +16,7 @@ import static cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.FractalRenderer.SUP
  * Represents all the rendering parameters that are used by current version of the Chaos Ultra project.
  */
 
-public class Model implements RenderingModel, GUIModel {
+class Model implements RenderingModel, GUIModel, DefaultFractalModel {
 
     private FloatPrecision floatingPointPrecision = FloatPrecision.defaultValue;
     private boolean useFoveatedRendering;
@@ -35,6 +35,7 @@ public class Model implements RenderingModel, GUIModel {
     private PointInt lastMousePosition = new PointInt();
     private Collection<String> availableFractals;
     private String fractalName;
+    private String fractalCustomParams;
 
     /**
      * @return deep copy of itself
@@ -58,6 +59,7 @@ public class Model implements RenderingModel, GUIModel {
         copy.lastMousePosition = this.lastMousePosition;
         copy.availableFractals = new ArrayList<>(availableFractals);
         copy.fractalName = this.fractalName;
+        copy.fractalCustomParams = this.fractalCustomParams;
         return copy;
     }
 
@@ -213,7 +215,8 @@ public class Model implements RenderingModel, GUIModel {
         this.fractalName = fractalName;
     }
 
-    void setPlaneSegmentFromCenter(double centerX, double centerY, double zoom) {
+    @Override
+    public void setPlaneSegmentFromCenter(double centerX, double centerY, double zoom) {
         double windowRelHeight = 1;
         double windowRelWidth = windowRelHeight / (double) canvasHeight * canvasWidth;
         double segment_left_bottom_x = centerX - windowRelWidth * zoom / 2;
@@ -224,4 +227,12 @@ public class Model implements RenderingModel, GUIModel {
         this.planeSegment.setAll(segment_left_bottom_x, segment_left_bottom_y, segment_right_top_x, segment_right_top_y);
     }
 
+    public String getFractalCustomParams() {
+        return fractalCustomParams;
+    }
+
+    @Override
+    public void setFractalCustomParams(String fractalCustomParams) {
+        this.fractalCustomParams = fractalCustomParams;
+    }
 }

@@ -21,4 +21,6 @@ public interface GUIModel {
     Collection<String> getAvailableFractals();
 
     String getFractalName();
+
+    String getFractalCustomParams();
 }

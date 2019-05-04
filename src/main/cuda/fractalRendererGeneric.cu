@@ -1,7 +1,7 @@
 #include <cuda_runtime_api.h>
 #include <math.h>
 #include <float.h>
-#include "helpers.hpp"
+#include "helpers.cuh"
 #include "fractal.cuh"
 
 typedef unsigned int uint;

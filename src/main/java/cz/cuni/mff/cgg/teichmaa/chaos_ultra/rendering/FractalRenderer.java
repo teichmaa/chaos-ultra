@@ -1,5 +1,8 @@
 package cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering;
 
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.model.DefaultFractalModel;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.model.RenderingModel;
+
 import java.io.Closeable;
 
 public interface FractalRenderer extends Closeable {
@@ -20,16 +23,18 @@ public interface FractalRenderer extends Closeable {
 
     void launchDebugKernel();
 
-    void renderFast(Model model);
+    void renderFast(RenderingModel model);
 
-    void renderQuality(Model model);
+    void renderQuality(RenderingModel model);
 
     @Override
     void close();
 
     void debugRightBottomPixel();
 
-    void setFractalSpecificParams(String text);
+    void setFractalCustomParams(String text);
 
     String getFractalName();
+
+    void supplyDefaultValues(DefaultFractalModel model);
 }

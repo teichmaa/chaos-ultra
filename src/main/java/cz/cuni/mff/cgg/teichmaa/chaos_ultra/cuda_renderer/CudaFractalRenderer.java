@@ -1,7 +1,8 @@
 package cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer;
 
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.*;
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.Model;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.model.DefaultFractalModel;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.model.RenderingModel;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.FloatPrecision;
 import jcuda.CudaException;
 import jcuda.NativePointerObject;
@@ -139,13 +140,13 @@ public class CudaFractalRenderer implements FractalRenderer {
         JCudaDriver.cuCtxSynchronize();
     }
 
-    private Model lastRendering = new Model();
+    private RenderingModel lastRendering;
 
     @Override
-    public void renderFast(Model model) {
+    public void renderFast(RenderingModel model) {
         if(state != FractalRendererState.readyToRender) throw new IllegalStateException("Renderer has to be initialized first");
 
-        if (model.isSampleReuseCacheDirty() || memory.isPrimary2DBufferDirty()) {
+        if (model.isSampleReuseCacheDirty() || memory.isPrimary2DBufferDirty() || lastRendering == null) {
             //if there is nothing to reuse, then create it
             renderQuality(model);
             return;
@@ -177,7 +178,7 @@ public class CudaFractalRenderer implements FractalRenderer {
     }
 
     @Override
-    public void renderQuality(Model model) {
+    public void renderQuality(RenderingModel model) {
         if(state != FractalRendererState.readyToRender) throw new IllegalStateException("Renderer has to be initialized first");
 
         updateFloatPrecision(model);
@@ -347,7 +348,7 @@ public class CudaFractalRenderer implements FractalRenderer {
     }
 
     @Override
-    public void setFractalSpecificParams(String text) {
+    public void setFractalCustomParams(String text) {
         module.setFractalCustomParameters(text);
     }
 
@@ -381,12 +382,17 @@ public class CudaFractalRenderer implements FractalRenderer {
     }
 
 
-    private void updateFloatPrecision(Model model) {
+    private void updateFloatPrecision(RenderingModel model) {
         model.setFloatingPointPrecision(kernelMainFloat.isSegmentBoundsAtFloatLimit() ? FloatPrecision.doublePrecision : FloatPrecision.singlePrecision);
     }
 
     @Override
     public String getFractalName() {
         return module.getFractalName();
+    }
+
+    @Override
+    public void supplyDefaultValues(DefaultFractalModel model) {
+        module.supplyDefaultValues(model);
     }
 }

@@ -127,7 +127,7 @@
                 </padding>
                 Fractal specific params:
             </Label>
-            <TextField fx:id="fractalSpecificParams">
+            <TextField fx:id="fractalCustomParams">
                 <padding>
                     <Insets top="5" right="0" bottom="5" left="0"/>
                 </padding>

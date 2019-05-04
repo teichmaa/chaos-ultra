@@ -1,6 +1,6 @@
 package cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer;
 
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.Model;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.model.RenderingModel;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.BitField;
 import jcuda.driver.CUmodule;
 
@@ -24,7 +24,7 @@ abstract class KernelMain extends RenderingKernel {
     }
 
     @Override
-    public void setParamsFromModel(Model model) {
+    public void setParamsFromModel(RenderingModel model) {
         super.setParamsFromModel(model);
         setVisualiseSampleCount(model.isVisualiseSampleCount());
         setUseAdaptiveSuperSampling(model.isUseAdaptiveSuperSampling());

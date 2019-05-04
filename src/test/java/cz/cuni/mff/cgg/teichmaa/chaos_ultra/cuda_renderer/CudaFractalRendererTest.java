@@ -3,7 +3,6 @@ package cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.modules.ModuleJulia;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.modules.ModuleMandelbrot;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.GLParams;
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.Model;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -43,7 +42,6 @@ class CudaFractalRendererTest {
         FractalRenderingModule m = new ModuleMandelbrot();
         m.initialize();
         GLParams glParams = null; //todo
-        Model chaosParams = null; //todo
         CudaFractalRenderer r = new CudaFractalRenderer(m);
     }
 }

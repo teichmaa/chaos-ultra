@@ -1,5 +1,7 @@
 package cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering;
 
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.model.DefaultFractalModel;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.model.RenderingModel;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.JavaHelpers;
 
 public class FractalRendererNullObjectVerbose implements FractalRenderer {
@@ -40,12 +42,12 @@ public class FractalRendererNullObjectVerbose implements FractalRenderer {
     }
 
     @Override
-    public void renderFast(Model model) {
+    public void renderFast(RenderingModel model) {
         printMethodName();
     }
 
     @Override
-    public void renderQuality(Model model) {
+    public void renderQuality(RenderingModel model) {
         printMethodName();
     }
 
@@ -60,7 +62,7 @@ public class FractalRendererNullObjectVerbose implements FractalRenderer {
     }
 
     @Override
-    public void setFractalSpecificParams(String text) {
+    public void setFractalCustomParams(String text) {
         printMethodName();
     }
 
@@ -74,5 +76,10 @@ public class FractalRendererNullObjectVerbose implements FractalRenderer {
     public FractalRendererState getState() {
         printMethodName();
         return FractalRendererState.notInitialized;
+    }
+
+    @Override
+    public void supplyDefaultValues(DefaultFractalModel model) {
+        printMethodName();
     }
 }

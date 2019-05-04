@@ -1,5 +1,7 @@
 package cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer;
 
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.model.DefaultFractalModel;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.model.RenderingModel;
 import jcuda.CudaException;
 import jcuda.driver.CUmodule;
 import jcuda.driver.CUresult;
@@ -171,5 +173,13 @@ public abstract class FractalRenderingModule implements Closeable {
     protected HashMap<String, String> parseParamsAsKeyValPairs(String params) {
         return null;
         //TODO impl
+    }
+
+    /**
+     * May be overridden by concrete modules if a specific default values are required.
+     * @param model model to set values to
+     */
+    protected void supplyDefaultValues(DefaultFractalModel model){
+        /* nothing */
     }
 }

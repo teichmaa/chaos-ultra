@@ -2,6 +2,7 @@ package cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.modules;
 
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.CudaInitializationException;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.FractalRenderingModule;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.model.DefaultFractalModel;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.PointDoubleImmutable;
 import jcuda.Pointer;
 import jcuda.Sizeof;
@@ -55,5 +56,11 @@ public class ModuleJulia extends FractalRenderingModule {
     public void setFractalCustomParameters(String params) {
         double[] vals = parseParamsAsDoubles(params);
         setC(PointDoubleImmutable.of(vals[0], vals[1]));
+    }
+
+    @Override
+    protected void supplyDefaultValues(DefaultFractalModel model) {
+        super.supplyDefaultValues(model);
+        model.setFractalCustomParams("0.3;0.3");
     }
 }

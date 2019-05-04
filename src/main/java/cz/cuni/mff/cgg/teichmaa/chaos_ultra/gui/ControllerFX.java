@@ -1,6 +1,5 @@
 package cz.cuni.mff.cgg.teichmaa.chaos_ultra.gui;
 
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.Model;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.RenderingController;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -25,7 +24,7 @@ public class ControllerFX implements Initializable, GUIController {
     @FXML
     private ChoiceBox<String> fractalChoiceBox;
     @FXML
-    private TextField fractalSpecificParams;
+    private TextField fractalCustomParams;
     @FXML
     private Button renderButton;
     @FXML
@@ -203,7 +202,7 @@ public class ControllerFX implements Initializable, GUIController {
 
     @FXML
     private void fractalSpecificParamsSetClicked(ActionEvent actionEvent) {
-        SwingUtilities.invokeLater(() -> renderingController.setFractalSpecificParams(fractalSpecificParams.getText().trim()));
+        SwingUtilities.invokeLater(() -> renderingController.setFractalCustomParams(fractalCustomParams.getText().trim()));
     }
 
     public void onModelUpdated(GUIModel model) {
@@ -216,6 +215,7 @@ public class ControllerFX implements Initializable, GUIController {
             maxIterations.setText(Integer.toString(model.getMaxIterations()));
             dimensions.setText("" + model.getCanvasWidth() + " " + UNICODE_TIMES_CHAR + " " + model.getCanvasHeight());
             fractalChoiceBox.setItems(FXCollections.observableArrayList(model.getAvailableFractals()));
+            fractalCustomParams.setText(model.getFractalCustomParams());
         });
     }
 }

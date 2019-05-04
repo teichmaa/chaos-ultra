@@ -3,7 +3,6 @@ package cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering;
 import com.jogamp.opengl.GLEventListener;
 import com.jogamp.opengl.awt.GLCanvas;
 import com.jogamp.opengl.util.Animator;
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.gui.ControllerFX;
 
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.gui.GUIController;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.PointInt;
@@ -12,8 +11,6 @@ import javax.swing.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
-import java.util.Collection;
-import java.util.Set;
 
 import static cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.FractalRenderer.SUPER_SAMPLING_MAX_LEVEL;
 
@@ -169,15 +166,16 @@ public class RenderingController extends MouseAdapter {
         animator.stop();
         currentMode.resetState();
 
-        model.setPlaneSegmentFromCenter(-0.5, 0, 2);
-        model.setMaxIterations(800);
-        model.setSuperSamplingLevel(5);
+        model.setPlaneSegmentFromCenter(0, 0, 4);
+        model.setMaxIterations(200);
+        model.setSuperSamplingLevel(2);
         model.setUseAdaptiveSuperSampling(true);
         model.setUseFoveatedRendering(true);
         model.setUseSampleReuse(true);
         model.setAutomaticQuality(true);
         model.setVisualiseSampleCount(false);
         guiController.onModelUpdated(model.copy());
+        model.setFractalCustomParams("");
 
         repaint();
     }
@@ -215,9 +213,10 @@ public class RenderingController extends MouseAdapter {
         glRenderer.repaint();
     }
 
-    public void setFractalSpecificParams(String text) {
+    public void setFractalCustomParams(String text) {
         assert SwingUtilities.isEventDispatchThread();
-        glRenderer.setFractalSpecificParams(text);
+        glRenderer.setFractalCustomParams(text);
+        model.setFractalCustomParams(text);
         repaint();
     }
 
@@ -230,8 +229,8 @@ public class RenderingController extends MouseAdapter {
         model.setFractalName(fractalName);
         animator.stop();
         currentMode.resetState();
-        glRenderer.onFractalChanged(fractalName);
         showDefaultView();
+        glRenderer.onFractalChanged(fractalName);
         model.setSampleReuseCacheDirty(true);
         repaint();
     }

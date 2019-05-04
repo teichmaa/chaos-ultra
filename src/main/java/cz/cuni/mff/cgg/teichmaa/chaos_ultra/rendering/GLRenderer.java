@@ -204,8 +204,10 @@ public class GLRenderer implements GLEventListener {
                 model.getPlaneSegment().getCenterX(),
                 model.getPlaneSegment().getCenterY(),
                 model.getPlaneSegment().getZoom() * height / (double) oldHeight);
-        if (oldHeight == 0) {
-            controller.showDefaultView();
+        if (oldHeight == 0) { //this happens during the initialization
+            controller.showDefaultView(); //reinitialize current fractal
+            fractalRenderer.supplyDefaultValues(model);
+            fractalRenderer.setFractalCustomParams(model.getFractalCustomParams());
         }
 
         if (fractalRenderer.getState() == FractalRendererState.readyToRender)
@@ -237,8 +239,8 @@ public class GLRenderer implements GLEventListener {
         repaint();
     }
 
-    public void setFractalSpecificParams(String text) {
-        fractalRenderer.setFractalSpecificParams(text);
+    public void setFractalCustomParams(String text) {
+        fractalRenderer.setFractalCustomParams(text);
     }
 
     public void repaint() {
@@ -247,8 +249,11 @@ public class GLRenderer implements GLEventListener {
 
     public void onFractalChanged(String fractalName) {
         doBeforeDisplay.add(gl -> {
-            fractalRenderer.freeRenderingResources();
+            if (fractalRenderer.getState() == FractalRendererState.readyToRender)
+                fractalRenderer.freeRenderingResources();
             fractalRenderer = fractalRendererProvider.getRenderer(fractalName);
+            fractalRenderer.supplyDefaultValues(model);
+            fractalRenderer.setFractalCustomParams(model.getFractalCustomParams());
             fractalRenderer.initializeRendering(GLParams.of(outputTexture, paletteTexture));
         });
     }
