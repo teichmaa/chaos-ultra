@@ -250,7 +250,6 @@ public class RenderingController extends MouseAdapter {
 
     public void setUseAdaptiveSuperSampling(boolean value) {
         model.setUseAdaptiveSuperSampling(value);
-        //todo overit ze tato metoda a dalsi se opravdu deji
     }
 
     public void setAutomaticQuality(boolean value) {

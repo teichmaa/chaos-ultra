@@ -27,8 +27,6 @@ public class GLRenderer implements GLEventListener {
     private boolean doNotRenderRequested = false;
     private final Model model;
     private final RenderingStateModel stateModel;
-    private int width_t; //todo toto je mozna obsolete, protoze ty hodnoty jsou v modelu
-    private int height_t;
     private final RenderingController controller;
     private final GLCanvas target;
 
@@ -92,10 +90,10 @@ public class GLRenderer implements GLEventListener {
     @Override
     public void display(GLAutoDrawable drawable) {
         assert SwingUtilities.isEventDispatchThread();
-        assert width_t == outputTexture.getWidth();
-        assert height_t == outputTexture.getHeight();
-        if (width_t == 0 || height_t == 0) {
-            System.err.printf("Warning, RenderingController.display() called with width=%d, height=%d. Skipping the operation.\n", width_t, height_t); //todo make a logger for this
+        assert model.getCanvasWidth() == outputTexture.getWidth();
+        assert model.getCanvasHeight() == outputTexture.getHeight();
+        if (model.getCanvasWidth() == 0 || model.getCanvasHeight() == 0) {
+            System.err.printf("Warning, RenderingController.display() called with width=%d, height=%d. Skipping the operation.\n", model.getCanvasWidth(), model.getCanvasHeight()); //todo make a logger for this
             return;
         }
 
@@ -196,9 +194,7 @@ public class GLRenderer implements GLEventListener {
     @Override
     public void reshape(GLAutoDrawable drawable, int x, int y, int width, int height) {
         final GL2 gl = drawable.getGL().getGL2();
-        final int oldHeight = height_t;
-        this.width_t = width;
-        this.height_t = height;
+        final int oldHeight = model.getCanvasHeight();
         model.setCanvasWidth(width);
         model.setCanvasHeight(height);
         model.setPlaneSegmentFromCenter(
@@ -218,6 +214,8 @@ public class GLRenderer implements GLEventListener {
     public void saveImage(String fileName, String format) {
         assert SwingUtilities.isEventDispatchThread();
         doBeforeDisplay.add(gl -> {
+            int width_t = model.getCanvasWidth();
+            int height_t = model.getCanvasHeight();
             int[] data = new int[width_t * height_t];
             Buffer b = IntBuffer.wrap(data);
             gl.glBindTexture(GL_TEXTURE_2D, outputTexture.getHandle().getValue());
