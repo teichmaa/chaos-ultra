@@ -1,6 +1,24 @@
 #ifndef HELPERS
 #define HELPERS
 
+#define DEBUG_MODE
+#ifdef DEBUG_MODE 
+  #define ASSERT(x) assert(x)
+#else 
+  #define ASSERT(x) do {} while(0)
+#endif
+
+#ifndef CUDART_VERSION
+  #error CUDART_VERSION Undefined!
+#elif (CUDART_VERSION >= 9000) //for cuda 9 and later, use __any_sync(__activemask(), predicate) instead, see Programming guide, B.13 for more details
+  #define __ALL(predicate) __all_sync(__activemask(), predicate)
+  #define __ANY(predicate) __any_sync(__activemask(), predicate)
+#else
+  #define __ALL(predicate) __all(predicate)
+  #define __ANY(predicate) __any(predicate)
+#endif
+
+
 template <class T> struct Point {
   T x;
   T y;
@@ -71,14 +89,20 @@ struct pixel_info_t{
 
 
 
-class ColorsARGB{
+class ColorsRGBA{ 
 public:
+//when human read, it is abgr, because of endianity
+//                                              aabbggrr
   static constexpr const unsigned int BLACK = 0xff000000;
   static constexpr const unsigned int WHITE = 0xffffffff;
   static constexpr const unsigned int PINK  = 0xffb469ff;
   static constexpr const unsigned int YELLOW= 0xff00ffff;
   static constexpr const unsigned int GOLD  = 0xff00d7ff;
+  static constexpr const unsigned int BLUE  = 0xffff0000;
+  static constexpr const unsigned int GREEN = 0xff00ff00;
+  static constexpr const unsigned int RED   = 0xff0000ff;
 }; 
+
 
 struct Color{
   char r;

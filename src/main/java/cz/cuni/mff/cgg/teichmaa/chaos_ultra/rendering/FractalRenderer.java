@@ -27,11 +27,7 @@ public interface FractalRenderer extends Closeable {
     @Override
     void close();
 
-//    void setBounds(double left_bottom_x, double left_bottom_y, double right_top_x, double right_top_y);
-
     void debugRightBottomPixel();
-
-//    void bindParamsTo(Model params);
 
     void setFractalSpecificParams(String text);
 

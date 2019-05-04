@@ -111,7 +111,6 @@ public class ControllerFX implements Initializable, GUIController {
 
     @FXML
     private void renderClicked(ActionEvent actionEvent) {
-        useAutomaticQuality.setSelected(false);
         render();
     }
 

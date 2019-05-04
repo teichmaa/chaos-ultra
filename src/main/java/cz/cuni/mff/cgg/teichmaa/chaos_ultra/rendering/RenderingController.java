@@ -182,15 +182,15 @@ public class RenderingController extends MouseAdapter {
         repaint();
     }
 
-    public void setPlaneSegmentRequested(double center_x, double center_y, double zoom) {
+    public void setPlaneSegmentRequested(double centerX, double centerY, double zoom) {
         assert SwingUtilities.isEventDispatchThread();
         //todo change automatic quality state?
-        setPlaneSegment(center_x, center_y, zoom);
+        setPlaneSegment(centerX, centerY, zoom);
         guiController.onModelUpdated(model.copy());
     }
 
-    private void setPlaneSegment(double center_x, double center_y, double zoom) {
-
+    private void setPlaneSegment(double centerX, double centerY, double zoom) {
+        model.setPlaneSegmentFromCenter(centerX, centerY, zoom);
     }
 
     public void setMaxIterationsRequested(int maxIterations) {
@@ -225,6 +225,9 @@ public class RenderingController extends MouseAdapter {
         assert SwingUtilities.isEventDispatchThread();
         if(fractalName == null || fractalName.isEmpty())
             return;
+        if(fractalName.equals(model.getFractalName()))
+            return;
+        model.setFractalName(fractalName);
         animator.stop();
         currentMode.resetState();
         glRenderer.onFractalChanged(fractalName);

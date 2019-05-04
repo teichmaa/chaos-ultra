@@ -19,4 +19,6 @@ public interface GUIModel {
     int getCanvasHeight();
 
     Collection<String> getAvailableFractals();
+
+    String getFractalName();
 }

@@ -1,9 +1,9 @@
-#include "helpers.hpp"
+#include "fractal.cuh"
 
 __constant__ double julia_c[2]; 
 
 template <class Real> __device__ __forceinline__
-unsigned int escape(unsigned int maxIterations, Point<Real> z){
+unsigned int iterate(unsigned int maxIterations, Point<Real> z){
   Point<Real> c((Real) julia_c[0],(Real) julia_c[1]);
   Real zx_new;
   unsigned int i = 0;
@@ -14,6 +14,15 @@ unsigned int escape(unsigned int maxIterations, Point<Real> z){
       ++i;
   }
   return i;
+}
+
+__device__ __forceinline__
+unsigned int colorize(cudaSurfaceObject_t colorPalette, unsigned int paletteLength, unsigned int iterationResult){
+  unsigned int paletteIdx = paletteLength - (iterationResult % paletteLength) - 1;
+  ASSERT(paletteIdx < paletteLength);
+  unsigned int resultColor;
+  surf2Dread(&resultColor, colorPalette, paletteIdx * sizeof(unsigned int), 0);
+  return resultColor;
 }
 
 __device__ void debugFractal(){

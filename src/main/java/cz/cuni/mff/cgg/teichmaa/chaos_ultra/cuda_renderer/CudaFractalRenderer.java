@@ -341,7 +341,9 @@ public class CudaFractalRenderer implements FractalRenderer {
 
     @Override
     public void close() {
-        freeRenderingResources();
+        if(state == FractalRendererState.readyToRender)
+            freeRenderingResources();
+        memory.close();
     }
 
     @Override
@@ -380,7 +382,7 @@ public class CudaFractalRenderer implements FractalRenderer {
 
 
     private void updateFloatPrecision(Model model) {
-        model.setFloatingPointPrecision(kernelMainFloat.isBoundsAtFloatLimit() ? FloatPrecision.doublePrecision : FloatPrecision.singlePrecision);
+        model.setFloatingPointPrecision(kernelMainFloat.isSegmentBoundsAtFloatLimit() ? FloatPrecision.doublePrecision : FloatPrecision.singlePrecision);
     }
 
     @Override

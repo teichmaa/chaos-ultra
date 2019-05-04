@@ -34,6 +34,7 @@ public class Model implements RenderingModel, GUIModel {
     private boolean sampleReuseCacheDirty;
     private PointInt lastMousePosition = new PointInt();
     private Collection<String> availableFractals;
+    private String fractalName;
 
     /**
      * @return deep copy of itself
@@ -56,6 +57,7 @@ public class Model implements RenderingModel, GUIModel {
         copy.sampleReuseCacheDirty = this.sampleReuseCacheDirty;
         copy.lastMousePosition = this.lastMousePosition;
         copy.availableFractals = new ArrayList<>(availableFractals);
+        copy.fractalName = this.fractalName;
         return copy;
     }
 
@@ -201,6 +203,14 @@ public class Model implements RenderingModel, GUIModel {
 
     public void setAvailableFractals(Collection<String> availableFractals) {
         this.availableFractals = availableFractals;
+    }
+
+    public String getFractalName() {
+        return fractalName;
+    }
+
+    public void setFractalName(String fractalName) {
+        this.fractalName = fractalName;
     }
 
     void setPlaneSegmentFromCenter(double centerX, double centerY, double zoom) {

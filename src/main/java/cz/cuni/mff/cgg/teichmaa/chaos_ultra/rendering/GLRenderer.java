@@ -35,6 +35,8 @@ public class GLRenderer implements GLEventListener {
         this.model = model;
         this.target = target;
         this.stateModel = stateModel;
+        model.setCanvasWidth(target.getWidth());
+        model.setCanvasHeight(target.getHeight());
     }
 
     @Override
@@ -66,6 +68,7 @@ public class GLRenderer implements GLEventListener {
         model.setAvailableFractals(fractalRendererProvider.getAvailableFractals());
 
         fractalRenderer = fractalRendererProvider.getDefaultRenderer();
+        model.setFractalName(fractalRenderer.getFractalName());
 
         // fractalRenderer uses the null-object pattern, so even if not initialized properly to CudaFractalRenderer, we can still call its methods
         //todo domyslet jak je to s tim null objectem a kdo vlastne vyhazuje jakou vyjimku kdy (modul vs renderer) a jak ji zobrazovat a kdo je zopovedny za ten null object a tyhle shity
@@ -201,6 +204,9 @@ public class GLRenderer implements GLEventListener {
                 model.getPlaneSegment().getCenterX(),
                 model.getPlaneSegment().getCenterY(),
                 model.getPlaneSegment().getZoom() * height / (double) oldHeight);
+        if (oldHeight == 0) {
+            controller.showDefaultView();
+        }
 
         if (fractalRenderer.getState() == FractalRendererState.readyToRender)
             fractalRenderer.freeRenderingResources();
@@ -235,7 +241,7 @@ public class GLRenderer implements GLEventListener {
         fractalRenderer.setFractalSpecificParams(text);
     }
 
-    public void repaint(){
+    public void repaint() {
         target.repaint();
     }
 

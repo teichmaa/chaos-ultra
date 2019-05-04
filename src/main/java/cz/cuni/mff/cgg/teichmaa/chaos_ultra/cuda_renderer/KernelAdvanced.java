@@ -48,6 +48,10 @@ abstract class KernelAdvanced extends KernelMain {
     }
 
     void setOriginSegment(double left_bottom_x, double left_bottom_y, double right_top_x, double right_top_y){
+        checkArgument(left_bottom_x, "origin segment left_bottom_x");
+        checkArgument(left_bottom_y, "origin segment left_bottom_y");
+        checkArgument(right_top_x, "origin segment right_top_x");
+        checkArgument(right_top_y, "origin segment right_top_y");
         params[PARAM_IDX_IMAGE_REUSED] = pointerToAbstractReal(left_bottom_x, left_bottom_y, right_top_x, right_top_y);
     }
 

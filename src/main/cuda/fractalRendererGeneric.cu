@@ -2,6 +2,7 @@
 #include <math.h>
 #include <float.h>
 #include "helpers.hpp"
+#include "fractal.cuh"
 
 typedef unsigned int uint;
 using Pointf = Point<float>;
@@ -9,31 +10,6 @@ using Pointi = Point<uint>;
 
 __device__ const float PI_F = 3.14159265358979f;
 __device__ const uint MAX_SS_LEVEL = 256;
-
-#define CUDA_CALL(x) do { if((x) != cudaSuccess) { \
-  printf("Mandelbrot: Error at %s:%d\n",__FILE__,__LINE__); \
-  return EXIT_FAILURE;}} while(0)
-  
-#define CURAND_CALL(x) do { if((x) != CURAND_STATUS_SUCCESS) { \
-  printf("Mandelbrot: Error at %s:%d\n",__FILE__,__LINE__); \
-  return EXIT_FAILURE;}} while(0)
-
-#define DEBUG_MODE
-#ifdef DEBUG_MODE 
-  #define ASSERT(x) assert(x)
-#else 
-  #define ASSERT(x) do {} while(0)
-#endif
-
-#ifndef CUDART_VERSION
-  #error CUDART_VERSION Undefined!
-#elif (CUDART_VERSION >= 9000) //for cuda 9 and later, use __any_sync(__activemask(), predicate) instead, see Programming guide, B.13 for more details
-  #define __ALL(predicate) __all_sync(__activemask(), predicate)
-  #define __ANY(predicate) __any_sync(__activemask(), predicate)
-#else
-  #define __ALL(predicate) __all(predicate)
-  #define __ANY(predicate) __any(predicate)
-#endif
 
 
 extern "C" __global__
@@ -90,6 +66,11 @@ __device__ const Point<uint> getImageIndexes(){
   const uint inblock_idx_y = (threadID / blockWidth) * warpH + (threadID / warpH) % warpH;
   const uint idx_x = blockDim.x * blockIdx.x + inblock_idx_x;
   const uint idx_y = blockDim.y * blockIdx.y + inblock_idx_y;
+
+  // does this fix the right bottom corner problem?
+  // idx_x = blockIdx.x * blockDim.x + threadIdx.x;
+  // idx_y = blockIdx.y * blockDim.y + threadIdx.y;
+
   // { //debug
   //   uint warpid = threadID / warpH;
   //   if(idx_x < 20 && idx_y < 20){
@@ -103,6 +84,15 @@ __device__ const Point<uint> getImageIndexes(){
 __device__ __forceinline__
 pixel_info_t* getPtrToPixel(pixel_info_t** array2D, long pitch, uint x, uint y){
   return (((pixel_info_t*)((char*)array2D + y * pitch)) + x);
+}
+
+__device__ __forceinline__
+uint colorizeSampleCount(uint sampleCount){
+  const uint sampleCount100Percent = 25;
+  sampleCount = min(sampleCount, sampleCount100Percent);
+  float sampleCountRel = sampleCount / (float) sampleCount100Percent;
+  uint gray = (uint) (255 * sampleCountRel);
+  return 0xff000000 + gray + (gray << 2) + (gray << 4);
 }
 
 /// param sampleCount: Maximum number of samples to take. Actual number of samples taken will be stored here before returning. If adaptiveSS==false, the value will not change.
@@ -123,7 +113,7 @@ uint sampleTheFractal(Pointi pixel, Pointi size, Rectangle<Real> image, uint max
     const Point<Real> c = Point<Real>(image.left_bottom.x, image.right_top.y) +
       Point<Real>(1,-1) * (pixel.cast<Real>() + delta) * pixelSize;
 
-    uint escapeTime = escape(maxIterations, c);
+    uint escapeTime = iterate(maxIterations, c);
     escapeTimeSum += escapeTime;
     if(i < adaptiveTreshold){
       r[i] = escapeTime;
@@ -308,10 +298,6 @@ void fractalRenderAdvanced(pixel_info_t** output, long outputPitch, Pointi outpu
 //   if(idx.x >= width-qqq || idx.y >= height-qqq)      
 //       result = maxIterations;
 
-  if(flags & VISUALISE_SAMPLE_COUNT_FLAG_MASK){
-    result = sampleCount * visualityAmplifyCoeff;
-  }
-
   pixel_info_t* pOutput = getPtrToPixel(output, outputPitch, idx.x, idx.y);
   pOutput->value = result;
   pOutput->weight = resultWeight;
@@ -342,20 +328,23 @@ void fractalRenderAdvancedDouble(pixel_info_t** output, long outputPitch, Pointi
 }
 
 extern "C" __global__
-void compose(pixel_info_t** inputMain, long inputMainPitch, pixel_info_t** inputBcg, long inputBcgPitch, cudaSurfaceObject_t surfaceOutput, uint width, uint height, cudaSurfaceObject_t colorPalette, uint paletteLength){
-  const uint idx_x = blockDim.x * blockIdx.x + threadIdx.x;
-  const uint idx_y = blockDim.y * blockIdx.y + threadIdx.y;
-  if(idx_x >= width || idx_y >= height) return;
+void compose(pixel_info_t** inputMain, long inputMainPitch, pixel_info_t** inputBcg, long inputBcgPitch, cudaSurfaceObject_t  surfaceOutput, uint width, uint height, cudaSurfaceObject_t colorPalette, uint paletteLength){
+    const uint idx_x = blockDim.x * blockIdx.x + threadIdx.x;
+    const uint idx_y = blockDim.y * blockIdx.y + threadIdx.y;
+    if(idx_x >= width || idx_y >= height) return;
 
-  pixel_info_t* pResult;
-  pResult = getPtrToPixel(inputMain, inputMainPitch, idx_x, idx_y);
-  uint result = pResult->value;
+    pixel_info_t* pResult;
+    pResult = getPtrToPixel(inputMain, inputMainPitch, idx_x, idx_y);
+    uint result = pResult->value;
 
-  uint paletteIdx = paletteLength - (result % paletteLength) - 1;
-  ASSERT(paletteIdx < paletteLength);
-  uint resultColor;
-  surf2Dread(&resultColor, colorPalette, paletteIdx * sizeof(uint), 0);
-  surf2Dwrite(resultColor, surfaceOutput, idx_x * sizeof(uint), idx_y);
+    uint resultColor;
+    //if(flags & VISUALISE_SAMPLE_COUNT_FLAG_MASK)  //todo tento kernel nema flags
+    if(false){ 
+      resultColor = colorizeSampleCount(result); //todo pass sample count here
+    } else{
+      resultColor = colorize(colorPalette, paletteLength, result);
+    }
+    surf2Dwrite(resultColor, surfaceOutput, idx_x * sizeof(uint), idx_y);
 }
 
 extern "C" __global__
@@ -373,7 +362,7 @@ void fractalRenderUnderSampled(pixel_info_t** output, long outputPitch, uint wid
   float cx = left_bottom_x + (idx_x)  * pixelWidth;
   float cy = right_top_y - (idx_y) * pixelHeight;
 
-  uint escapeTime = escape(maxIterations, Pointf(cx, cy));
+  uint escapeTime = iterate(maxIterations, Pointf(cx, cy));
 
   for(uint x = 0; x < underSamplingLevel; x++){
     for(uint y = 0; y < underSamplingLevel; y++){

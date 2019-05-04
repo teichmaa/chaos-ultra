@@ -7,7 +7,6 @@ import jcuda.driver.CUmodule;
 
 public abstract class RenderingKernel extends CudaKernel {
 
-    //final short PARAM_IDX_SURFACE_OUT = 0;
     private final short PARAM_IDX_2D_ARR_OUT;
     private final short PARAM_IDX_2D_ARR_OUT_PITCH;
     private final short PARAM_IDX_OUT_SIZE;
@@ -25,7 +24,7 @@ public abstract class RenderingKernel extends CudaKernel {
         PARAM_IDX_MAX_ITERATIONS = registerParam();
 
         setOutputSize(width, height);
-        setBounds(left_bottom_x, left_bottom_y, right_top_x, right_top_y);
+        setPlaneSegment(left_bottom_x, left_bottom_y, right_top_x, right_top_y);
         setMaxIterations(1);
     }
 
@@ -33,7 +32,7 @@ public abstract class RenderingKernel extends CudaKernel {
     public void setParamsFromModel(Model model) {
         super.setParamsFromModel(model);
         setMaxIterations(model.getMaxIterations());
-        setBounds(
+        setPlaneSegment(
                 model.getPlaneSegment().getLeftBottom().getX(),
                 model.getPlaneSegment().getLeftBottom().getY(),
                 model.getPlaneSegment().getRightTop().getX(),
@@ -106,18 +105,22 @@ public abstract class RenderingKernel extends CudaKernel {
         return right_top_y;
     }
 
-    void setBounds(double left_bottom_x, double left_bottom_y, double right_top_x, double right_top_y) {
+    void setPlaneSegment(double left_bottom_x, double left_bottom_y, double right_top_x, double right_top_y) {
+        checkArgument(left_bottom_x, "segment left_bottom_x");
+        checkArgument(left_bottom_y, "segment left_bottom_y");
+        checkArgument(right_top_x, "segment right_top_x");
+        checkArgument(right_top_y, "segment right_top_y");
         params[PARAM_IDX_IMAGE] = pointerToAbstractReal(left_bottom_x, left_bottom_y, right_top_x, right_top_y);
         this.left_bottom_x = left_bottom_x;
         this.left_bottom_y = left_bottom_y;
         this.right_top_x = right_top_x;
         this.right_top_y = right_top_y;
-        if(isBoundsAtDoubleLimit()){
+        if(isSegmentBoundsAtDoubleLimit()){
             System.out.println("warning: double limit");
         }
     }
 
-    boolean isBoundsAtFloatLimit() {
+    boolean isSegmentBoundsAtFloatLimit() {
         double maxAllowedDxError = Math.ulp((float)left_bottom_x);
         double maxAllowedDyError = Math.ulp((float)left_bottom_y);
         double pixelWidth = Math.abs(right_top_x - left_bottom_x) / width;
@@ -125,7 +128,7 @@ public abstract class RenderingKernel extends CudaKernel {
         return (pixelWidth < maxAllowedDxError) ||( pixelHeight < maxAllowedDyError);
     }
 
-    boolean isBoundsAtDoubleLimit() {
+    boolean isSegmentBoundsAtDoubleLimit() {
         double maxAllowedDxError = Math.ulp(left_bottom_x);
         double maxAllowedDyError = Math.ulp(left_bottom_y);
         double pixelWidth = Math.abs(right_top_x - left_bottom_x) / width;
@@ -133,4 +136,11 @@ public abstract class RenderingKernel extends CudaKernel {
         return (pixelWidth < maxAllowedDxError) ||( pixelHeight < maxAllowedDyError);
     }
 
+    /**
+     * @throws IllegalArgumentException if value is NaN or +- infinity
+     */
+    protected void checkArgument(double value, String parameterName){
+        if(!Double.isFinite(value))
+            throw new IllegalArgumentException("Argument " + parameterName + " must be a finite float but is " + value + ".");
+    }
 }

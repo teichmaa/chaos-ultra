@@ -7,8 +7,8 @@ import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.CudaInitializationExce
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.FractalRenderingModule;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.modules.ModuleJulia;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.modules.ModuleMandelbrot;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.modules.Newton;
 
-import javax.swing.*;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -22,6 +22,7 @@ public class FractalRendererProvider {
         //register new fractals here:
         modules.add(ModuleJulia.class);
         modules.add(ModuleMandelbrot.class);
+        modules.add(Newton.class);
 
         //end register section
 
@@ -35,63 +36,44 @@ public class FractalRendererProvider {
         return moduleInstances.keySet();
     }
 
-    //    private CudaFractalRenderer activeRenderer;
-    private CudaFractalRenderer mandelbrot;
-    private CudaFractalRenderer julia;
+    private CudaFractalRenderer activeRenderer;
 
     public FractalRenderer getDefaultRenderer(){
         return getRenderer("mandelbrot");
     }
 
     public FractalRenderer getRenderer(String fractalName) {
-        if(fractalName == null)
-            return new FractalRendererNullObjectVerbose();
-        if (fractalName.equals("mandelbrot")) {
-            if (mandelbrot == null) {
-                FractalRenderingModule module = moduleInstances.get(fractalName);
-                module.initialize();
-                mandelbrot = new CudaFractalRenderer(module);
+        if(activeRenderer !=null){
+            if(activeRenderer.getFractalName().equals(fractalName))
+                return activeRenderer; //returning the current active renderer
+            else{
+                activeRenderer.close(); //closing the previous renderer
             }
-            return mandelbrot;
-        } else if (fractalName.equals("julia")) {
-            if (julia == null) {
-                FractalRenderingModule module = moduleInstances.get(fractalName);
-                module.initialize();
-                julia = new CudaFractalRenderer(module);
-            }
-            return julia;
         }
-        else return null;
 
-//        if(activeRenderer !=null){
-//            if(activeRenderer.getFractalName().equals(fractalName))
-//                return activeRenderer; //returning the current active renderer
-//            else{
-//                activeRenderer.close(); //closing the previous renderer
-//            }
-//        }
-//
-//        if (!moduleInstances.containsKey(fractalName)) {
-//            throw new IllegalArgumentException("Unknown fractal: " + fractalName);
-//        }
-//        FractalRenderingModule module = moduleInstances.get(fractalName);
-//        if(!module.isInitialized()){
-//            module.initialize();
-//        }
-//
-//        //TODO tohle je nejaky divny slozity, jak tu je vic rendereru a sdili spolu params. To je potreba jeste domyslet.
-//        activeRenderer = new CudaFractalRenderer(module, glParams, chaosParams);
-//        return activeRenderer;
+        if (!moduleInstances.containsKey(fractalName)) {
+            throw new IllegalArgumentException("Unknown fractal: " + fractalName);
+        }
+        FractalRenderingModule module = moduleInstances.get(fractalName);
+        if(!module.isInitialized()){
+            module.initialize();
+        }
+
+        activeRenderer = new CudaFractalRenderer(module);
+        return activeRenderer;
     }
 
     /**
      * @throws cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.CudaInitializationException
      */
-    private static FractalRenderingModule createInstance(Class<? extends FractalRenderingModule> c) {
+    private static FractalRenderingModule createInstance(Class<? extends FractalRenderingModule> clazz) {
         assert CudaHelpers.isCudaContextThread();
         FractalRenderingModule instance;
+        if(Arrays.stream(clazz.getConstructors()).noneMatch(c -> c.getParameterCount() == 0)){
+            throw new CudaInitializationException(clazz + " has no parameterless constructor.");
+        }
         try {
-            instance = c.newInstance();
+            instance = clazz.newInstance();
         } catch (InstantiationException | IllegalAccessException e) {
             throw new CudaInitializationException(e);
         } catch (UnsatisfiedLinkError e) {
