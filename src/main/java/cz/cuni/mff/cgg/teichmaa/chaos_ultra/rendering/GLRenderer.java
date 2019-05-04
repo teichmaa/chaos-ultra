@@ -64,10 +64,11 @@ public class GLRenderer implements GLEventListener {
         );
         GLHelpers.specifyTextureSizeAndData(gl, paletteTexture, colorPalette);
 
-        fractalRendererProvider = new FractalRendererProvider(model);
+        fractalRendererProvider = new FractalRendererProvider();
+        model.setAvailableFractals(fractalRendererProvider.getAvailableFractals());
 
-//        fractalRenderer = fractalRendererProvider.getRenderer("mandelbrot");
-        fractalRenderer = fractalRendererProvider.getRenderer("julia");
+        fractalRenderer = fractalRendererProvider.getDefaultRenderer();
+
         // fractalRenderer uses the null-object pattern, so even if not initialized properly to CudaFractalRenderer, we can still call its methods
         //todo domyslet jak je to s tim null objectem a kdo vlastne vyhazuje jakou vyjimku kdy (modul vs renderer) a jak ji zobrazovat a kdo je zopovedny za ten null object a tyhle shity
 
@@ -201,9 +202,9 @@ public class GLRenderer implements GLEventListener {
         model.setCanvasWidth(width);
         model.setCanvasHeight(height);
         model.setPlaneSegmentFromCenter(
-                model.getSegment().getCenterX(),
-                model.getSegment().getCenterY(),
-                model.getSegment().getZoom() * height / (double) oldHeight);
+                model.getPlaneSegment().getCenterX(),
+                model.getPlaneSegment().getCenterY(),
+                model.getPlaneSegment().getZoom() * height / (double) oldHeight);
 
         if (fractalRenderer.getState() == FractalRendererState.readyToRender)
             fractalRenderer.freeRenderingResources();

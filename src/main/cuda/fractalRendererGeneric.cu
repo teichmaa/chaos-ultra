@@ -245,7 +245,13 @@ void fractalRenderAdvanced(pixel_info_t** output, long outputPitch, Pointi outpu
   const Pointi idx = getImageIndexes();
   if(idx.x >= outputSize.x || idx.y >= outputSize.y) return;
   if(idx.x == 0 && idx.y == 0){
-    // printf("fractalRenderReuseSamples:\n");
+    // printf("fractalRenderAdvanced:\n");
+    // printf("\t maxIterations:%d\n",maxIterations);
+    // printf("\t focus:%d,%d\n",focus.x, focus.y);
+    // printf("\t fov:%d\n",(flags & USE_FOVEATION_FLAG_MASK));
+    // printf("\t reuse:%d\n",flags & USE_SAMPLE_REUSE_FLAG_MASK);
+    // printf("\t ad SS:%d\n",flags & USE_ADAPTIVE_SS_FLAG_MASK);
+    // printf("\t zooming:%d\n",flags & IS_ZOOMING_FLAG_MASK);
     // printf("\n");
   }
   ASSERT(idx.x < outputSize.x);

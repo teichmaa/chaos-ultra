@@ -9,8 +9,6 @@ public class PointDoubleImmutable {
         this.y = y;
     }
 
-    @org.jetbrains.annotations.NotNull
-    @org.jetbrains.annotations.Contract(value = "_, _ -> new", pure = true)
     public static PointDoubleImmutable of(double x, double y){
         return new PointDoubleImmutable(x, y);
     }

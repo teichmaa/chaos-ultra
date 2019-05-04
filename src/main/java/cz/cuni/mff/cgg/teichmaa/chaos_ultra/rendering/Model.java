@@ -1,9 +1,14 @@
 package cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering;
 
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.gui.GUIModel;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.model.PlaneSegment;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.model.RenderingModel;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.FloatPrecision;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.PointInt;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 
 import static cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.FractalRenderer.SUPER_SAMPLING_MAX_LEVEL;
 
@@ -11,14 +16,14 @@ import static cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.FractalRenderer.SUP
  * Represents all the rendering parameters that are used by current version of the Chaos Ultra project.
  */
 
-public class Model implements RenderingModel {
+public class Model implements RenderingModel, GUIModel {
 
     private FloatPrecision floatingPointPrecision = FloatPrecision.defaultValue;
     private boolean useFoveatedRendering;
     private PointInt mouseFocus = new PointInt();
     private boolean zooming;
     private int maxIterations;
-    private PlaneSegment segment = new PlaneSegment();
+    private PlaneSegment planeSegment = new PlaneSegment();
     private boolean useSampleReuse;
     private int superSamplingLevel;
     private boolean useAdaptiveSuperSampling;
@@ -28,6 +33,7 @@ public class Model implements RenderingModel {
     private int canvasHeight;
     private boolean sampleReuseCacheDirty;
     private PointInt lastMousePosition = new PointInt();
+    private Collection<String> availableFractals;
 
     /**
      * @return deep copy of itself
@@ -39,7 +45,7 @@ public class Model implements RenderingModel {
         copy.mouseFocus = this.mouseFocus.copy();
         copy.zooming = this.zooming;
         copy.maxIterations = this.maxIterations;
-        copy.segment = this.segment.copy();
+        copy.planeSegment = this.planeSegment.copy();
         copy.useSampleReuse = this.useSampleReuse;
         copy.superSamplingLevel = this.superSamplingLevel;
         copy.useAdaptiveSuperSampling = this.useAdaptiveSuperSampling;
@@ -49,6 +55,7 @@ public class Model implements RenderingModel {
         copy.canvasHeight = this.canvasHeight;
         copy.sampleReuseCacheDirty = this.sampleReuseCacheDirty;
         copy.lastMousePosition = this.lastMousePosition;
+        copy.availableFractals = new ArrayList<>(availableFractals);
         return copy;
     }
 
@@ -102,8 +109,8 @@ public class Model implements RenderingModel {
         this.maxIterations = maxIterations;
     }
 
-    public PlaneSegment getSegment() {
-        return segment;
+    public PlaneSegment getPlaneSegment() {
+        return planeSegment;
     }
 
     @Override
@@ -187,6 +194,15 @@ public class Model implements RenderingModel {
         return lastMousePosition;
     }
 
+    @Override
+    public Collection<String> getAvailableFractals() {
+        return availableFractals;
+    }
+
+    public void setAvailableFractals(Collection<String> availableFractals) {
+        this.availableFractals = availableFractals;
+    }
+
     void setPlaneSegmentFromCenter(double centerX, double centerY, double zoom) {
         double windowRelHeight = 1;
         double windowRelWidth = windowRelHeight / (double) canvasHeight * canvasWidth;
@@ -195,7 +211,7 @@ public class Model implements RenderingModel {
         double segment_right_top_x = centerX + windowRelWidth * zoom / 2;
         double segment_right_top_y = centerY + windowRelHeight * zoom / 2;
 
-        this.segment.setAll(segment_left_bottom_x, segment_left_bottom_y, segment_right_top_x, segment_right_top_y);
+        this.planeSegment.setAll(segment_left_bottom_x, segment_left_bottom_y, segment_right_top_x, segment_right_top_y);
     }
 
 }

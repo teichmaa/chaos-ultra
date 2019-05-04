@@ -1,4 +1,4 @@
-package cz.cuni.mff.cgg.teichmaa.chaos_ultra.gui;
+package cz.cuni.mff.cgg.teichmaa.chaos_ultra.util;
 
 public class CyclicBuffer {
 

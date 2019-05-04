@@ -2,11 +2,13 @@ package cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering;
 
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.CudaFractalRenderer;
 
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.CudaHelpers;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.CudaInitializationException;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.FractalRenderingModule;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.modules.ModuleJulia;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.modules.ModuleMandelbrot;
 
+import javax.swing.*;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -14,32 +16,36 @@ import java.util.stream.Collectors;
 public class FractalRendererProvider {
 
     private static final HashSet<Class<? extends FractalRenderingModule>> modules = new HashSet<>();
-    private static final Map<String, FractalRenderingModule> moduleInstances;
+    private final Map<String, FractalRenderingModule> moduleInstances;
 
-    //register new fractals here:
     static {
+        //register new fractals here:
         modules.add(ModuleJulia.class);
         modules.add(ModuleMandelbrot.class);
 
+        //end register section
+
+    }
+
+    public FractalRendererProvider() {
         moduleInstances = modules.stream().map(FractalRendererProvider::createInstance).collect(Collectors.toMap(FractalRenderingModule::getFractalName, Function.identity()));
     }
 
-    public static Set<String> getAvailableFractals() {
+    public Set<String> getAvailableFractals() {
         return moduleInstances.keySet();
     }
-
-
-    public FractalRendererProvider(Model chaosParams) {
-        this.chaosParams = chaosParams;
-    }
-
-    private Model chaosParams;
 
     //    private CudaFractalRenderer activeRenderer;
     private CudaFractalRenderer mandelbrot;
     private CudaFractalRenderer julia;
 
+    public FractalRenderer getDefaultRenderer(){
+        return getRenderer("mandelbrot");
+    }
+
     public FractalRenderer getRenderer(String fractalName) {
+        if(fractalName == null)
+            return new FractalRendererNullObjectVerbose();
         if (fractalName.equals("mandelbrot")) {
             if (mandelbrot == null) {
                 FractalRenderingModule module = moduleInstances.get(fractalName);
@@ -82,6 +88,7 @@ public class FractalRendererProvider {
      * @throws cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.CudaInitializationException
      */
     private static FractalRenderingModule createInstance(Class<? extends FractalRenderingModule> c) {
+        assert CudaHelpers.isCudaContextThread();
         FractalRenderingModule instance;
         try {
             instance = c.newInstance();

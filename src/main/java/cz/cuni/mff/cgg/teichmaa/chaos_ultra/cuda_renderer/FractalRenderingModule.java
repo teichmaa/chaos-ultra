@@ -35,9 +35,9 @@ public abstract class FractalRenderingModule implements Closeable {
 
     static {
         //This has to be called from the AWT GL-Thread
-//        if(!SwingUtilities.isEventDispatchThread()){
-//            throw new IllegalStateException("Cuda has to be initialized from Swing event dispatch thread.");
-//        }
+        if(!CudaHelpers.isCudaContextThread()){
+            throw new IllegalStateException("Cuda has to be initialized from a specific thread.");
+        }
         CudaHelpers.cudaInit();
 
         //locate directory with kernels:

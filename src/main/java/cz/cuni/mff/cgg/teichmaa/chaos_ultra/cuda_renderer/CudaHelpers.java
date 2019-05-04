@@ -6,6 +6,8 @@ import jcuda.driver.CUdevice;
 import jcuda.driver.JCudaDriver;
 import jcuda.runtime.JCuda;
 
+import javax.swing.*;
+
 public class CudaHelpers {
     private static boolean already = false;
 
@@ -40,6 +42,10 @@ public class CudaHelpers {
 
         CudaHelpers.dev = dev;
         CudaHelpers.ctx = ctx;
+    }
+
+    public static boolean isCudaContextThread(){
+        return SwingUtilities.isEventDispatchThread();
     }
 
     static Pointer pointerTo(int value){

@@ -34,10 +34,10 @@ public abstract class RenderingKernel extends CudaKernel {
         super.setParamsFromModel(model);
         setMaxIterations(model.getMaxIterations());
         setBounds(
-                model.getSegment().getLeftBottom().getX(),
-                model.getSegment().getLeftBottom().getY(),
-                model.getSegment().getRightTop().getX(),
-                model.getSegment().getRightTop().getY()
+                model.getPlaneSegment().getLeftBottom().getX(),
+                model.getPlaneSegment().getLeftBottom().getY(),
+                model.getPlaneSegment().getRightTop().getX(),
+                model.getPlaneSegment().getRightTop().getY()
         );
     }
 

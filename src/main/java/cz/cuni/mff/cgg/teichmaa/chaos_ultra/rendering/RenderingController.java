@@ -5,12 +5,15 @@ import com.jogamp.opengl.awt.GLCanvas;
 import com.jogamp.opengl.util.Animator;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.gui.ControllerFX;
 
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.gui.GUIController;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.PointInt;
 
 import javax.swing.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
+import java.util.Collection;
+import java.util.Set;
 
 import static cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.FractalRenderer.SUPER_SAMPLING_MAX_LEVEL;
 
@@ -36,16 +39,16 @@ public class RenderingController extends MouseAdapter {
     //        |__|__|__|__|           (0,0) x > .......
 
 
-    private final ControllerFX controllerFX;
     private final Animator animator;
 
-    private final Model model = new Model();
+    private final GUIController guiController;
     private final GLRenderer glRenderer;
 
-    private RenderingModeFSM currentMode = new RenderingModeFSM();
+    private final Model model = new Model();
+    private final RenderingModeFSM currentMode = new RenderingModeFSM();
 
-    public RenderingController(GLCanvas target, ControllerFX controllerFX) {
-        this.controllerFX = controllerFX;
+    public RenderingController(GLCanvas target, GUIController guiController) {
+        this.guiController = guiController;
         glRenderer = new GLRenderer(this, model,currentMode,target);
         animator = new Animator(target);
         animator.setRunAsFastAsPossible(true);
@@ -75,11 +78,11 @@ public class RenderingController extends MouseAdapter {
         assert SwingUtilities.isEventDispatchThread();
 
         if (SwingUtilities.isLeftMouseButton(e)) {
-            double canvasToZoomCoeff = model.getSegment().getSegmentHeight() / model.getCanvasHeight();
+            double canvasToZoomCoeff = model.getPlaneSegment().getSegmentHeight() / model.getCanvasHeight();
             double dx = (model.getLastMousePosition().getX() - e.getX()) * canvasToZoomCoeff;
             double dy = -(model.getLastMousePosition().getY() - e.getY()) * canvasToZoomCoeff;
-            model.getSegment().increaseXsBy(dx);
-            model.getSegment().increaseYsBy(dy);
+            model.getPlaneSegment().increaseXsBy(dx);
+            model.getPlaneSegment().increaseYsBy(dy);
 
             currentMode.startMoving();
             repaint();
@@ -140,16 +143,16 @@ public class RenderingController extends MouseAdapter {
      * @param into      whether to zoom in or out
      */
     private void zoomAt(int texture_x, int texture_y, boolean into) {
-        double segment_width = model.getSegment().getSegmentWidth();
-        double segment_height = model.getSegment().getSegmentHeight();
+        double segment_width = model.getPlaneSegment().getSegmentWidth();
+        double segment_height = model.getPlaneSegment().getSegmentHeight();
 
         double relTop = texture_y / (double) model.getCanvasHeight(); //relative distance from zoomingCenter to border, \in (0,1)
         double relBtm = 1 - relTop;
         double relLeft = texture_x / (double) model.getCanvasWidth();
         double relRght = 1 - relLeft;
 
-        double center_x = model.getSegment().getLeftBottom().getX() + segment_width * relLeft;
-        double center_y = model.getSegment().getLeftBottom().getY() + segment_height * relBtm;
+        double center_x = model.getPlaneSegment().getLeftBottom().getX() + segment_width * relLeft;
+        double center_y = model.getPlaneSegment().getLeftBottom().getY() + segment_height * relBtm;
 
         double zoom_coeff = this.ZOOM_COEFF;
         if (!into) zoom_coeff = 2f - this.ZOOM_COEFF; //todo refactor
@@ -159,7 +162,7 @@ public class RenderingController extends MouseAdapter {
         double r_t_new_x = center_x + segment_width * relRght * zoom_coeff;
         double r_t_new_y = center_y + segment_height * relTop * zoom_coeff;
 
-        model.getSegment().setAll(l_b_new_x, l_b_new_y, r_t_new_x, r_t_new_y);
+        model.getPlaneSegment().setAll(l_b_new_x, l_b_new_y, r_t_new_x, r_t_new_y);
     }
 
     public void showDefaultView() {
@@ -174,7 +177,7 @@ public class RenderingController extends MouseAdapter {
         model.setUseSampleReuse(true);
         model.setAutomaticQuality(true);
         model.setVisualiseSampleCount(false);
-        controllerFX.onModelUpdated(model);
+        guiController.onModelUpdated(model.copy());
 
         repaint();
     }
@@ -183,7 +186,7 @@ public class RenderingController extends MouseAdapter {
         assert SwingUtilities.isEventDispatchThread();
         //todo change automatic quality state?
         setPlaneSegment(center_x, center_y, zoom);
-        controllerFX.onModelUpdated(model.copy());
+        guiController.onModelUpdated(model.copy());
     }
 
     private void setPlaneSegment(double center_x, double center_y, double zoom) {
@@ -194,7 +197,7 @@ public class RenderingController extends MouseAdapter {
         assert SwingUtilities.isEventDispatchThread();
         //todo does this affect automatic quality?
         model.setMaxIterations(maxIterations);
-        controllerFX.onModelUpdated(model.copy());
+        guiController.onModelUpdated(model.copy());
     }
 
     public void setSuperSamplingLevelRequested(int supSampLvl) {
@@ -205,7 +208,7 @@ public class RenderingController extends MouseAdapter {
             System.out.println("Warning: super sampling level clamped to " + newValue + ", higher is not supported");
         }
         model.setSuperSamplingLevel(newValue);
-        controllerFX.onModelUpdated(model.copy());
+        guiController.onModelUpdated(model.copy());
     }
 
     public void repaint() {
@@ -220,6 +223,8 @@ public class RenderingController extends MouseAdapter {
 
     public void onFractalChanged(String fractalName) {
         assert SwingUtilities.isEventDispatchThread();
+        if(fractalName == null || fractalName.isEmpty())
+            return;
         animator.stop();
         currentMode.resetState();
         glRenderer.onFractalChanged(fractalName);
@@ -270,7 +275,7 @@ public class RenderingController extends MouseAdapter {
     }
 
     void onRenderingDone(){
-        controllerFX.onModelUpdated(model.copy());
+        guiController.onModelUpdated(model.copy());
     }
 
 
@@ -278,4 +283,5 @@ public class RenderingController extends MouseAdapter {
         currentMode.startProgressiveRendering();
         repaint();
     }
+
 }

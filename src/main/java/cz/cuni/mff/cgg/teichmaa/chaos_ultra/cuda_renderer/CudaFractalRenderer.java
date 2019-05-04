@@ -164,7 +164,7 @@ public class CudaFractalRenderer implements FractalRenderer {
                 throw new IllegalStateException("Precision not supported: " + model.getFloatingPointPrecision());
         }
 
-        k.setOriginSegment(lastRendering.getSegment());
+        k.setOriginSegment(lastRendering.getPlaneSegment());
         k.setParamsFromModel(model);
         k.setInput(memory.getPrimary2DBuffer(), memory.getPrimary2DBufferPitch());
         k.setOutput(memory.getSecondary2DBuffer(), memory.getSecondary2DBufferPitch());

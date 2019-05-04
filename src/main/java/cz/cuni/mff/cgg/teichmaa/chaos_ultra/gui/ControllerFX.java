@@ -15,9 +15,10 @@ import java.io.File;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Objects;
 import java.util.ResourceBundle;
 
-public class ControllerFX implements Initializable {
+public class ControllerFX implements Initializable, GUIController {
 
     private static final char UNICODE_TIMES_CHAR = '\u00D7';
 
@@ -65,9 +66,10 @@ public class ControllerFX implements Initializable {
         if (singleton == null)
             singleton = this;
 
-        //todo do this properly
-        fractalChoiceBox.setItems(FXCollections.observableArrayList("mandelbrot","julia"));
-        fractalChoiceBox.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> SwingUtilities.invokeLater(() -> renderingController.onFractalChanged(newValue)));
+        fractalChoiceBox.getSelectionModel().selectedItemProperty().addListener((__, oldValue, newValue) -> {
+            if(!Objects.equals(oldValue, newValue))
+                SwingUtilities.invokeLater(() -> renderingController.onFractalChanged(newValue));
+        });
 
         visualiseSampleCount.selectedProperty().addListener((__,___,value) -> SwingUtilities.invokeLater(
                 () -> renderingController.setVisualiseSampleCount(value))
@@ -205,15 +207,16 @@ public class ControllerFX implements Initializable {
         SwingUtilities.invokeLater(() -> renderingController.setFractalSpecificParams(fractalSpecificParams.getText().trim()));
     }
 
-    public void onModelUpdated(Model model) {
+    public void onModelUpdated(GUIModel model) {
         Platform.runLater(() -> {
-            center_x.setText(Double.toString(model.getSegment().getCenterX()));
-            center_y.setText(Double.toString(model.getSegment().getCenterY()));
-            zoom.setText(Double.toString(model.getSegment().getZoom()));
+            center_x.setText(Double.toString(model.getPlaneSegment().getCenterX()));
+            center_y.setText(Double.toString(model.getPlaneSegment().getCenterY()));
+            zoom.setText(Double.toString(model.getPlaneSegment().getZoom()));
             precision.setText(model.getFloatingPointPrecision().toString());
             superSamplingLevel.setText(Integer.toString(model.getSuperSamplingLevel()));
             maxIterations.setText(Integer.toString(model.getMaxIterations()));
             dimensions.setText("" + model.getCanvasWidth() + " " + UNICODE_TIMES_CHAR + " " + model.getCanvasHeight());
+            fractalChoiceBox.setItems(FXCollections.observableArrayList(model.getAvailableFractals()));
         });
     }
 }
