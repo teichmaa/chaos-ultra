@@ -3,6 +3,7 @@ package cz.cuni.mff.cgg.teichmaa.chaos_ultra.gui;
 import com.jogamp.opengl.GLCapabilities;
 import com.jogamp.opengl.GLProfile;
 import com.jogamp.opengl.awt.GLCanvas;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.RenderingController;
 import javafx.application.Platform;
 import javafx.embed.swing.JFXPanel;
 import javafx.fxml.FXMLLoader;
@@ -59,7 +60,7 @@ class SceneBuilder {
         final GLCanvas fractalCanvas = new GLCanvas(capabilities);
         final RenderingController renderingController = new RenderingController(fractalCanvas, controllerFX);
         {
-            fractalCanvas.addGLEventListener(renderingController);
+            fractalCanvas.addGLEventListener(renderingController.getView());
             fractalCanvas.addMouseWheelListener(renderingController);
             fractalCanvas.addMouseMotionListener(renderingController);
             fractalCanvas.addMouseListener(renderingController);

@@ -1,12 +1,8 @@
 package cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer;
 
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.FractalRenderer;
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.FractalRendererException;
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.FractalRendererState;
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.OpenGLParams;
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.rendering_params.RenderingModel;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.*;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.Model;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.FloatPrecision;
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.OpenGLTexture;
 import jcuda.CudaException;
 import jcuda.NativePointerObject;
 import jcuda.Pointer;
@@ -50,7 +46,7 @@ public class CudaFractalRenderer implements FractalRenderer {
     private FractalRenderingModule module;
     private cudaStream_t defaultStream = new cudaStream_t();
 
-    private OpenGLParams glParams;
+    private GLParams glParams;
     private cudaGraphicsResource outputTextureResource = new cudaGraphicsResource();
     private cudaGraphicsResource paletteTextureResource = new cudaGraphicsResource();
 
@@ -72,11 +68,11 @@ public class CudaFractalRenderer implements FractalRenderer {
     private FractalRendererState state = FractalRendererState.notInitialized;
 
     @Override
-    public void initializeRendering(OpenGLParams glParams) {
+    public void initializeRendering(GLParams glParams) {
         if(state == FractalRendererState.readyToRender) throw new IllegalStateException("Already initialized.");
 
         this.glParams = glParams;
-        OpenGLTexture outputTexture = glParams.getOutput();
+        GLTexture outputTexture = glParams.getOutput();
         int width = outputTexture.getWidth();
         int height = outputTexture.getHeight();
 
@@ -143,10 +139,10 @@ public class CudaFractalRenderer implements FractalRenderer {
         JCudaDriver.cuCtxSynchronize();
     }
 
-    private RenderingModel lastRendering = new RenderingModel();
+    private Model lastRendering = new Model();
 
     @Override
-    public void renderFast(RenderingModel model) {
+    public void renderFast(Model model) {
         if(state != FractalRendererState.readyToRender) throw new IllegalStateException("Renderer has to be initialized first");
 
         if (model.isSampleReuseCacheDirty() || memory.isPrimary2DBufferDirty()) {
@@ -181,7 +177,7 @@ public class CudaFractalRenderer implements FractalRenderer {
     }
 
     @Override
-    public void renderQuality(RenderingModel model) {
+    public void renderQuality(Model model) {
         if(state != FractalRendererState.readyToRender) throw new IllegalStateException("Renderer has to be initialized first");
 
         updateFloatPrecision(model);
@@ -383,7 +379,7 @@ public class CudaFractalRenderer implements FractalRenderer {
     }
 
 
-    private void updateFloatPrecision(RenderingModel model) {
+    private void updateFloatPrecision(Model model) {
         model.setFloatingPointPrecision(kernelMainFloat.isBoundsAtFloatLimit() ? FloatPrecision.doublePrecision : FloatPrecision.singlePrecision);
     }
 

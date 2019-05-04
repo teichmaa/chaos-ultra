@@ -1,11 +1,9 @@
 package cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering;
 
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.rendering_params.RenderingModel;
-
 public class FractalRendererNullObject implements FractalRenderer {
 
     @Override
-    public void initializeRendering(OpenGLParams glParams) {
+    public void initializeRendering(GLParams glParams) {
 
     }
 
@@ -30,12 +28,12 @@ public class FractalRendererNullObject implements FractalRenderer {
     }
 
     @Override
-    public void renderFast(RenderingModel model) {
+    public void renderFast(Model model) {
 
     }
 
     @Override
-    public void renderQuality(RenderingModel model) {
+    public void renderQuality(Model model) {
 
     }
 

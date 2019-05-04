@@ -1,20 +1,21 @@
-package cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.rendering_params;
+package cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering;
 
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.FractalRenderer;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.model.PlaneSegment;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.model.RenderingModel;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.FloatPrecision;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.PointInt;
+
+import static cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.FractalRenderer.SUPER_SAMPLING_MAX_LEVEL;
 
 /**
  * Represents all the rendering parameters that are used by current version of the Chaos Ultra project.
  */
 
-public class RenderingModel implements FoveatedRendering, IterationLimit, SampleReuse, SuperSampling, DynamicFloatingPointPrecision, AutomaticQuality {
-
-    public static final int SUPER_SAMPLING_MAX_LEVEL = FractalRenderer.SUPER_SAMPLING_MAX_LEVEL;
+public class Model implements RenderingModel {
 
     private FloatPrecision floatingPointPrecision = FloatPrecision.defaultValue;
     private boolean useFoveatedRendering;
-    private PointInt focus = new PointInt();
+    private PointInt mouseFocus = new PointInt();
     private boolean zooming;
     private int maxIterations;
     private PlaneSegment segment = new PlaneSegment();
@@ -26,6 +27,30 @@ public class RenderingModel implements FoveatedRendering, IterationLimit, Sample
     private int canvasWidth;
     private int canvasHeight;
     private boolean sampleReuseCacheDirty;
+    private PointInt lastMousePosition = new PointInt();
+
+    /**
+     * @return deep copy of itself
+     */
+    public Model copy() {
+        Model copy = new Model();
+        copy.floatingPointPrecision = this.floatingPointPrecision;
+        copy.useFoveatedRendering = this.useFoveatedRendering;
+        copy.mouseFocus = this.mouseFocus.copy();
+        copy.zooming = this.zooming;
+        copy.maxIterations = this.maxIterations;
+        copy.segment = this.segment.copy();
+        copy.useSampleReuse = this.useSampleReuse;
+        copy.superSamplingLevel = this.superSamplingLevel;
+        copy.useAdaptiveSuperSampling = this.useAdaptiveSuperSampling;
+        copy.visualiseSampleCount = this.visualiseSampleCount;
+        copy.automaticQuality = this.automaticQuality;
+        copy.canvasWidth = this.canvasWidth;
+        copy.canvasHeight = this.canvasHeight;
+        copy.sampleReuseCacheDirty = this.sampleReuseCacheDirty;
+        copy.lastMousePosition = this.lastMousePosition;
+        return copy;
+    }
 
     @Override
     public FloatPrecision getFloatingPointPrecision() {
@@ -48,13 +73,13 @@ public class RenderingModel implements FoveatedRendering, IterationLimit, Sample
     }
 
     @Override
-    public PointInt getFocus() {
-        return focus;
+    public PointInt getMouseFocus() {
+        return mouseFocus;
     }
 
     @Override
-    public void setFocus(PointInt focus) {
-        this.focus = focus;
+    public void setMouseFocus(PointInt mouseFocus) {
+        this.mouseFocus = mouseFocus;
     }
 
     @Override
@@ -138,7 +163,7 @@ public class RenderingModel implements FoveatedRendering, IterationLimit, Sample
         return canvasWidth;
     }
 
-    public void setCanvasWidth(int canvasWidth) {
+    void setCanvasWidth(int canvasWidth) {
         this.canvasWidth = canvasWidth;
     }
 
@@ -146,7 +171,7 @@ public class RenderingModel implements FoveatedRendering, IterationLimit, Sample
         return canvasHeight;
     }
 
-    public void setCanvasHeight(int canvasHeight) {
+    void setCanvasHeight(int canvasHeight) {
         this.canvasHeight = canvasHeight;
     }
 
@@ -158,25 +183,19 @@ public class RenderingModel implements FoveatedRendering, IterationLimit, Sample
         this.sampleReuseCacheDirty = sampleReuseCacheDirty;
     }
 
-    /**
-     * @return deep copy of itself
-     */
-    public RenderingModel copy() {
-        RenderingModel copy = new RenderingModel();
-        copy.floatingPointPrecision = this.floatingPointPrecision;
-        copy.useFoveatedRendering = this.useFoveatedRendering;
-        copy.focus = this.focus.copy();
-        copy.zooming = this.zooming;
-        copy.maxIterations = this.maxIterations;
-        copy.segment = this.segment.copy();
-        copy.useSampleReuse = this.useSampleReuse;
-        copy.superSamplingLevel = this.superSamplingLevel;
-        copy.useAdaptiveSuperSampling = this.useAdaptiveSuperSampling;
-        copy.visualiseSampleCount = this.visualiseSampleCount;
-        copy.automaticQuality = this.automaticQuality;
-        copy.canvasWidth = this.canvasWidth;
-        copy.canvasHeight = this.canvasHeight;
-        copy.sampleReuseCacheDirty = this.sampleReuseCacheDirty;
-        return copy;
+    PointInt getLastMousePosition() {
+        return lastMousePosition;
     }
+
+    void setPlaneSegmentFromCenter(double centerX, double centerY, double zoom) {
+        double windowRelHeight = 1;
+        double windowRelWidth = windowRelHeight / (double) canvasHeight * canvasWidth;
+        double segment_left_bottom_x = centerX - windowRelWidth * zoom / 2;
+        double segment_left_bottom_y = centerY - windowRelHeight * zoom / 2;
+        double segment_right_top_x = centerX + windowRelWidth * zoom / 2;
+        double segment_right_top_y = centerY + windowRelHeight * zoom / 2;
+
+        this.segment.setAll(segment_left_bottom_x, segment_left_bottom_y, segment_right_top_x, segment_right_top_y);
+    }
+
 }

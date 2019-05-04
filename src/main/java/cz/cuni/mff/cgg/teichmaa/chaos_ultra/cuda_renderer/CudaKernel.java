@@ -1,6 +1,6 @@
 package cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer;
 
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.rendering_params.RenderingModel;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.Model;
 import jcuda.CudaException;
 import jcuda.NativePointerObject;
 import jcuda.driver.CUfunction;
@@ -123,7 +123,7 @@ public abstract class CudaKernel {
      * Should be overridden by descendants.
      * @param model values to use
      */
-    public void setParamsFromModel(RenderingModel model){
+    public void setParamsFromModel(Model model){
         /* nothing */
     }
 }

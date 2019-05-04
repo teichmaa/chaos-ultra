@@ -1,4 +1,4 @@
-package cz.cuni.mff.cgg.teichmaa.chaos_ultra.util;
+package cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering;
 
 import com.jogamp.opengl.GL2;
 
@@ -10,11 +10,11 @@ import static com.jogamp.opengl.GL2ES3.GL_QUADS;
 import static com.jogamp.opengl.fixedfunc.GLMatrixFunc.GL_MODELVIEW;
 
 public class GLHelpers {
-    public static void specifyTextureSize(GL2 glContext, OpenGLTexture texture) {
+    public static void specifyTextureSize(GL2 glContext, GLTexture texture) {
         specifyTextureSizeAndData(glContext, texture, null);
     }
 
-    public static void specifyTextureSizeAndData(GL2 glContext, OpenGLTexture texture, Buffer data) {
+    public static void specifyTextureSizeAndData(GL2 glContext, GLTexture texture, Buffer data) {
 
         glContext.glMatrixMode(GL_MODELVIEW);
         glContext.glLoadIdentity();
@@ -36,7 +36,7 @@ public class GLHelpers {
      * @param glContext context to draw on
      * @param texture texture to be drawn
      */
-    public static void drawRectangle(GL2 glContext, OpenGLTexture texture){
+    public static void drawRectangle(GL2 glContext, GLTexture texture){
         glContext.glMatrixMode(GL_MODELVIEW);
         //gl.glPushMatrix();
         glContext.glLoadIdentity();

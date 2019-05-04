@@ -1,4 +1,4 @@
-package cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.rendering_params;
+package cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.model;
 
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.PointInt;
 
@@ -9,9 +9,9 @@ public interface FoveatedRendering {
 
     void setUseFoveatedRendering(boolean useFoveatedRendering);
 
-    void setFocus(PointInt focus);
+    void setMouseFocus(PointInt mouseFocus);
 
-    PointInt getFocus();
+    PointInt getMouseFocus();
 
     void setZooming(boolean isZooming);
 

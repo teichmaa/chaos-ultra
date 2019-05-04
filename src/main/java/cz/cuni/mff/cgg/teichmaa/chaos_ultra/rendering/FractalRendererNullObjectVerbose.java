@@ -1,6 +1,5 @@
 package cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering;
 
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.rendering_params.RenderingModel;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.JavaHelpers;
 
 public class FractalRendererNullObjectVerbose implements FractalRenderer {
@@ -14,7 +13,7 @@ public class FractalRendererNullObjectVerbose implements FractalRenderer {
     }
 
     @Override
-    public void initializeRendering(OpenGLParams glParams) {
+    public void initializeRendering(GLParams glParams) {
         printMethodName();
     }
 
@@ -41,12 +40,12 @@ public class FractalRendererNullObjectVerbose implements FractalRenderer {
     }
 
     @Override
-    public void renderFast(RenderingModel model) {
+    public void renderFast(Model model) {
         printMethodName();
     }
 
     @Override
-    public void renderQuality(RenderingModel model) {
+    public void renderQuality(Model model) {
         printMethodName();
     }
 

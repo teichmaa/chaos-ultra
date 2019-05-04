@@ -1,4 +1,4 @@
-package cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.rendering_params;
+package cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.model;
 
 public interface SampleReuse {
 

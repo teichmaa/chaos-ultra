@@ -6,7 +6,6 @@ import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.CudaInitializationExce
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.FractalRenderingModule;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.modules.ModuleJulia;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.modules.ModuleMandelbrot;
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.rendering_params.RenderingModel;
 
 import java.util.*;
 import java.util.function.Function;
@@ -30,11 +29,11 @@ public class FractalRendererProvider {
     }
 
 
-    public FractalRendererProvider(RenderingModel chaosParams) {
+    public FractalRendererProvider(Model chaosParams) {
         this.chaosParams = chaosParams;
     }
 
-    private RenderingModel chaosParams;
+    private Model chaosParams;
 
     //    private CudaFractalRenderer activeRenderer;
     private CudaFractalRenderer mandelbrot;

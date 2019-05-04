@@ -1,6 +1,7 @@
 package cz.cuni.mff.cgg.teichmaa.chaos_ultra.gui;
 
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.rendering_params.RenderingModel;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.Model;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.RenderingController;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
@@ -120,7 +121,7 @@ public class ControllerFX implements Initializable {
             int maxIterations = Integer.parseInt(this.maxIterations.getText());
             int supSamp = Integer.parseInt(superSamplingLevel.getText());
             SwingUtilities.invokeLater(() -> {
-                renderingController.setBoundsRequested(x, y, zoom);
+                renderingController.setPlaneSegmentRequested(x, y, zoom);
                 renderingController.setMaxIterationsRequested(maxIterations);
                 renderingController.setSuperSamplingLevelRequested(supSamp);
                 renderingController.repaint();
@@ -204,7 +205,7 @@ public class ControllerFX implements Initializable {
         SwingUtilities.invokeLater(() -> renderingController.setFractalSpecificParams(fractalSpecificParams.getText().trim()));
     }
 
-    public void onModelUpdated(RenderingModel model) {
+    public void onModelUpdated(Model model) {
         Platform.runLater(() -> {
             center_x.setText(Double.toString(model.getSegment().getCenterX()));
             center_y.setText(Double.toString(model.getSegment().getCenterY()));

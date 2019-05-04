@@ -1,6 +1,6 @@
 package cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer;
 
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.rendering_params.RenderingModel;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.Model;
 import jcuda.Pointer;
 import jcuda.driver.CUdeviceptr;
 import jcuda.driver.CUmodule;
@@ -30,7 +30,7 @@ public abstract class RenderingKernel extends CudaKernel {
     }
 
     @Override
-    public void setParamsFromModel(RenderingModel model) {
+    public void setParamsFromModel(Model model) {
         super.setParamsFromModel(model);
         setMaxIterations(model.getMaxIterations());
         setBounds(

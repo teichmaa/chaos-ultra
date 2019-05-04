@@ -2,7 +2,8 @@ package cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer;
 
 
 
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.rendering_params.*;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.Model;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.model.*;
 import jcuda.Pointer;
 import jcuda.driver.CUdeviceptr;
 import jcuda.driver.CUmodule;
@@ -29,9 +30,9 @@ abstract class KernelAdvanced extends KernelMain {
     }
 
     @Override
-    public void setParamsFromModel(RenderingModel model) {
+    public void setParamsFromModel(Model model) {
         super.setParamsFromModel(model);
-        setFocus(model.getFocus().getX(), model.getFocus().getY());
+        setFocus(model.getMouseFocus().getX(), model.getMouseFocus().getY());
         setIsZooming(model.isZooming());
         setUseFoveation(model.isUseFoveatedRendering());
         setUseSampleReuse(model.isUseSampleReuse());

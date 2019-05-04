@@ -1,13 +1,12 @@
-package cz.cuni.mff.cgg.teichmaa.chaos_ultra.gui;
+package cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering;
 
 
-import static cz.cuni.mff.cgg.teichmaa.chaos_ultra.gui.RenderingModeFSM.RenderingMode.*;
+import static cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.RenderingModeFSM.RenderingMode.*;
 
 /***
  * Finite State Machine for Rendering Mode transitions
  */
-class RenderingModeFSM {
-
+class RenderingModeFSM implements RenderingStateModel {
 
     enum RenderingMode {
         Waiting,
@@ -17,71 +16,69 @@ class RenderingModeFSM {
         ProgressiveRendering;
     }
 
-    static final int MAX_PROGRESSIVE_RENDERING_LEVEL = 6;//6
+    static final int MAX_PROGRESSIVE_RENDERING_LEVEL = 6;
 
     @Override
     public String toString() {
         String state = !zoomingAndMoving ? current.toString() : "ZoomingAndMoving";
-        String lvl = isProgressiveRendering() ? " lvl " + PRlvl : "";
+        String lvl = isProgressiveRendering() ? " lvl " + PRLvl : "";
         return "FSM in state " + state + lvl;
     }
 
     private RenderingMode current = Waiting;
     private RenderingMode last = Waiting;
-    private int PRlvl = 0;
+    /**
+     * Progressive rendering level
+     */
+    private int PRLvl = 0;
 
     private boolean zoomingAndMoving = false;
     private boolean zoomingDirection = false;
-    private boolean repeat = false;
 
-    void reset() {
+    public void resetState() {
         last = current;
         current = Waiting;
         zoomingAndMoving = false;
     }
 
-    void step() {
-        if(repeat){
-            repeat = false;
-            return;
-        }
+    public void step() {
         RenderingMode newValue = current;
         if ((current == Waiting && (last == ZoomingAuto || last == Moving))
                 || current == ZoomingOnce
                 ) {
             newValue = ProgressiveRendering;
-            PRlvl = 0;
-        } else if (current == ProgressiveRendering && PRlvl >= MAX_PROGRESSIVE_RENDERING_LEVEL)
+            PRLvl = 0;
+        } else if (current == ProgressiveRendering && PRLvl >= MAX_PROGRESSIVE_RENDERING_LEVEL)
             newValue = Waiting;
         //default: do nothing
         last = current;
         current = newValue;
         if (current == ProgressiveRendering) {
-            PRlvl = Math.min(MAX_PROGRESSIVE_RENDERING_LEVEL, PRlvl + 1);
+            PRLvl = Math.min(MAX_PROGRESSIVE_RENDERING_LEVEL, PRLvl + 1);
         }
     }
 
-    void doZoomingManualOnce(boolean inside) {
+    public void doZoomingManualOnce(boolean inside) {
         last = current;
         current = ZoomingOnce;
         zoomingDirection = inside;
         zoomingAndMoving = false;
     }
 
-    void startZoomingAndMoving(boolean inside) {
+    public void startZoomingAndMoving(boolean inside) {
         startZooming(inside);
         zoomingAndMoving = true;
 
     }
 
-    void startZooming(boolean inside) {
+    public void startZooming(boolean inside) {
         last = current;
         current = ZoomingAuto;
         zoomingDirection = inside;
         zoomingAndMoving = false;
     }
 
-    void stopZooming() {
+    public void stopZooming() {
         last = current;
         if (!zoomingAndMoving)
             current = Waiting;
@@ -90,25 +87,25 @@ class RenderingModeFSM {
         zoomingAndMoving = false;
     }
 
-    boolean isZooming() {
+    public boolean isZooming() {
         return current == ZoomingAuto || zoomingAndMoving || current == ZoomingOnce;
     }
 
-    boolean getZoomingDirection() {
+    public boolean getZoomingDirection() {
         if (!isZooming()) throw new IllegalStateException("cannot ask for zooming direction when not zooming");
         return zoomingDirection;
     }
 
-    void startMoving() {
+    public void startMoving() {
         last = current;
         current = Moving;
     }
 
-    boolean isMoving() {
+    public boolean isMoving() {
         return current == Moving || zoomingAndMoving;
     }
 
-    void stopMoving() {
+    public void stopMoving() {
         last = current;
         if (!zoomingAndMoving)
             current = Waiting;
@@ -116,30 +113,27 @@ class RenderingModeFSM {
         zoomingAndMoving = false;
     }
 
-    void startProgressiveRendering() {
+    public void startProgressiveRendering() {
         last = current;
         current = ProgressiveRendering;
-        PRlvl = 0;
+        PRLvl = 0;
         zoomingAndMoving = false;
     }
 
-    int getProgressiveRenderingLevel() {
+    public int getProgressiveRenderingLevel() {
         if (!isProgressiveRendering())
             throw new IllegalStateException("cannot ask for Progressive rendering level when not Progressive rendering");
-        return PRlvl;
+        return PRLvl;
     }
 
-    public void repeat() {
-    }
-
-    boolean isProgressiveRendering() {
+    public boolean isProgressiveRendering() {
         return current == ProgressiveRendering;
     }
-    boolean wasProgressiveRendering() {
+    public boolean wasProgressiveRendering() {
         return last == ProgressiveRendering;
     }
 
-    boolean isWaiting() {
+    public boolean isWaiting() {
         return current == Waiting;
     }
 
