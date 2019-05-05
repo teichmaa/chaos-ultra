@@ -1,0 +1,23 @@
+/* padding order: top right btm left */
+Label {
+    -fx-padding: 5 5 5 0;
+}
+.slimLabel{
+    -fx-padding: 0 5 2 0;
+}
+
+TextField, Button {
+      -fx-padding: 5;
+}
+
+ChoiceBox {
+
+}
+
+.mainVBox{
+    -fx-padding: 0 0 0 10;
+}
+
+.addVPadding{
+    -fx-padding: 18 0 0 0;
+}

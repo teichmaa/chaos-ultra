@@ -8,172 +8,106 @@
 <?import javafx.embed.swing.SwingNode?>
 <?import javafx.scene.control.CheckBox?>
 <?import javafx.scene.control.ChoiceBox?>
+<?import javafx.scene.layout.FlowPane?>
 <HBox fx:controller="cz.cuni.mff.cgg.teichmaa.chaos_ultra.gui.ControllerFX"
+      stylesheets="@style.css"
       xmlns:fx="http://javafx.com/fxml">
-        <SwingNode fx:id="swingNode" HBox.hgrow="ALWAYS">
+    <SwingNode fx:id="swingNode" HBox.hgrow="ALWAYS">
 
-        </SwingNode>
+    </SwingNode>
 
-    <VBox minWidth="250">
+    <VBox prefWidth="250" styleClass="mainVBox">
 
-        <HBox>
-            <Label>
-                <padding>
-                    <Insets top="5" right="5" bottom="5" left="5"/>
-                </padding>
-                x:
-            </Label>
-            <TextField fx:id="center_x" text="-0.5"/>
-        </HBox>
-        <HBox>
-            <Label>
-                <padding>
-                    <Insets top="5" right="5" bottom="5" left="5"/>
-                </padding>
-                y:
-            </Label>
-            <TextField fx:id="center_y" text="0"/>
-        </HBox>
-        <HBox>
-            <Label>
-                <padding>
-                    <Insets top="5" right="5" bottom="5" left="5"/>
-                </padding>
-                zoom:
-            </Label>
-            <TextField fx:id="zoom" text="2"/>
-        </HBox>
-        <HBox>
-            <Label>
-                <padding>
-                    <Insets top="5" right="5" bottom="5" left="5"/>
-                </padding>
-                max iterations:
-            </Label>
-            <TextField fx:id="maxIterations" text="2000"/>
-        </HBox>
-        <HBox>
-            <Label>
-                <padding>
-                    <Insets top="5" right="5" bottom="5" left="5"/>
-                </padding>
-                sup samp lvl:
-            </Label>
-            <TextField fx:id="superSamplingLevel" text="32"/>
-        </HBox>
-        <Button text="render" fx:id="renderButton" onAction="#renderClicked"/>
-        <HBox>
-            <Label>
-                <padding>
-                    <Insets top="5" right="5" bottom="5" left="5"/>
-                </padding>
-                adaptive SS:
-            </Label>
-            <CheckBox fx:id="useAdaptiveSS" selected="false"/>
-        </HBox>
-        <HBox>
-            <Label>
-                <padding>
-                    <Insets top="5" right="5" bottom="5" left="5"/>
-                </padding>
-                foveation:
-            </Label>
-            <CheckBox fx:id="useFoveatedRendering" selected="true"/>
-        </HBox>
-        <HBox>
-            <Label>
-                <padding>
-                    <Insets top="5" right="5" bottom="5" left="5"/>
-                </padding>
-                sample reuse:
-            </Label>
-            <CheckBox fx:id="useSampleReuse" selected="true" />
-        </HBox>
-        <HBox>
-            <Label>
-                <padding>
-                    <Insets top="5" right="5" bottom="5" left="5"/>
-                </padding>
-                visualise sample count:
-            </Label>
-            <CheckBox fx:id="visualiseSampleCount" selected="false"/>
-        </HBox>
-        <HBox>
-            <Label>
-                <padding>
-                    <Insets top="5" right="5" bottom="5" left="5"/>
-                </padding>
-                Automatic quality:
-            </Label>
-            <CheckBox fx:id="useAutomaticQuality" selected="true"/>
-        </HBox>
-        <HBox>
-            <Label>
-                <padding>
-                    <Insets top="5" right="5" bottom="5" left="5"/>
-                </padding>
-                dimensions:
-            </Label>
-            <Label fx:id="dimensions" text="1000 x 1000">
-                <padding>
-                    <Insets top="5" right="0" bottom="5" left="0"/>
-                </padding>
-            </Label>
-        </HBox>
-        <HBox>
-            <Label>
-                <padding>
-                    <Insets top="5" right="5" bottom="5" left="5"/>
-                </padding>
-                Fractal specific params:
-            </Label>
-            <TextField fx:id="fractalCustomParams">
-                <padding>
-                    <Insets top="5" right="0" bottom="5" left="0"/>
-                </padding>
-            </TextField>
-            <Button text="set" onAction="#fractalSpecificParamsSetClicked" />
-        </HBox>
-        <ChoiceBox fx:id="fractalChoiceBox" />
+        <VBox>
+            <HBox>
+                <Label>x:</Label>
+                <TextField fx:id="center_x" text="-0.5"/>
+            </HBox>
+            <HBox>
+                <Label>y:</Label>
+                <TextField fx:id="center_y" text="0"/>
+            </HBox>
+            <HBox>
+                <Label>zoom:</Label>
+                <TextField fx:id="zoom" text="2"/>
+            </HBox>
+            <HBox>
+                <Label>max iterations:</Label>
+                <TextField fx:id="maxIterations" text="2000"/>
+            </HBox>
+            <HBox>
+                <Label>sup samp lvl:</Label>
+                <TextField fx:id="superSamplingLevel" text="32"/>
+            </HBox>
+            <Button text="render" fx:id="renderButton" onAction="#renderClicked"/>
+        </VBox>
 
-        <HBox>
-            <Label>
-                <padding>
-                    <Insets top="5" right="5" bottom="5" left="5"/>
-                </padding>
-                Floating point precision:
-            </Label>
-            <Label fx:id="precision" text="single">
-                <padding>
-                    <Insets top="5" right="0" bottom="5" left="0"/>
-                </padding>
-            </Label>
-        </HBox>
+        <VBox styleClass="addVPadding">
+            <HBox>
+                <Label styleClass="slimLabel">adaptive SS:</Label>
+                <CheckBox fx:id="useAdaptiveSS" selected="false"/>
+            </HBox>
+            <HBox>
+                <Label styleClass="slimLabel">foveation:</Label>
+                <CheckBox fx:id="useFoveatedRendering" selected="true"/>
+            </HBox>
+            <HBox>
+                <Label styleClass="slimLabel">sample reuse:</Label>
+                <CheckBox fx:id="useSampleReuse" selected="true"/>
+            </HBox>
+            <HBox>
+                <Label styleClass="slimLabel">visualise sample count:</Label>
+                <CheckBox fx:id="visualiseSampleCount" selected="false"/>
+            </HBox>
+            <HBox>
+                <Label styleClass="slimLabel">Automatic quality:</Label>
+                <CheckBox fx:id="useAutomaticQuality" selected="true"/>
+            </HBox>
+        </VBox>
 
+        <VBox styleClass="addVPadding">
+            <Label>choose fractal:</Label>
+            <ChoiceBox fx:id="fractalChoiceBox" prefWidth="200"/>
+            <VBox>
+                <Label>Fractal custom params:</Label>
+                <HBox>
+                    <TextField fx:id="fractalCustomParams"/>
+                    <Button text="set" onAction="#fractalSpecificParamsSetClicked"/>
+                </HBox>
+            </VBox>
+        </VBox>
 
+        <VBox styleClass="addVPadding">
+            <HBox>
+                <Label>Floating point precision:</Label>
+                <Label fx:id="precision" text="single"/>
+            </HBox>
+            <HBox>
+                <Label>Dimensions:</Label>
+                <Label fx:id="dimensions"/>
+            </HBox>
+        </VBox>
 
-        <Label>
-            <padding>
-                <Insets top="25" right="5" bottom="5" left="5"/>
-            </padding>
-            Premade views:
-        </Label>
+        <VBox styleClass="addVPadding">
+            <Label>Premade views:</Label>
+            <FlowPane maxWidth="200">
+                <Button text="default view" onAction="#example0Clicked"/>
+                <Button text="example1" onAction="#example1Clicked"/>
+                <Button text="example2" onAction="#example2Clicked"/>
+                <Button text="example3" onAction="#example3Clicked"/>
+                <Button text="example4" onAction="#example4Clicked"/>
+                <Button text="example5" onAction="#example5Clicked"/>
+            </FlowPane>
+        </VBox>
 
-        <Button text="default view" onAction="#example0Clicked"/>
-        <Button text="example1" onAction="#example1Clicked"/>
-        <Button text="example2" onAction="#example2Clicked"/>
-        <Button text="example3" onAction="#example3Clicked"/>
-        <Button text="example4" onAction="#example4Clicked"/>
-        <Button text="example5" onAction="#example5Clicked"/>
-        <Label>
-            <padding>
-                <Insets top="25" right="5" bottom="5" left="5"/>
-            </padding>
-            Other functions:
-        </Label>
-        <Button text="save as image" onAction="#saveImageClicked"/>
-        <Button text="dbg1: fractal" onAction="#debugButton1Clicked"/>
-        <Button text="dbg2: right btm pixel" onAction="#debugButton2Clicked"/>
+        <VBox styleClass="addVPadding">
+            <Label>Other functions:</Label>
+            <FlowPane maxWidth="200">
+                <Button text="save as image" onAction="#saveImageClicked"/>
+                <Button text="dbg1: fractal" onAction="#debugButton1Clicked"/>
+                <Button text="dbg2: right btm pixel" onAction="#debugButton2Clicked"/>
+            </FlowPane>
+        </VBox>
 
     </VBox>
 

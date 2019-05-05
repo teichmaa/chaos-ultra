@@ -70,6 +70,7 @@ public class ControllerFX implements Initializable, GUIController {
                 SwingUtilities.invokeLater(() -> renderingController.onFractalChanged(newValue));
         });
 
+
         visualiseSampleCount.selectedProperty().addListener((__,___,value) -> SwingUtilities.invokeLater(
                 () -> renderingController.setVisualiseSampleCount(value))
         );
