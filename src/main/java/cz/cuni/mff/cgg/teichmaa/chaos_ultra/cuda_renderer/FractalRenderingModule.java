@@ -73,7 +73,7 @@ public abstract class FractalRenderingModule implements Closeable {
         } catch (CudaException e) {
             if (e.getMessage().contains(CUresult.stringFor(CUresult.CUDA_ERROR_FILE_NOT_FOUND))) {
                 String message = "Invalid ptx file name: " + ptxFileFullPath + System.lineSeparator() +
-                        "Have you set " + CUDA_KERNELS_DIR_PROPERTY_NAME + " properly?";
+                        "Have you set property " + CUDA_KERNELS_DIR_PROPERTY_NAME + " properly?";
                 throw new IllegalArgumentException(message, e);
             } else if (e.getMessage().contains(CUresult.stringFor(CUresult.CUDA_ERROR_INVALID_CONTEXT))) {
                 throw new CudaInitializationException("Invalid CUDA context", e);

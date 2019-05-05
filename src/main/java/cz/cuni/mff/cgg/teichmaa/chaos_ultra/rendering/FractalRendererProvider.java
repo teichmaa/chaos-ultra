@@ -77,7 +77,6 @@ public class FractalRendererProvider {
         } catch (InstantiationException | IllegalAccessException e) {
             throw new CudaInitializationException(e);
         } catch (UnsatisfiedLinkError e) {
-            //TODO jak jinak tohle zobrazit uzivateli?
             if (e.getMessage().contains("Cuda")) {
                 String message = "Error while loading the Cuda native library. Do you have CUDA installed?";
                 throw new CudaInitializationException(message, e);

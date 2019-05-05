@@ -75,7 +75,7 @@ class GLRenderer implements GLEventListener {
 
             controller.showDefaultView();
         } catch (Exception e) {
-            model.getErrors().add(e.getMessage());
+            model.logError(e.getMessage());
         }
     }
 
@@ -135,7 +135,7 @@ class GLRenderer implements GLEventListener {
 //        System.out.println("" + lastFrameRenderTime + " ms (frame total render time)");
             controller.onRenderingDone();
         } catch (Exception e) {
-            model.getErrors().add(e.getMessage());
+            model.logError(e.getMessage());
         }
     }
 
@@ -226,7 +226,7 @@ class GLRenderer implements GLEventListener {
 
             controller.startProgressiveRendering();
         } catch (Exception e) {
-            model.getErrors().add(e.getMessage());
+            model.logError(e.getMessage());
         }
     }
 

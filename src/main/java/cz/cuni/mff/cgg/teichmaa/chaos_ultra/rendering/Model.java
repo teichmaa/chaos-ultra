@@ -243,4 +243,9 @@ class Model implements RenderingModel, GUIModel, DefaultFractalModel {
     public List<String> getErrors() {
         return errors;
     }
+
+    @Override
+    public void logError(String error) {
+        getErrors().add(error);
+    }
 }

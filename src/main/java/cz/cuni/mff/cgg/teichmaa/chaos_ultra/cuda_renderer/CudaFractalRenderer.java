@@ -2,6 +2,7 @@ package cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer;
 
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.*;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.model.DefaultFractalModel;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.model.ErrorLogger;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.model.RenderingModel;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.FloatPrecision;
 import jcuda.CudaException;
@@ -170,9 +171,9 @@ public class CudaFractalRenderer implements FractalRenderer {
         k.setInput(memory.getPrimary2DBuffer(), memory.getPrimary2DBufferPitch());
         k.setOutput(memory.getSecondary2DBuffer(), memory.getSecondary2DBufferPitch());
 
-        launchRenderingKernel(false, k);
+        launchRenderingKernel(false, k, model);
         memory.switch2DBuffers();
-        launchDrawingKernel(false, kernelCompose);
+        launchDrawingKernel(false, kernelCompose, model);
 
         lastRendering = model.copy();
     }
@@ -198,15 +199,15 @@ public class CudaFractalRenderer implements FractalRenderer {
         kernelMain.setParamsFromModel(model);
         kernelMain.setOutput(memory.getPrimary2DBuffer(), memory.getPrimary2DBufferPitch());
 
-        launchRenderingKernel(false, kernelMain);
-        launchDrawingKernel(false, kernelCompose);
+        launchRenderingKernel(false, kernelMain, model);
+        launchDrawingKernel(false, kernelCompose, model);
 
         lastRendering = model.copy();
         memory.setPrimary2DBufferDirty(false);
         model.setSampleReuseCacheDirty(false);
     }
 
-    private void launchRenderingKernel(boolean async, RenderingKernel kernel) {
+    private void launchRenderingKernel(boolean async, RenderingKernel kernel, ErrorLogger logger) {
         int width = kernel.getWidth();
         int height = kernel.getHeight();
 
@@ -233,8 +234,7 @@ public class CudaFractalRenderer implements FractalRenderer {
             if (!async)
                 cuCtxSynchronize();
         } catch (CudaException e) {
-            System.err.println("Error just after launching a kernel:");
-            System.err.println(e);
+            logger.logError("Error just after launching a kernel:" + e.getMessage());
         }
     }
 
@@ -242,7 +242,7 @@ public class CudaFractalRenderer implements FractalRenderer {
      * @param async
      * @param kernel
      */
-    private void launchDrawingKernel(boolean async, KernelCompose kernel) {
+    private void launchDrawingKernel(boolean async, KernelCompose kernel, ErrorLogger logger) {
         long start = System.currentTimeMillis();
 
         try {
@@ -306,8 +306,7 @@ public class CudaFractalRenderer implements FractalRenderer {
                         if (!async)
                             cuCtxSynchronize();
                     } catch (CudaException e) {
-                        System.err.println("Error just after launching a kernel:");
-                        System.err.println(e);
+                        logger.logError("Error just after launching a kernel:" + e.getMessage());
                     }
                 } finally {
                     JCuda.cudaDestroySurfaceObject(surfaceOutput);
@@ -318,8 +317,7 @@ public class CudaFractalRenderer implements FractalRenderer {
                 JCuda.cudaGraphicsUnmapResources(1, new cudaGraphicsResource[]{paletteTextureResource}, defaultStream);
             }
         } catch (CudaException | FractalRendererException e) {
-            System.err.println("Error during kernel launch preparation:");
-            System.err.println(e);
+            logger.logError("Error during kernel launch preparation:" + e.getMessage());
         }
 
         long end = System.currentTimeMillis();
