@@ -15,9 +15,18 @@ ChoiceBox {
 }
 
 .mainVBox{
-    -fx-padding: 0 0 0 10;
+    -fx-padding: 0 15 0 8;
 }
 
 .addVPadding{
     -fx-padding: 18 0 0 0;
+}
+.topBox{
+    -fx-padding: 5 0 8 0;
+}
+Separator{
+    -fx-padding: 3 0 3 0;
+}
+#errorsTextArea{
+    -fx-text-fill: #ce000d;
 }

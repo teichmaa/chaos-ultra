@@ -1,114 +1,127 @@
-<?import javafx.geometry.Insets?>
-
-<?import javafx.scene.control.Button?>
-<?import javafx.scene.control.Label?>
-<?import javafx.scene.layout.HBox?>
-<?import javafx.scene.layout.VBox?>
-<?import javafx.scene.control.TextField?>
 <?import javafx.embed.swing.SwingNode?>
-<?import javafx.scene.control.CheckBox?>
-<?import javafx.scene.control.ChoiceBox?>
-<?import javafx.scene.layout.FlowPane?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
 <HBox fx:controller="cz.cuni.mff.cgg.teichmaa.chaos_ultra.gui.ControllerFX"
       stylesheets="@style.css"
       xmlns:fx="http://javafx.com/fxml">
-    <SwingNode fx:id="swingNode" HBox.hgrow="ALWAYS">
+    <SwingNode fx:id="swingNode" HBox.hgrow="ALWAYS"/>
 
-    </SwingNode>
+    <ScrollPane hbarPolicy="NEVER" vbarPolicy="AS_NEEDED">
+        <VBox styleClass="mainVBox">
+            <VBox prefWidth="250">
 
-    <VBox prefWidth="250" styleClass="mainVBox">
+                <VBox styleClass="topBox">
+                    <Label>choose fractal:</Label>
+                    <ChoiceBox fx:id="fractalChoiceBox" prefWidth="180"/>
+                    <VBox>
+                        <Label>Fractal custom parameters:</Label>
+                        <HBox>
+                            <TextField fx:id="fractalCustomParams" HBox.hgrow="ALWAYS"/>
+                            <Button text="set" onAction="#fractalSpecificParamsSetClicked"/>
+                        </HBox>
+                    </VBox>
+                </VBox>
 
-        <VBox>
-            <HBox>
-                <Label>x:</Label>
-                <TextField fx:id="center_x" text="-0.5"/>
-            </HBox>
-            <HBox>
-                <Label>y:</Label>
-                <TextField fx:id="center_y" text="0"/>
-            </HBox>
-            <HBox>
-                <Label>zoom:</Label>
-                <TextField fx:id="zoom" text="2"/>
-            </HBox>
-            <HBox>
-                <Label>max iterations:</Label>
-                <TextField fx:id="maxIterations" text="2000"/>
-            </HBox>
-            <HBox>
-                <Label>sup samp lvl:</Label>
-                <TextField fx:id="superSamplingLevel" text="32"/>
-            </HBox>
-            <Button text="render" fx:id="renderButton" onAction="#renderClicked"/>
-        </VBox>
+                <TitledPane text="general parameters">
+                    <VBox>
+                        <HBox>
+                            <Label>center x:</Label>
+                            <TextField fx:id="center_x" text="0" HBox.hgrow="ALWAYS"/>
+                        </HBox>
+                        <HBox>
+                            <Label>center y:</Label>
+                            <TextField fx:id="center_y" text="0" HBox.hgrow="ALWAYS"/>
+                        </HBox>
+                        <HBox>
+                            <Label>zoom:</Label>
+                            <TextField fx:id="zoom" text="2" HBox.hgrow="ALWAYS"/>
+                        </HBox>
+                        <Separator/>
+                        <HBox>
+                            <Label>max iterations:</Label>
+                            <TextField fx:id="maxIterations" text="2000" HBox.hgrow="ALWAYS"/>
+                        </HBox>
+                        <HBox>
+                            <Label>sup. samp. lvl:</Label>
+                            <TextField fx:id="superSamplingLevel" text="32" HBox.hgrow="ALWAYS"/>
+                        </HBox>
+                        <Button text="set" fx:id="renderButton" onAction="#renderClicked"/>
+                    </VBox>
+                </TitledPane>
 
-        <VBox styleClass="addVPadding">
-            <HBox>
-                <Label styleClass="slimLabel">adaptive SS:</Label>
-                <CheckBox fx:id="useAdaptiveSS" selected="false"/>
-            </HBox>
-            <HBox>
-                <Label styleClass="slimLabel">foveation:</Label>
-                <CheckBox fx:id="useFoveatedRendering" selected="true"/>
-            </HBox>
-            <HBox>
-                <Label styleClass="slimLabel">sample reuse:</Label>
-                <CheckBox fx:id="useSampleReuse" selected="true"/>
-            </HBox>
-            <HBox>
-                <Label styleClass="slimLabel">visualise sample count:</Label>
-                <CheckBox fx:id="visualiseSampleCount" selected="false"/>
-            </HBox>
-            <HBox>
-                <Label styleClass="slimLabel">Automatic quality:</Label>
-                <CheckBox fx:id="useAutomaticQuality" selected="true"/>
-            </HBox>
-        </VBox>
 
-        <VBox styleClass="addVPadding">
-            <Label>choose fractal:</Label>
-            <ChoiceBox fx:id="fractalChoiceBox" prefWidth="200"/>
-            <VBox>
-                <Label>Fractal custom params:</Label>
-                <HBox>
-                    <TextField fx:id="fractalCustomParams"/>
-                    <Button text="set" onAction="#fractalSpecificParamsSetClicked"/>
-                </HBox>
+                <TitledPane text="status">
+                    <VBox>
+                        <HBox>
+                            <Label styleClass="slimLabel">Floating point precision:</Label>
+                            <Label styleClass="slimLabel" fx:id="precision" text="single"/>
+                        </HBox>
+                        <HBox>
+                            <Label styleClass="slimLabel">Dimensions:</Label>
+                            <Label styleClass="slimLabel" fx:id="dimensions"/>
+                        </HBox>
+                    </VBox>
+                </TitledPane>
+
+                <TitledPane text="heuristics" expanded="false">
+                    <VBox>
+                        <HBox>
+                            <Label styleClass="slimLabel">adaptive SS:</Label>
+                            <CheckBox fx:id="useAdaptiveSS" selected="false"/>
+                        </HBox>
+                        <HBox>
+                            <Label styleClass="slimLabel">foveation:</Label>
+                            <CheckBox fx:id="useFoveatedRendering" selected="true"/>
+                        </HBox>
+                        <HBox>
+                            <Label styleClass="slimLabel">sample reuse:</Label>
+                            <CheckBox fx:id="useSampleReuse" selected="true"/>
+                        </HBox>
+                        <HBox>
+                            <Label styleClass="slimLabel">automatic quality:</Label>
+                            <CheckBox fx:id="useAutomaticQuality" selected="true"/>
+                        </HBox>
+                        <Separator/>
+                        <HBox>
+                            <Label styleClass="slimLabel">visualise sample count:</Label>
+                            <CheckBox fx:id="visualiseSampleCount" selected="false"/>
+                        </HBox>
+                    </VBox>
+                </TitledPane>
+
+                <TitledPane text="additional functionality" expanded="false">
+                    <VBox>
+                        <VBox>
+                            <Label>Mandelbrot premade views:</Label>
+                            <FlowPane maxWidth="200">
+                                <Button text="default view" onAction="#example0Clicked"/>
+                                <Button text="example1" onAction="#example1Clicked"/>
+                                <Button text="example2" onAction="#example2Clicked"/>
+                                <Button text="example3" onAction="#example3Clicked"/>
+                                <Button text="example4" onAction="#example4Clicked"/>
+                                <Button text="example5" onAction="#example5Clicked"/>
+                            </FlowPane>
+                        </VBox>
+
+                        <VBox styleClass="addVPadding">
+                            <Label>Other functions:</Label>
+                            <FlowPane maxWidth="200">
+                                <Button text="save as image" onAction="#saveImageClicked"/>
+                                <Button text="dbg1: fractal" onAction="#debugButton1Clicked"/>
+                                <Button text="dbg2: right btm pixel" onAction="#debugButton2Clicked"/>
+                            </FlowPane>
+                        </VBox>
+                    </VBox>
+                </TitledPane>
+
+                <TitledPane text="system messages">
+                    <VBox>
+                        <TextArea editable="false" fx:id="errorsTextArea" prefRowCount="6"/>
+                        <Button text="clear" onMouseClicked="#clearErrors"/>
+                    </VBox>
+                </TitledPane>
             </VBox>
         </VBox>
-
-        <VBox styleClass="addVPadding">
-            <HBox>
-                <Label>Floating point precision:</Label>
-                <Label fx:id="precision" text="single"/>
-            </HBox>
-            <HBox>
-                <Label>Dimensions:</Label>
-                <Label fx:id="dimensions"/>
-            </HBox>
-        </VBox>
-
-        <VBox styleClass="addVPadding">
-            <Label>Premade views:</Label>
-            <FlowPane maxWidth="200">
-                <Button text="default view" onAction="#example0Clicked"/>
-                <Button text="example1" onAction="#example1Clicked"/>
-                <Button text="example2" onAction="#example2Clicked"/>
-                <Button text="example3" onAction="#example3Clicked"/>
-                <Button text="example4" onAction="#example4Clicked"/>
-                <Button text="example5" onAction="#example5Clicked"/>
-            </FlowPane>
-        </VBox>
-
-        <VBox styleClass="addVPadding">
-            <Label>Other functions:</Label>
-            <FlowPane maxWidth="200">
-                <Button text="save as image" onAction="#saveImageClicked"/>
-                <Button text="dbg1: fractal" onAction="#debugButton1Clicked"/>
-                <Button text="dbg2: right btm pixel" onAction="#debugButton2Clicked"/>
-            </FlowPane>
-        </VBox>
-
-    </VBox>
+    </ScrollPane>
 
 </HBox>

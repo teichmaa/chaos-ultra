@@ -4,6 +4,7 @@ import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.model.PlaneSegment;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.FloatPrecision;
 
 import java.util.Collection;
+import java.util.List;
 
 public interface GUIModel {
     PlaneSegment getPlaneSegment();
@@ -23,4 +24,6 @@ public interface GUIModel {
     String getFractalName();
 
     String getFractalCustomParams();
+
+    List<String> getErrors();
 }

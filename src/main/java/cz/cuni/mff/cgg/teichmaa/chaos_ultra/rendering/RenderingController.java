@@ -4,6 +4,7 @@ import com.jogamp.opengl.GLEventListener;
 import com.jogamp.opengl.awt.GLCanvas;
 import com.jogamp.opengl.util.Animator;
 
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.gui.ControllerFX;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.gui.GUIController;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.PointInt;
 
@@ -11,6 +12,7 @@ import javax.swing.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
+import java.util.Optional;
 
 import static cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.FractalRenderer.SUPER_SAMPLING_MAX_LEVEL;
 
@@ -174,17 +176,24 @@ public class RenderingController extends MouseAdapter {
         model.setUseSampleReuse(true);
         model.setAutomaticQuality(true);
         model.setVisualiseSampleCount(false);
-        guiController.onModelUpdated(model.copy());
+        onModelUpdated();
         model.setFractalCustomParams("");
 
         repaint();
+    }
+
+    public void onModelUpdated(){
+        guiController.onModelUpdated(model.copy());
+        Optional<String> cudaInitError = model.getErrors().stream().filter(e -> e.contains("CUDA installed?")).findFirst();
+        cudaInitError.ifPresent(guiController::showErrorMessageBlocking);
+        model.getErrors().clear();
     }
 
     public void setPlaneSegmentRequested(double centerX, double centerY, double zoom) {
         assert SwingUtilities.isEventDispatchThread();
         //todo change automatic quality state?
         setPlaneSegment(centerX, centerY, zoom);
-        guiController.onModelUpdated(model.copy());
+        onModelUpdated();
     }
 
     private void setPlaneSegment(double centerX, double centerY, double zoom) {
@@ -195,7 +204,7 @@ public class RenderingController extends MouseAdapter {
         assert SwingUtilities.isEventDispatchThread();
         //todo does this affect automatic quality?
         model.setMaxIterations(maxIterations);
-        guiController.onModelUpdated(model.copy());
+        onModelUpdated();
     }
 
     public void setSuperSamplingLevelRequested(int supSampLvl) {
@@ -206,7 +215,7 @@ public class RenderingController extends MouseAdapter {
             System.out.println("Warning: super sampling level clamped to " + newValue + ", higher is not supported");
         }
         model.setSuperSamplingLevel(newValue);
-        guiController.onModelUpdated(model.copy());
+        onModelUpdated();
     }
 
     public void repaint() {
@@ -276,7 +285,7 @@ public class RenderingController extends MouseAdapter {
     }
 
     void onRenderingDone(){
-        guiController.onModelUpdated(model.copy());
+        onModelUpdated();
     }
 
 

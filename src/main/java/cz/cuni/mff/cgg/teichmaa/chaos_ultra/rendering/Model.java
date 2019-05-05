@@ -9,6 +9,8 @@ import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.PointInt;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
 import static cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.FractalRenderer.SUPER_SAMPLING_MAX_LEVEL;
 
@@ -33,10 +35,10 @@ class Model implements RenderingModel, GUIModel, DefaultFractalModel {
     private int canvasHeight;
     private boolean sampleReuseCacheDirty;
     private PointInt lastMousePosition = new PointInt();
-    private Collection<String> availableFractals;
+    private Collection<String> availableFractals = Collections.emptyList();
     private String fractalName;
     private String fractalCustomParams;
-
+    private List<String> errors = new ArrayList<>();
     /**
      * @return deep copy of itself
      */
@@ -60,6 +62,7 @@ class Model implements RenderingModel, GUIModel, DefaultFractalModel {
         copy.availableFractals = new ArrayList<>(availableFractals);
         copy.fractalName = this.fractalName;
         copy.fractalCustomParams = this.fractalCustomParams;
+        copy.errors = new ArrayList<>(this.errors);
         return copy;
     }
 
@@ -234,5 +237,10 @@ class Model implements RenderingModel, GUIModel, DefaultFractalModel {
     @Override
     public void setFractalCustomParams(String fractalCustomParams) {
         this.fractalCustomParams = fractalCustomParams;
+    }
+
+    @Override
+    public List<String> getErrors() {
+        return errors;
     }
 }

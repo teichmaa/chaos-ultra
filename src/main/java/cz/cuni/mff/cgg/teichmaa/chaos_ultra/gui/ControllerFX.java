@@ -7,12 +7,14 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
-
+import javafx.scene.input.MouseEvent;
 
 import javax.swing.*;
 import java.io.File;
 import java.net.URL;
 import java.text.SimpleDateFormat;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.Objects;
 import java.util.ResourceBundle;
@@ -21,6 +23,8 @@ public class ControllerFX implements Initializable, GUIController {
 
     private static final char UNICODE_TIMES_CHAR = '\u00D7';
 
+    @FXML
+    private TextArea errorsTextArea;
     @FXML
     private ChoiceBox<String> fractalChoiceBox;
     @FXML
@@ -66,24 +70,24 @@ public class ControllerFX implements Initializable, GUIController {
             singleton = this;
 
         fractalChoiceBox.getSelectionModel().selectedItemProperty().addListener((__, oldValue, newValue) -> {
-            if(!Objects.equals(oldValue, newValue))
+            if (!Objects.equals(oldValue, newValue))
                 SwingUtilities.invokeLater(() -> renderingController.onFractalChanged(newValue));
         });
 
 
-        visualiseSampleCount.selectedProperty().addListener((__,___,value) -> SwingUtilities.invokeLater(
+        visualiseSampleCount.selectedProperty().addListener((__, ___, value) -> SwingUtilities.invokeLater(
                 () -> renderingController.setVisualiseSampleCount(value))
         );
-        useAdaptiveSS.selectedProperty().addListener((__,___,value) -> SwingUtilities.invokeLater(
+        useAdaptiveSS.selectedProperty().addListener((__, ___, value) -> SwingUtilities.invokeLater(
                 () -> renderingController.setUseAdaptiveSuperSampling(value))
         );
-        useAutomaticQuality.selectedProperty().addListener((__,___,value) -> SwingUtilities.invokeLater(
+        useAutomaticQuality.selectedProperty().addListener((__, ___, value) -> SwingUtilities.invokeLater(
                 () -> renderingController.setAutomaticQuality(value))
         );
         useFoveatedRendering.selectedProperty().addListener((__, ___, value) -> SwingUtilities.invokeLater(
                 () -> renderingController.setUseFoveatedRendering(value))
         );
-        useSampleReuse.selectedProperty().addListener((__,___,value) -> SwingUtilities.invokeLater(
+        useSampleReuse.selectedProperty().addListener((__, ___, value) -> SwingUtilities.invokeLater(
                 () -> renderingController.setUseSampleReuse(value))
         );
     }
@@ -93,7 +97,7 @@ public class ControllerFX implements Initializable, GUIController {
     }
 
 
-    void showErrorMessage(String message) {
+    public void showErrorMessageBlocking(String message) {
         Platform.runLater(() -> new Alert(Alert.AlertType.ERROR, message).showAndWait());
     }
 
@@ -128,13 +132,15 @@ public class ControllerFX implements Initializable, GUIController {
                 renderingController.repaint();
             });
         } catch (NumberFormatException e) {
-            showErrorMessage("Number in a text field could not be parsed.");
+            showErrorMessageBlocking("Number in a text field could not be parsed.");
         }
     }
 
     @FXML
     private void example0Clicked(ActionEvent actionEvent) {
-        renderingController.showDefaultView();
+        SwingUtilities.invokeLater(() ->
+                renderingController.showDefaultView()
+        );
     }
 
     @FXML
@@ -142,7 +148,7 @@ public class ControllerFX implements Initializable, GUIController {
         center_x.setText("-0.748");
         center_y.setText("0.1");
         zoom.setText("0.0014");
-        renderClicked(actionEvent);
+        render();
     }
 
     @FXML
@@ -150,7 +156,7 @@ public class ControllerFX implements Initializable, GUIController {
         center_x.setText("-0.235125");
         center_y.setText("0.827215");
         zoom.setText("4.0E-5");
-        renderClicked(actionEvent);
+        render();
     }
 
     @FXML
@@ -158,7 +164,7 @@ public class ControllerFX implements Initializable, GUIController {
         center_x.setText("-0.925");
         center_y.setText("0.266");
         zoom.setText("0.032");
-        renderClicked(actionEvent);
+        render();
     }
 
     @FXML
@@ -168,7 +174,7 @@ public class ControllerFX implements Initializable, GUIController {
         zoom.setText("0.029995363");
         superSamplingLevel.setText("32");
         useAdaptiveSS.setSelected(false);
-        renderClicked(actionEvent);
+        render();
     }
 
     @FXML
@@ -179,13 +185,13 @@ public class ControllerFX implements Initializable, GUIController {
         superSamplingLevel.setText("8");
         useAdaptiveSS.setSelected(false);
         maxIterations.setText("3000");
-        renderClicked(actionEvent);
+        render();
     }
 
     @FXML
     private void saveImageClicked(ActionEvent actionEvent) {
         String time = new SimpleDateFormat("dd-MM-YY_HH-mm-ss").format(new Date());
-        SwingUtilities.invokeLater(() -> renderingController.saveImage(System.getProperty("user.dir")  + File.separator + "saved_images" + File.separator +
+        SwingUtilities.invokeLater(() -> renderingController.saveImage(System.getProperty("user.dir") + File.separator + "saved_images" + File.separator +
                 "fractal_" + time + ".png", "png"));
         // todo vybiratko na soubory
     }
@@ -217,6 +223,19 @@ public class ControllerFX implements Initializable, GUIController {
             dimensions.setText("" + model.getCanvasWidth() + " " + UNICODE_TIMES_CHAR + " " + model.getCanvasHeight());
             fractalChoiceBox.setItems(FXCollections.observableArrayList(model.getAvailableFractals()));
             fractalCustomParams.setText(model.getFractalCustomParams());
+            model.getErrors().forEach(c -> errorsTextArea.appendText(timestamp() + c + System.lineSeparator()));
+            errorsTextArea.selectPositionCaret(errorsTextArea.getLength()); //scroll to end
         });
+    }
+
+    private String timestamp() {
+        return LocalTime.now().format(timeFormat) + ": ";
+    }
+
+    private DateTimeFormatter timeFormat = DateTimeFormatter.ofPattern("HH:mm:ss");
+
+    @FXML
+    private void clearErrors(MouseEvent mouseEvent) {
+        errorsTextArea.setText("");
     }
 }

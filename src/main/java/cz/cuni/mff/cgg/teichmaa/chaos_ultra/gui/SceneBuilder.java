@@ -16,6 +16,8 @@ import java.io.IOException;
 
 class SceneBuilder {
 
+    public static final String APP_TITLE = "Chaos ultra";
+
     public void start() {
         Platform.runLater(this::initialiseFxPanel);
     }
@@ -41,15 +43,12 @@ class SceneBuilder {
     }
 
     private void composeAndRunSwingScene(){
-        final JFrame root = new JFrame("Mandelzoomer");
+        final JFrame root = new JFrame(APP_TITLE);
         root.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        //todo mozna muzu pouzit jiny layout a to vyresi moje problemy
         root.setLayout(new BorderLayout());
         root.add(getGLCanvas(ControllerFX.getSingleton()));
         root.add(fxPanel, BorderLayout.EAST);
-        root.setMinimumSize(new Dimension(800, 800)); //todo tohle je blby, ja bych ten JPanel potreboval ctvercovy
-        //napriklad https://stackoverflow.com/questions/16075022/making-a-jpanel-square
-        // ale to chci resit az na desktopu
+        root.setMinimumSize(new Dimension(800, 600));
         root.setVisible(true);
     }
 

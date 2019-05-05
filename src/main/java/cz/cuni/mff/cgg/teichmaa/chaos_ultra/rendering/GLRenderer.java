@@ -7,7 +7,6 @@ import com.jogamp.opengl.awt.GLCanvas;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.ImageHelpers;
 
 import javax.swing.*;
-
 import java.nio.Buffer;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
@@ -17,7 +16,7 @@ import java.util.function.Consumer;
 import static com.jogamp.opengl.GL.*;
 import static cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.FractalRenderer.SUPER_SAMPLING_MAX_LEVEL;
 
-public class GLRenderer implements GLEventListener {
+class GLRenderer implements GLEventListener {
 
     private GLTexture outputTexture;
     private GLTexture paletteTexture;
@@ -41,39 +40,43 @@ public class GLRenderer implements GLEventListener {
 
     @Override
     public void init(GLAutoDrawable drawable) {
-        assert SwingUtilities.isEventDispatchThread();
-        final GL2 gl = drawable.getGL().getGL2();
+        try {
+            assert SwingUtilities.isEventDispatchThread();
+            final GL2 gl = drawable.getGL().getGL2();
 
-        //documentation for GL texture handling and lifecycle: https://www.khronos.org/opengl/wiki/Texture_Storage#Direct_creation
-        int[] GLHandles = new int[2];
-        gl.glGenTextures(GLHandles.length, GLHandles, 0);
+            //documentation for GL texture handling and lifecycle: https://www.khronos.org/opengl/wiki/Texture_Storage#Direct_creation
+            int[] GLHandles = new int[2];
+            gl.glGenTextures(GLHandles.length, GLHandles, 0);
 
-        outputTexture = GLTexture.of(
-                GLTextureHandle.of(GLHandles[0]),
-                GL_TEXTURE_2D,
-                0,
-                0
-        );
+            outputTexture = GLTexture.of(
+                    GLTextureHandle.of(GLHandles[0]),
+                    GL_TEXTURE_2D,
+                    0,
+                    0
+            );
 
-        Buffer colorPalette = IntBuffer.wrap(ImageHelpers.createColorPalette());
-        paletteTexture = GLTexture.of(
-                GLTextureHandle.of(GLHandles[1]),
-                GL_TEXTURE_2D,
-                colorPalette.limit(),
-                1
-        );
-        GLHelpers.specifyTextureSizeAndData(gl, paletteTexture, colorPalette);
+            Buffer colorPalette = IntBuffer.wrap(ImageHelpers.createColorPalette());
+            paletteTexture = GLTexture.of(
+                    GLTextureHandle.of(GLHandles[1]),
+                    GL_TEXTURE_2D,
+                    colorPalette.limit(),
+                    1
+            );
+            GLHelpers.specifyTextureSizeAndData(gl, paletteTexture, colorPalette);
 
-        fractalRendererProvider = new FractalRendererProvider();
-        model.setAvailableFractals(fractalRendererProvider.getAvailableFractals());
+            fractalRendererProvider = new FractalRendererProvider();
+            model.setAvailableFractals(fractalRendererProvider.getAvailableFractals());
 
-        fractalRenderer = fractalRendererProvider.getDefaultRenderer();
-        model.setFractalName(fractalRenderer.getFractalName());
+            fractalRenderer = fractalRendererProvider.getDefaultRenderer();
+            model.setFractalName(fractalRenderer.getFractalName());
 
-        // fractalRenderer uses the null-object pattern, so even if not initialized properly to CudaFractalRenderer, we can still call its methods
-        //todo domyslet jak je to s tim null objectem a kdo vlastne vyhazuje jakou vyjimku kdy (modul vs renderer) a jak ji zobrazovat a kdo je zopovedny za ten null object a tyhle shity
+            // fractalRenderer uses the null-object pattern, so even if not initialized properly to CudaFractalRenderer, we can still call its methods
+            //todo domyslet jak je to s tim null objectem a kdo vlastne vyhazuje jakou vyjimku kdy (modul vs renderer) a jak ji zobrazovat a kdo je zopovedny za ten null object a tyhle shity
 
-        controller.showDefaultView();
+            controller.showDefaultView();
+        } catch (Exception e) {
+            model.getErrors().add(e.getMessage());
+        }
     }
 
 
@@ -92,44 +95,48 @@ public class GLRenderer implements GLEventListener {
 
     @Override
     public void display(GLAutoDrawable drawable) {
-        assert SwingUtilities.isEventDispatchThread();
-        assert model.getCanvasWidth() == outputTexture.getWidth();
-        assert model.getCanvasHeight() == outputTexture.getHeight();
-        if (model.getCanvasWidth() == 0 || model.getCanvasHeight() == 0) {
-            System.err.printf("Warning, RenderingController.display() called with width=%d, height=%d. Skipping the operation.\n", model.getCanvasWidth(), model.getCanvasHeight()); //todo make a logger for this
-            return;
-        }
+        try {
+            assert SwingUtilities.isEventDispatchThread();
+            assert model.getCanvasWidth() == outputTexture.getWidth();
+            assert model.getCanvasHeight() == outputTexture.getHeight();
+            if (model.getCanvasWidth() == 0 || model.getCanvasHeight() == 0) {
+                System.err.printf("Warning, RenderingController.display() called with width=%d, height=%d. Skipping the operation.\n", model.getCanvasWidth(), model.getCanvasHeight()); //todo make a logger for this
+                return;
+            }
 
-        final GL2 gl = drawable.getGL().getGL2();
-        doBeforeDisplay.forEach(c -> c.accept(gl));
-        doBeforeDisplay.clear();
-        if (doNotRenderRequested) {
-            doNotRenderRequested = false;
-            return;
-        }
+            final GL2 gl = drawable.getGL().getGL2();
+            doBeforeDisplay.forEach(c -> c.accept(gl));
+            doBeforeDisplay.clear();
+            if (doNotRenderRequested) {
+                doNotRenderRequested = false;
+                return;
+            }
 
-        long startTime = System.currentTimeMillis();
+            long startTime = System.currentTimeMillis();
 
-        //todo tohle cele by asi ocenilo lepsi navrh. Inspiruj se u her a u Update smycky atd
-        //  ve finale by kernel launch asi mohl nebyt blocking
-        //      trivialni napad: double buffering, GL vzdy vykresli tu druhou, nez cuda zrovna pocita
+            //todo tohle cele by asi ocenilo lepsi navrh. Inspiruj se u her a u Update smycky atd
+            //  ve finale by kernel launch asi mohl nebyt blocking
+            //      trivialni napad: double buffering, GL vzdy vykresli tu druhou, nez cuda zrovna pocita
 
-        if (stateModel.isZooming()) {
-            controller.zoomAt(model.getLastMousePosition(), stateModel.getZoomingDirection());
-        }
+            if (stateModel.isZooming()) {
+                controller.zoomAt(model.getLastMousePosition(), stateModel.getZoomingDirection());
+            }
 
-        determineRenderingModeQuality();
-        render(drawable.getGL().getGL2());
+            determineRenderingModeQuality();
+            render(drawable.getGL().getGL2());
 
-        stateModel.step();
-        if (stateModel.isProgressiveRendering())
-            this.repaint();
+            stateModel.step();
+            if (stateModel.isProgressiveRendering())
+                this.repaint();
 
-        long endTime = System.currentTimeMillis();
-        lastFrameRenderTime = (int) (endTime - startTime);
-        //lastFramesRenderTime.get(currentMode.getCurrent()).add((int) (endTime - startTime));
+            long endTime = System.currentTimeMillis();
+            lastFrameRenderTime = (int) (endTime - startTime);
+            //lastFramesRenderTime.get(currentMode.getCurrent()).add((int) (endTime - startTime));
 //        System.out.println("" + lastFrameRenderTime + " ms (frame total render time)");
-        controller.onRenderingDone();
+            controller.onRenderingDone();
+        } catch (Exception e) {
+            model.getErrors().add(e.getMessage());
+        }
     }
 
     private static final int shortestFrameRenderTime = 15;
@@ -196,27 +203,31 @@ public class GLRenderer implements GLEventListener {
 
     @Override
     public void reshape(GLAutoDrawable drawable, int x, int y, int width, int height) {
-        final GL2 gl = drawable.getGL().getGL2();
-        final int oldHeight = model.getCanvasHeight();
-        model.setCanvasWidth(width);
-        model.setCanvasHeight(height);
-        model.setPlaneSegmentFromCenter(
-                model.getPlaneSegment().getCenterX(),
-                model.getPlaneSegment().getCenterY(),
-                model.getPlaneSegment().getZoom() * height / (double) oldHeight);
-        if (oldHeight == 0) { //this happens during the initialization
-            controller.showDefaultView(); //reinitialize current fractal
-            fractalRenderer.supplyDefaultValues(model);
-            fractalRenderer.setFractalCustomParams(model.getFractalCustomParams());
+        try {
+            final GL2 gl = drawable.getGL().getGL2();
+            final int oldHeight = model.getCanvasHeight();
+            model.setCanvasWidth(width);
+            model.setCanvasHeight(height);
+            model.setPlaneSegmentFromCenter(
+                    model.getPlaneSegment().getCenterX(),
+                    model.getPlaneSegment().getCenterY(),
+                    model.getPlaneSegment().getZoom() * height / (double) oldHeight);
+            if (oldHeight == 0) { //this happens during the initialization
+                controller.showDefaultView(); //reinitialize current fractal
+                fractalRenderer.supplyDefaultValues(model);
+                fractalRenderer.setFractalCustomParams(model.getFractalCustomParams());
+            }
+
+            if (fractalRenderer.getState() == FractalRendererState.readyToRender)
+                fractalRenderer.freeRenderingResources();
+            outputTexture = outputTexture.withNewSize(width, height);
+            GLHelpers.specifyTextureSize(gl, outputTexture);
+            fractalRenderer.initializeRendering(GLParams.of(outputTexture, paletteTexture));
+
+            controller.startProgressiveRendering();
+        } catch (Exception e) {
+            model.getErrors().add(e.getMessage());
         }
-
-        if (fractalRenderer.getState() == FractalRendererState.readyToRender)
-            fractalRenderer.freeRenderingResources();
-        outputTexture = outputTexture.withNewSize(width, height);
-        GLHelpers.specifyTextureSize(gl, outputTexture);
-        fractalRenderer.initializeRendering(GLParams.of(outputTexture, paletteTexture));
-
-        controller.startProgressiveRendering();
     }
 
     public void saveImage(String fileName, String format) {
