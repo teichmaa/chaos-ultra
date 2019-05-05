@@ -144,6 +144,7 @@ public abstract class FractalRenderingModule implements Closeable {
     public abstract void setFractalCustomParameters(String params);
 
     /**
+     * @param params list of numbers, delimited by comma `,` or semicolon `;`.
      * @throws NumberFormatException
      */
     protected double[] parseParamsAsDoubles(String params) {
@@ -157,9 +158,9 @@ public abstract class FractalRenderingModule implements Closeable {
     }
 
     /**
+     * @param params list of integers, delimited by comma `,` or semicolon `;`.
      * @throws NumberFormatException
      */
-
     protected int[] parseParamsAsIntegers(String params) {
         String[] tokens = params.split("[,;]");
         List<Integer> vals = Arrays.stream(tokens).map(Integer::parseInt).collect(Collectors.toList());
@@ -170,9 +171,20 @@ public abstract class FractalRenderingModule implements Closeable {
         return result;
     }
 
+    /**
+     *
+     * @param params Input format: `key=value` pairs, delimited by comma `,` or semicolon `;`.
+     *               If pair contains multiple equal signs `=`, the remaining ones are considered value. If pair does not contain any equal sign, it is silently skipped.
+     */
     protected HashMap<String, String> parseParamsAsKeyValPairs(String params) {
-        return null;
-        //TODO impl
+        HashMap<String, String> result = new HashMap<>();
+        String[] tokens = params.split("[,;]");
+        for (int i = 0; i < tokens.length; i++) {
+            String[] pair = tokens[i].split("=", 2);
+            if(pair.length < 2) continue;
+            result.put(pair[0].trim(),pair[1].trim());
+        }
+        return result;
     }
 
     /**
