@@ -4,7 +4,6 @@ import com.jogamp.opengl.GLEventListener;
 import com.jogamp.opengl.awt.GLCanvas;
 import com.jogamp.opengl.util.Animator;
 
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.gui.ControllerFX;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.gui.GUIController;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.PointInt;
 

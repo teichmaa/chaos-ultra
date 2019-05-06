@@ -1,7 +1,7 @@
 <?import javafx.embed.swing.SwingNode?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<HBox fx:controller="cz.cuni.mff.cgg.teichmaa.chaos_ultra.gui.ControllerFX"
+<HBox fx:controller="cz.cuni.mff.cgg.teichmaa.chaos_ultra.gui.PresenterFX"
       stylesheets="@style.css"
       xmlns:fx="http://javafx.com/fxml">
     <SwingNode fx:id="swingNode" HBox.hgrow="ALWAYS"/>

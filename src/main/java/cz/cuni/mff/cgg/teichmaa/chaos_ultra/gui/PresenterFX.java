@@ -19,7 +19,7 @@ import java.util.Date;
 import java.util.Objects;
 import java.util.ResourceBundle;
 
-public class ControllerFX implements Initializable, GUIController {
+public class PresenterFX implements Initializable, GUIController {
 
     private static final char UNICODE_TIMES_CHAR = '\u00D7';
 
@@ -58,9 +58,9 @@ public class ControllerFX implements Initializable, GUIController {
 
     private RenderingController renderingController;
 
-    private static ControllerFX singleton = null;
+    private static PresenterFX singleton = null;
 
-    static ControllerFX getSingleton() {
+    static PresenterFX getSingleton() {
         return singleton;
     }
 
@@ -99,18 +99,6 @@ public class ControllerFX implements Initializable, GUIController {
 
     public void showErrorMessageBlocking(String message) {
         Platform.runLater(() -> new Alert(Alert.AlertType.ERROR, message).showAndWait());
-    }
-
-    void setX(double x) {
-        Platform.runLater(() -> center_x.setText("" + x));
-    }
-
-    void setY(double y) {
-        Platform.runLater(() -> center_y.setText("" + y));
-    }
-
-    void setZoom(double zoom) {
-        Platform.runLater(() -> this.zoom.setText("" + zoom));
     }
 
     @FXML
@@ -193,9 +181,7 @@ public class ControllerFX implements Initializable, GUIController {
         String time = new SimpleDateFormat("dd-MM-YY_HH-mm-ss").format(new Date());
         SwingUtilities.invokeLater(() -> renderingController.saveImage(System.getProperty("user.dir") + File.separator + "saved_images" + File.separator +
                 "fractal_" + time + ".png", "png"));
-        // todo vybiratko na soubory
     }
-
 
     @FXML
     private void debugButton2Clicked(ActionEvent actionEvent) {

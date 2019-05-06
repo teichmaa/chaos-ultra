@@ -36,8 +36,8 @@ class SceneBuilder {
         Scene scene = new Scene(root);
         fxPanel.setScene(scene);
 
-        //assuming that the FXMLLoader properly instantiated the ControllerFX singleton
-        assert ControllerFX.getSingleton() != null;
+        //assuming that the FXMLLoader properly instantiated the PresenterFX singleton
+        assert PresenterFX.getSingleton() != null;
 
         SwingUtilities.invokeLater(this::composeAndRunSwingScene);
     }
@@ -46,25 +46,25 @@ class SceneBuilder {
         final JFrame root = new JFrame(APP_TITLE);
         root.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         root.setLayout(new BorderLayout());
-        root.add(getGLCanvas(ControllerFX.getSingleton()));
+        root.add(getGLCanvas(PresenterFX.getSingleton()));
         root.add(fxPanel, BorderLayout.EAST);
         root.setMinimumSize(new Dimension(800, 600));
         root.setVisible(true);
     }
 
-    private JPanel getGLCanvas(ControllerFX controllerFX) {
+    private JPanel getGLCanvas(PresenterFX presenterFX) {
         final GLProfile profile = GLProfile.get(GLProfile.GL2);
         final GLCapabilities capabilities = new GLCapabilities(profile);
 
         final GLCanvas fractalCanvas = new GLCanvas(capabilities);
-        final RenderingController renderingController = new RenderingController(fractalCanvas, controllerFX);
+        final RenderingController renderingController = new RenderingController(fractalCanvas, presenterFX);
         {
             fractalCanvas.addGLEventListener(renderingController.getView());
             fractalCanvas.addMouseWheelListener(renderingController);
             fractalCanvas.addMouseMotionListener(renderingController);
             fractalCanvas.addMouseListener(renderingController);
         }
-        controllerFX.setRenderingController(renderingController);
+        presenterFX.setRenderingController(renderingController);
 
         final JPanel panel = new JPanel();
         {
