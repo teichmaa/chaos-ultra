@@ -1,5 +1,8 @@
-package cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering;
+package cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.model;
 
+/**
+ * Data class, bundling the two textures required for rendering.
+ */
 public class GLParams {
     private GLTexture output;
     private GLTexture palette;

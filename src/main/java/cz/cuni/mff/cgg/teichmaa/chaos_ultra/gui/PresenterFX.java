@@ -19,7 +19,7 @@ import java.util.Date;
 import java.util.Objects;
 import java.util.ResourceBundle;
 
-public class PresenterFX implements Initializable, GUIController {
+public class PresenterFX implements Initializable, GUIPresenter {
 
     private static final char UNICODE_TIMES_CHAR = '\u00D7';
 
@@ -97,7 +97,7 @@ public class PresenterFX implements Initializable, GUIController {
     }
 
 
-    public void showErrorMessageBlocking(String message) {
+    public void showBlockingErrorAlertAsync(String message) {
         Platform.runLater(() -> new Alert(Alert.AlertType.ERROR, message).showAndWait());
     }
 
@@ -120,7 +120,7 @@ public class PresenterFX implements Initializable, GUIController {
                 renderingController.repaint();
             });
         } catch (NumberFormatException e) {
-            showErrorMessageBlocking("Number in a text field could not be parsed.");
+            showBlockingErrorAlertAsync("Number in a text field could not be parsed.");
         }
     }
 
@@ -179,7 +179,7 @@ public class PresenterFX implements Initializable, GUIController {
     @FXML
     private void saveImageClicked(ActionEvent actionEvent) {
         String time = new SimpleDateFormat("dd-MM-YY_HH-mm-ss").format(new Date());
-        SwingUtilities.invokeLater(() -> renderingController.saveImage(System.getProperty("user.dir") + File.separator + "saved_images" + File.separator +
+        SwingUtilities.invokeLater(() -> renderingController.saveImageRequested(System.getProperty("user.dir") + File.separator + "saved_images" + File.separator +
                 "fractal_" + time + ".png", "png"));
     }
 
@@ -209,7 +209,7 @@ public class PresenterFX implements Initializable, GUIController {
             dimensions.setText("" + model.getCanvasWidth() + " " + UNICODE_TIMES_CHAR + " " + model.getCanvasHeight());
             fractalChoiceBox.setItems(FXCollections.observableArrayList(model.getAvailableFractals()));
             fractalCustomParams.setText(model.getFractalCustomParams());
-            model.getErrors().forEach(c -> errorsTextArea.appendText(timestamp() + c + System.lineSeparator()));
+            model.getNewlyLoggedErrors().forEach(c -> errorsTextArea.appendText(timestamp() + c + System.lineSeparator()));
             errorsTextArea.selectPositionCaret(errorsTextArea.getLength()); //scroll to end
         });
     }

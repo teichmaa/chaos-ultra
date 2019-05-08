@@ -3,8 +3,7 @@ package cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering;
 import com.jogamp.opengl.GLEventListener;
 import com.jogamp.opengl.awt.GLCanvas;
 import com.jogamp.opengl.util.Animator;
-
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.gui.GUIController;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.gui.GUIPresenter;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.PointInt;
 
 import javax.swing.*;
@@ -17,48 +16,33 @@ import static cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.FractalRenderer.SUP
 
 public class RenderingController extends MouseAdapter {
 
+    public static final double ZOOM_COEFF = 0.977f;
+
     private static RenderingController singleton = null;
-
-    // terminology of private fields:
-    //   texture: {int x int} discrete set, representing the surface that we draw on
-    //   plane (aka complex plane): {real x real} continuous set, representing the part of the complex plane that we render
-    //   name_x: x-coordinate of a point in texture or Real coordinate of a point in complex plane
-    //   name_y: y-coordinate of a point in texture or Imag coordinate of a point in complex plane
-    //   attributeName_t: texture attribute
-    //   attributeName_p: plane attribute
-
-    //        Texture (int x int)        Complex plane (real x real)
-    //      (0,0)    __ __
-    //        | x > |__|__|             .
-    //        |y |__|__|__|             .
-    //        |v |__|__|__|    <==>     .
-    //        |__|__|__|__|             ^
-    //        |__|__|__|__|             y
-    //        |__|__|__|__|           (0,0) x > .......
-
 
     private final Animator animator;
 
-    private final GUIController guiController;
-    private final GLRenderer glRenderer;
+    private final GUIPresenter guiPresenter;
+    private final GLView glView;
 
     private final Model model = new Model();
     private final RenderingModeFSM currentMode = new RenderingModeFSM();
 
-    public RenderingController(GLCanvas target, GUIController guiController) {
-        this.guiController = guiController;
-        glRenderer = new GLRenderer(this, model,currentMode,target);
+    public RenderingController(GLCanvas target, GUIPresenter guiPresenter) {
+        this.guiPresenter = guiPresenter;
+        glView = new GLRenderer(this, model, currentMode, target);
         animator = new Animator(target);
         animator.setRunAsFastAsPossible(true);
         animator.stop();
-        renderInFuture.setRepeats(false);
+        repaintOnceLater.setRepeats(false);
 
 //        for(RenderingModeFSM.RenderingMode mode : RenderingModeFSM.RenderingMode.values()){
 //            lastFramesRenderTime.put(mode, new CyclicBuffer(lastFramesRenderTimeBufferLength, shortestFrameRenderTime));
 //        }
 
-        if (singleton == null)
+        if (singleton == null) {
             singleton = this;
+        } else throw new IllegalStateException("Cannot instantiate more than one RenderingController");
     }
 
     @Override
@@ -111,7 +95,7 @@ public class RenderingController extends MouseAdapter {
         }
     }
 
-    private Timer renderInFuture = new Timer(100, __ ->
+    private Timer repaintOnceLater = new Timer(100, __ ->
             repaint());
 
     @Override
@@ -121,39 +105,33 @@ public class RenderingController extends MouseAdapter {
         animator.stop();
         if (SwingUtilities.isLeftMouseButton(e) && currentMode.isMoving()) {
             currentMode.stopMoving();
-            renderInFuture.start();
+            repaintOnceLater.start();
         }
         if ((SwingUtilities.isRightMouseButton(e) || SwingUtilities.isMiddleMouseButton(e)) && currentMode.isZooming()) {
             currentMode.stopZooming();
-            renderInFuture.start();
+            repaintOnceLater.start();
         }
     }
 
-    private static final double ZOOM_COEFF = 0.977f;
-
-    public void zoomAt(PointInt where, boolean into) {
-        zoomAt(where.getX(), where.getY(), into);
-    }
-
     /**
-     * @param texture_x zooming center, texture x-coordinate
-     * @param texture_y zooming center, texture y-coordinate
-     * @param into      whether to zoom in or out
+     * Apply zooming to model values, especially the plane segment
+     *
+     * @param where texture coordinates of the zooming center
+     * @param into  whether to zoom in or out
      */
-    private void zoomAt(int texture_x, int texture_y, boolean into) {
+    public void zoomAt(PointInt where, boolean into) {
         double segment_width = model.getPlaneSegment().getSegmentWidth();
         double segment_height = model.getPlaneSegment().getSegmentHeight();
 
-        double relTop = texture_y / (double) model.getCanvasHeight(); //relative distance from zoomingCenter to border, \in (0,1)
+        double relTop = where.getY() / (double) model.getCanvasHeight(); //relative distance from zoomingCenter to border, \in (0,1)
         double relBtm = 1 - relTop;
-        double relLeft = texture_x / (double) model.getCanvasWidth();
+        double relLeft = where.getX() / (double) model.getCanvasWidth();
         double relRght = 1 - relLeft;
 
         double center_x = model.getPlaneSegment().getLeftBottom().getX() + segment_width * relLeft;
         double center_y = model.getPlaneSegment().getLeftBottom().getY() + segment_height * relBtm;
 
-        double zoom_coeff = this.ZOOM_COEFF;
-        if (!into) zoom_coeff = 2f - this.ZOOM_COEFF; //todo refactor
+        double zoom_coeff = into ? RenderingController.ZOOM_COEFF : 2f - RenderingController.ZOOM_COEFF;
 
         double l_b_new_x = center_x - segment_width * relLeft * zoom_coeff;
         double l_b_new_y = center_y - segment_height * relBtm * zoom_coeff;
@@ -181,11 +159,14 @@ public class RenderingController extends MouseAdapter {
         repaint();
     }
 
-    public void onModelUpdated(){
-        guiController.onModelUpdated(model.copy());
-        Optional<String> cudaInitError = model.getErrors().stream().filter(e -> e.contains("CUDA installed?")).findFirst();
-        cudaInitError.ifPresent(guiController::showErrorMessageBlocking);
-        model.getErrors().clear();
+    private void onModelUpdated() {
+        guiPresenter.onModelUpdated(model.copy());
+        {
+            //special handling of the cuda initialization error that we want to show as a blocking popup
+            Optional<String> cudaInitError = model.getNewlyLoggedErrors().stream().filter(e -> e.contains("CUDA installed?")).findFirst();
+            cudaInitError.ifPresent(guiPresenter::showBlockingErrorAlertAsync);
+        }
+        model.getNewlyLoggedErrors().clear();
     }
 
     public void setPlaneSegmentRequested(double centerX, double centerY, double zoom) {
@@ -206,9 +187,11 @@ public class RenderingController extends MouseAdapter {
         onModelUpdated();
     }
 
+    /**
+     * @param supSampLvl will be clamped to be >=1 and <= SUPER_SAMPLING_MAX_LEVEL
+     */
     public void setSuperSamplingLevelRequested(int supSampLvl) {
         assert SwingUtilities.isEventDispatchThread();
-        //supSampLvl will be clamped to be >=1 and <= SUPER_SAMPLING_MAX_LEVEL
         int newValue = Math.max(1, Math.min(supSampLvl, SUPER_SAMPLING_MAX_LEVEL));
         if(newValue != supSampLvl){
             System.out.println("Warning: super sampling level clamped to " + newValue + ", higher is not supported");
@@ -218,13 +201,13 @@ public class RenderingController extends MouseAdapter {
     }
 
     public void repaint() {
-        glRenderer.repaint();
+        glView.repaint();
     }
 
     public void setFractalCustomParams(String text) {
         assert SwingUtilities.isEventDispatchThread();
-        glRenderer.setFractalCustomParams(text);
         model.setFractalCustomParams(text);
+        glView.onFractalCustomParamsUpdated();
         repaint();
     }
 
@@ -238,18 +221,18 @@ public class RenderingController extends MouseAdapter {
         animator.stop();
         currentMode.resetState();
         showDefaultView();
-        glRenderer.onFractalChanged(fractalName);
+        glView.onFractalChanged(fractalName);
         model.setSampleReuseCacheDirty(true);
         repaint();
     }
 
     public void debugRightBottomPixel() {
-        glRenderer.debugRightBottomPixel();
+        glView.debugRightBottomPixel();
     }
 
 
     public void debugFractal() {
-        glRenderer.launchDebugKernel();
+        glView.launchDebugKernel();
     }
 
     public void setVisualiseSampleCount(boolean value) {
@@ -268,29 +251,31 @@ public class RenderingController extends MouseAdapter {
 
     public void setUseFoveatedRendering(boolean value) {
         model.setUseFoveatedRendering(value);
-        startProgressiveRendering();
+        startProgressiveRenderingAsync();
     }
 
     public void setUseSampleReuse(boolean value) {
         model.setUseSampleReuse(value);
     }
 
-    public void saveImage(String fileName, String format) {
-        glRenderer.saveImage(fileName, format);
+    public void startProgressiveRenderingAsync() {
+        currentMode.startProgressiveRendering();
+        repaint();
     }
 
-    public GLEventListener getView() {
-        return glRenderer;
-    }
-
-    void onRenderingDone(){
+    void onRenderingDone() {
+        currentMode.step();
+        if (currentMode.isProgressiveRendering())
+            repaint();
         onModelUpdated();
     }
 
+    public void saveImageRequested(String fileName, String format) {
+        glView.saveImageAsync(fileName, format);
+    }
 
-    public void startProgressiveRendering() {
-        currentMode.startProgressiveRendering();
-        repaint();
+    public GLEventListener getView() {
+        return glView;
     }
 
 }

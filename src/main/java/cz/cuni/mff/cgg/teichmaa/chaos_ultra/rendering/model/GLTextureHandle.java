@@ -1,5 +1,8 @@
-package cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering;
+package cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.model;
 
+/**
+ * Wrapper class, containing an integer handle, representing a texture managed by OpenGL.
+ */
 public class GLTextureHandle {
     int value;
 

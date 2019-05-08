@@ -1,5 +1,8 @@
-package cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering;
+package cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.model;
 
+/**
+ * Data class representing a texture managed by OpenGL.
+ */
 public class GLTexture {
     private final GLTextureHandle handle;
     private final int target;

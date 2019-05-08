@@ -2,8 +2,11 @@ package cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering;
 
 import com.jogamp.opengl.GL2;
 import com.jogamp.opengl.GLAutoDrawable;
-import com.jogamp.opengl.GLEventListener;
 import com.jogamp.opengl.awt.GLCanvas;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.CudaFractalRendererProvider;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.model.GLParams;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.model.GLTexture;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.model.GLTextureHandle;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.ImageHelpers;
 
 import javax.swing.*;
@@ -16,7 +19,7 @@ import java.util.function.Consumer;
 import static com.jogamp.opengl.GL.*;
 import static cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.FractalRenderer.SUPER_SAMPLING_MAX_LEVEL;
 
-class GLRenderer implements GLEventListener {
+class GLRenderer implements GLView {
 
     private GLTexture outputTexture;
     private GLTexture paletteTexture;
@@ -64,21 +67,19 @@ class GLRenderer implements GLEventListener {
             );
             GLHelpers.specifyTextureSizeAndData(gl, paletteTexture, colorPalette);
 
-            fractalRendererProvider = new FractalRendererProvider();
+            fractalRendererProvider = new CudaFractalRendererProvider();
             model.setAvailableFractals(fractalRendererProvider.getAvailableFractals());
 
+            // This call can produce an exception.
+            // However, fractalRenderer uses the null-object pattern, so even if not initialized properly to CudaFractalRenderer, we can still call its methods.
             fractalRenderer = fractalRendererProvider.getDefaultRenderer();
             model.setFractalName(fractalRenderer.getFractalName());
-
-            // fractalRenderer uses the null-object pattern, so even if not initialized properly to CudaFractalRenderer, we can still call its methods
-            //todo domyslet jak je to s tim null objectem a kdo vlastne vyhazuje jakou vyjimku kdy (modul vs renderer) a jak ji zobrazovat a kdo je zopovedny za ten null object a tyhle shity
 
             controller.showDefaultView();
         } catch (Exception e) {
             model.logError(e.getMessage());
         }
     }
-
 
     @Override
     public void dispose(GLAutoDrawable drawable) {
@@ -124,10 +125,6 @@ class GLRenderer implements GLEventListener {
 
             determineRenderingModeQuality();
             render(drawable.getGL().getGL2());
-
-            stateModel.step();
-            if (stateModel.isProgressiveRendering())
-                this.repaint();
 
             long endTime = System.currentTimeMillis();
             lastFrameRenderTime = (int) (endTime - startTime);
@@ -212,7 +209,7 @@ class GLRenderer implements GLEventListener {
                     model.getPlaneSegment().getCenterX(),
                     model.getPlaneSegment().getCenterY(),
                     model.getPlaneSegment().getZoom() * height / (double) oldHeight);
-            if (oldHeight == 0) { //this happens during the initialization
+            if (oldHeight == 0) { //this happens during program initialization
                 controller.showDefaultView(); //reinitialize current fractal
                 fractalRenderer.supplyDefaultValues(model);
                 fractalRenderer.setFractalCustomParams(model.getFractalCustomParams());
@@ -224,13 +221,14 @@ class GLRenderer implements GLEventListener {
             GLHelpers.specifyTextureSize(gl, outputTexture);
             fractalRenderer.initializeRendering(GLParams.of(outputTexture, paletteTexture));
 
-            controller.startProgressiveRendering();
+            controller.startProgressiveRenderingAsync();
         } catch (Exception e) {
             model.logError(e.getMessage());
         }
     }
 
-    public void saveImage(String fileName, String format) {
+    @Override
+    public void saveImageAsync(String fileName, String format) {
         assert SwingUtilities.isEventDispatchThread();
         doBeforeDisplay.add(gl -> {
             int width_t = model.getCanvasWidth();
@@ -250,14 +248,17 @@ class GLRenderer implements GLEventListener {
         repaint();
     }
 
-    public void setFractalCustomParams(String text) {
-        fractalRenderer.setFractalCustomParams(text);
+    @Override
+    public void onFractalCustomParamsUpdated() {
+        fractalRenderer.setFractalCustomParams(model.getFractalCustomParams());
     }
 
+    @Override
     public void repaint() {
         target.repaint();
     }
 
+    @Override
     public void onFractalChanged(String fractalName) {
         doBeforeDisplay.add(gl -> {
             if (fractalRenderer.getState() == FractalRendererState.readyToRender)
@@ -269,10 +270,12 @@ class GLRenderer implements GLEventListener {
         });
     }
 
+    @Override
     public void debugRightBottomPixel() {
         fractalRenderer.debugRightBottomPixel();
     }
 
+    @Override
     public void launchDebugKernel() {
         fractalRenderer.launchDebugKernel();
     }

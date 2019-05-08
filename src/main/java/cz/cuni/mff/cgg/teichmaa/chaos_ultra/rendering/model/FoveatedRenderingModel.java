@@ -2,7 +2,7 @@ package cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.model;
 
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.PointInt;
 
-public interface FoveatedRendering {
+public interface FoveatedRenderingModel {
     //todo screen distance, eyes distance etc
 
     boolean isUseFoveatedRendering();

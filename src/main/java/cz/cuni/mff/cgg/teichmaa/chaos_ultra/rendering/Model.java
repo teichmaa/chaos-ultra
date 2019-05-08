@@ -20,25 +20,40 @@ import static cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.FractalRenderer.SUP
 
 class Model implements RenderingModel, GUIModel, DefaultFractalModel {
 
+    //    The relationship between the canvas (a.k.a texture) and the plane, resp. its segment:
+    //
+    //        Texture~Canvas (int x int)   Complex plane (real x real)
+    //      (0,0)    __ __
+    //        | x > |__|__|                .
+    //        |y |__|__|__|                .
+    //        |v |__|__|__|    <==>        .
+    //        |__|__|__|__|                ^
+    //        |__|__|__|__|                y
+    //        |__|__|__|__|              (0,0) x > .......
+
+    private int maxIterations;
     private FloatPrecision floatingPointPrecision = FloatPrecision.defaultValue;
     private boolean useFoveatedRendering;
     private PointInt mouseFocus = new PointInt();
     private boolean zooming;
-    private int maxIterations;
-    private PlaneSegment planeSegment = new PlaneSegment();
     private boolean useSampleReuse;
+    private boolean sampleReuseCacheDirty;
     private int superSamplingLevel;
     private boolean useAdaptiveSuperSampling;
     private boolean visualiseSampleCount;
     private boolean automaticQuality;
+
     private int canvasWidth;
     private int canvasHeight;
-    private boolean sampleReuseCacheDirty;
+    private PlaneSegment planeSegment = new PlaneSegment();
+
     private PointInt lastMousePosition = new PointInt();
-    private Collection<String> availableFractals = Collections.emptyList();
     private String fractalName;
+
+    private Collection<String> availableFractals = Collections.emptyList();
     private String fractalCustomParams;
     private List<String> errors = new ArrayList<>();
+
     /**
      * @return deep copy of itself
      */
@@ -240,12 +255,12 @@ class Model implements RenderingModel, GUIModel, DefaultFractalModel {
     }
 
     @Override
-    public List<String> getErrors() {
+    public List<String> getNewlyLoggedErrors() {
         return errors;
     }
 
     @Override
     public void logError(String error) {
-        getErrors().add(error);
+        errors.add(error);
     }
 }

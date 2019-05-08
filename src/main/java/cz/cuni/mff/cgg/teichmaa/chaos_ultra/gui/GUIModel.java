@@ -25,5 +25,5 @@ public interface GUIModel {
 
     String getFractalCustomParams();
 
-    List<String> getErrors();
+    List<String> getNewlyLoggedErrors();
 }

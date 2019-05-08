@@ -1,9 +1,9 @@
 package cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer;
 
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.*;
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.model.DefaultFractalModel;
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.model.ErrorLogger;
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.model.RenderingModel;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.FractalRenderer;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.FractalRendererException;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.FractalRendererState;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.model.*;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.FloatPrecision;
 import jcuda.CudaException;
 import jcuda.NativePointerObject;
@@ -16,8 +16,10 @@ import java.nio.IntBuffer;
 import java.security.InvalidParameterException;
 import java.util.function.Consumer;
 
-import static jcuda.driver.JCudaDriver.*;
-import static jcuda.runtime.cudaGraphicsRegisterFlags.*;
+import static jcuda.driver.JCudaDriver.cuCtxSynchronize;
+import static jcuda.driver.JCudaDriver.cuMemcpy2D;
+import static jcuda.runtime.cudaGraphicsRegisterFlags.cudaGraphicsRegisterFlagsReadOnly;
+import static jcuda.runtime.cudaGraphicsRegisterFlags.cudaGraphicsRegisterFlagsWriteDiscard;
 import static jcuda.runtime.cudaResourceType.cudaResourceTypeArray;
 
 /**
@@ -69,6 +71,9 @@ public class CudaFractalRenderer implements FractalRenderer {
 
     private FractalRendererState state = FractalRendererState.notInitialized;
 
+    /**
+     * @throws jcuda.CudaException containing cudaErrorInvalidGraphicsContext when OpenGL is not active
+     */
     @Override
     public void initializeRendering(GLParams glParams) {
         if(state == FractalRendererState.readyToRender) throw new IllegalStateException("Already initialized.");
@@ -207,7 +212,7 @@ public class CudaFractalRenderer implements FractalRenderer {
         model.setSampleReuseCacheDirty(false);
     }
 
-    private void launchRenderingKernel(boolean async, RenderingKernel kernel, ErrorLogger logger) {
+    private void launchRenderingKernel(boolean async, RenderingKernel kernel, PublicErrorLogger logger) {
         int width = kernel.getWidth();
         int height = kernel.getHeight();
 
@@ -242,7 +247,7 @@ public class CudaFractalRenderer implements FractalRenderer {
      * @param async
      * @param kernel
      */
-    private void launchDrawingKernel(boolean async, KernelCompose kernel, ErrorLogger logger) {
+    private void launchDrawingKernel(boolean async, KernelCompose kernel, PublicErrorLogger logger) {
         long start = System.currentTimeMillis();
 
         try {
@@ -343,6 +348,7 @@ public class CudaFractalRenderer implements FractalRenderer {
         if(state == FractalRendererState.readyToRender)
             freeRenderingResources();
         memory.close();
+        module.close();
     }
 
     @Override

@@ -1,18 +1,36 @@
 package cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering;
 
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.model.DefaultFractalModel;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.model.GLParams;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.model.RenderingModel;
 
 import java.io.Closeable;
 
+/**
+ * Represents a class that is able, using some underlying technology, to sample a fractal and render it on an OpenGL texture.
+ * <br />
+ * Each instance may represent a different fractal.
+ */
 public interface FractalRenderer extends Closeable {
     int SUPER_SAMPLING_MAX_LEVEL = 256;
 
-    //todo dokumentacni komentar
-    //using this call-me-approach rather than unregistering the resource every time a frame is rendered is for performance reasons, see https://devtalk.nvidia.com/default/topic/747242/cuda-opengl-interop-performance/
-    //may be called only when a corresponding OpenGL context is active (e.g. during GLEventListener events). Otherwise cudaErrorInvalidGraphicsContext or some other errors are to expect.
+    /**
+     * Initializes rendering and set the renderer to readyToRender state.
+     * The implementation is allowed (and expected) to map the textures to its internal resources, potentially locking the textures for modification and for exclusive writing.
+     * <br />
+     * The resources have to be freed by calling {@code freeRenderingResources} or {@code close}.
+     * <br />
+     * May be called only when a corresponding OpenGL context is active (e.g. during GLEventListener events).
+     * <br />
+     * Using this stateful approach rather stateless (registering the resource every time a frame is rendered) is for performance reasons.
+     *
+     * @param glParams glParams containing the output texture to render on and the color palette
+     */
     void initializeRendering(GLParams glParams);
 
+    /**
+     * Frees the textures previously supplied to {@code initializeRendering}, allowing for texture modification, and sets the renderer to notInitialized state. The renderer may be later initialized again.
+     */
     void freeRenderingResources();
 
     FractalRendererState getState();
@@ -23,10 +41,27 @@ public interface FractalRenderer extends Closeable {
 
     void launchDebugKernel();
 
+    /**
+     * Should use any available means to reduce the computational complexity of fractal sampling.
+     * <br />
+     * The implementation is expected be scalable; in the sense that the lower the values of {@code maxIterations} and {@code superSamplingLevel}, the faster computation time.
+     * @throws FractalRendererException upon rendering error
+     * @param model model with data to render
+     */
     void renderFast(RenderingModel model);
 
+    /**
+     * Should provide high quality images with little artifacts, at the cost of taking longer time to compute.
+     * <br />
+     * The implementation is expected be scalable; in the sense that the higher the values of {@code maxIterations} and {@code superSamplingLevel}, the higher visual quality.
+     * @throws FractalRendererException upon rendering error
+     * @param model model with data to render
+     */
     void renderQuality(RenderingModel model);
 
+    /**
+     * Closes the object, calling {@code freeRenderingResources} beside others.
+     */
     @Override
     void close();
 
@@ -36,5 +71,9 @@ public interface FractalRenderer extends Closeable {
 
     String getFractalName();
 
+    /**
+     * Asks the underlying implementation to provide default values to be set before starting to render the fractal. This is an optional operation and may be left empty.
+     * @param model model to supply the default values to
+     */
     void supplyDefaultValues(DefaultFractalModel model);
 }

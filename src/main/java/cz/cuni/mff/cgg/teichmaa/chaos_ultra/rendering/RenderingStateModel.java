@@ -16,7 +16,5 @@ public interface RenderingStateModel {
 
     boolean isZooming();
 
-    void step();
-
     void resetState();
 }

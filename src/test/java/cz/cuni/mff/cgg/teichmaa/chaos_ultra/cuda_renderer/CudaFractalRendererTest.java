@@ -2,7 +2,7 @@ package cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer;
 
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.modules.ModuleJulia;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.modules.ModuleMandelbrot;
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.GLParams;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.model.GLParams;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 

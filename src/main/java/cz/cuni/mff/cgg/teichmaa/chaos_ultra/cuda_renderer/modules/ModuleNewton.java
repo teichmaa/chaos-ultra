@@ -2,10 +2,9 @@ package cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.modules;
 
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.cuda_renderer.FractalRenderingModule;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.model.DefaultFractalModel;
-import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.model.RenderingModel;
 
-public class Newton extends FractalRenderingModule {
-    public Newton() {
+public class ModuleNewton extends FractalRenderingModule {
+    public ModuleNewton() {
         super("newton", "newton");
     }
 

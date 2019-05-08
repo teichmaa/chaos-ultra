@@ -1,6 +1,7 @@
 package cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering;
 
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.model.DefaultFractalModel;
+import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.model.GLParams;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.rendering.model.RenderingModel;
 import cz.cuni.mff.cgg.teichmaa.chaos_ultra.util.JavaHelpers;
 
