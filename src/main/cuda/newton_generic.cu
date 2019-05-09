@@ -3,29 +3,41 @@
 #include <math.h>
 
 using namespace thrust;
-template <class Real> __device__
-complex<Real> evalF(complex<Real> x){
-    return (x * x * x) - 1;
-}
+
+__constant__ Point<double> roots[3]; 
+__constant__ double coefficients[4]; 
+
 
 template <class Real> __device__
-complex<Real> evalFDerivative(complex<Real> x){
-    return (3 * (x * x));
+complex<Real> newtonMethod(complex<Real> x){
+    complex<Real> x_pow_2 = x * x;
+    complex<Real> x_pow_3 = x_pow_2 * x;
+    
+    complex<Real> f_eval_x =  coefficients[0] + 
+                              coefficients[1] * x + 
+                              coefficients[2] * x_pow_2 + 
+                              coefficients[3] * x_pow_3 ;
+    complex<Real> f_derivative_eval_x = coefficients[1] + 
+                                        coefficients[2] * 2 * x + 
+                                        coefficients[3] * 3 * x_pow_2 ;
+
+    return x - (f_eval_x / f_derivative_eval_x);
 }
+
 
 template <class Real> __device__
 unsigned int iterate(unsigned int maxIterations, Point<Real> z){
 
-    const complex<Real> root_a(1,0);
-    const complex<Real> root_b(-0.5,0.86602540378); // 0.86602540378 = sqrt(3) / 2
-    const complex<Real> root_c(-0.5,-0.86602540378);
-    const Real tolerance = 0.000001;
+    const complex<Real> root_a(roots[0].x,roots[0].y);
+    const complex<Real> root_b(roots[1].x,roots[1].y); 
+    const complex<Real> root_c(roots[2].x,roots[2].y);
+    const Real tolerance = 0.0001;
 
     complex<Real> x(z.x,z.y);
 
     unsigned int i = 0;
     while(i < maxIterations){
-        x = x - evalF(x) / evalFDerivative(x);
+        x = newtonMethod(x);
         ++i;
     }
 
@@ -61,6 +73,12 @@ unsigned int colorize(cudaSurfaceObject_t colorPalette, unsigned int paletteLeng
 }
 
 
+
 __device__ void debugFractal(){
     /* empty */
 }
+
+
+
+
+

@@ -211,6 +211,7 @@ public class PresenterFX implements Initializable, GUIPresenter {
             fractalCustomParams.setText(model.getFractalCustomParams());
             model.getNewlyLoggedErrors().forEach(c -> errorsTextArea.appendText(timestamp() + c + System.lineSeparator()));
             errorsTextArea.selectPositionCaret(errorsTextArea.getLength()); //scroll to end
+            useSampleReuse.setSelected(model.isUseSampleReuse());
         });
     }
 

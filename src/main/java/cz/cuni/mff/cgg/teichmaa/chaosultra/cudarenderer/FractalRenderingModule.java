@@ -179,12 +179,32 @@ public abstract class FractalRenderingModule implements Closeable {
      * @param nameOfTheConstant name of the constant as declared in the cuda source.
      * @param value value to write
      */
+    protected void writeToConstantMemory(String nameOfTheConstant, int value){
+        CuSizedDeviceptr sizedPtr = getDeviceConstantMemoryPointer(nameOfTheConstant);
+        if(sizedPtr.getSize() < Sizeof.INT)
+            throw new IllegalArgumentException("Attempt to write double to device memory allocated to size " + sizedPtr.getSize());
+        int[] source = new int[]{value};
+        cudaMemcpy(sizedPtr.getPtr(), Pointer.to(source), sizedPtr.getSize(), cudaMemcpyKind.cudaMemcpyHostToDevice);
+    }
+
+    /**
+     *
+     * @param nameOfTheConstant name of the constant as declared in the cuda source.
+     * @param value value to write
+     */
     protected void writeToConstantMemory(String nameOfTheConstant, double value){
         CuSizedDeviceptr sizedPtr = getDeviceConstantMemoryPointer(nameOfTheConstant);
         if(sizedPtr.getSize() < Sizeof.DOUBLE)
             throw new IllegalArgumentException("Attempt to write double to device memory allocated to size " + sizedPtr.getSize());
         double[] source = new double[]{value};
         cudaMemcpy(sizedPtr.getPtr(), Pointer.to(source), sizedPtr.getSize(), cudaMemcpyKind.cudaMemcpyHostToDevice);
+    }
+
+    protected void writeToConstantMemory(String nameOfTheConstant, double[] data){
+        CuSizedDeviceptr sizedPtr = getDeviceConstantMemoryPointer(nameOfTheConstant);
+        if(sizedPtr.getSize() < data.length * Sizeof.DOUBLE)
+            throw new IllegalArgumentException("Attempt to write double[] of size "+ data.length + " to device memory allocated to size " + sizedPtr.getSize());
+        cudaMemcpy(sizedPtr.getPtr(), Pointer.to(data), sizedPtr.getSize(), cudaMemcpyKind.cudaMemcpyHostToDevice);
     }
 
     /**

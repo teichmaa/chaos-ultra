@@ -83,7 +83,6 @@ public class RenderingController extends MouseAdapter {
         assert SwingUtilities.isEventDispatchThread();
         super.mousePressed(e);
 
-        System.out.println("pressed");
         model.getLastMousePosition().setXYFrom(e);
         model.getMouseFocus().setXYFrom(e);
         if (SwingUtilities.isRightMouseButton(e) && SwingUtilities.isLeftMouseButton(e)) {

@@ -26,4 +26,6 @@ public interface GUIModel {
     String getFractalCustomParams();
 
     List<String> getNewlyLoggedErrors();
+
+    boolean isUseSampleReuse();
 }

@@ -8,6 +8,7 @@ import cz.cuni.mff.cgg.teichmaa.chaosultra.rendering.model.GLParams;
 import cz.cuni.mff.cgg.teichmaa.chaosultra.rendering.model.GLTexture;
 import cz.cuni.mff.cgg.teichmaa.chaosultra.rendering.model.GLTextureHandle;
 import cz.cuni.mff.cgg.teichmaa.chaosultra.util.ImageHelpers;
+import cz.cuni.mff.cgg.teichmaa.chaosultra.util.JavaHelpers;
 
 import javax.swing.*;
 import java.nio.Buffer;
@@ -78,6 +79,7 @@ class GLRenderer implements GLView {
             controller.showDefaultView();
         } catch (Exception e) {
             model.logError(e.getMessage());
+            if(JavaHelpers.isDebugMode()) throw e;
         }
     }
 
@@ -136,6 +138,7 @@ class GLRenderer implements GLView {
             controller.onRenderingDone();
         } catch (Exception e) {
             model.logError(e.getMessage());
+            if(JavaHelpers.isDebugMode()) throw e;
         }
     }
 
@@ -227,6 +230,7 @@ class GLRenderer implements GLView {
             controller.startProgressiveRenderingAsync();
         } catch (Exception e) {
             model.logError(e.getMessage());
+            if(JavaHelpers.isDebugMode()) throw e;
         }
     }
 
@@ -255,8 +259,10 @@ class GLRenderer implements GLView {
     public void onFractalCustomParamsUpdated() {
         try {
             fractalRenderer.setFractalCustomParams(model.getFractalCustomParams());
+            model.setSampleReuseCacheDirty(true);
         } catch (Exception e){
             model.logError(e.getMessage());
+            if(JavaHelpers.isDebugMode()) throw e;
         }
     }
 

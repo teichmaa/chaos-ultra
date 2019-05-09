@@ -5,6 +5,7 @@ import cz.cuni.mff.cgg.teichmaa.chaosultra.rendering.FractalRendererException;
 import cz.cuni.mff.cgg.teichmaa.chaosultra.rendering.FractalRendererState;
 import cz.cuni.mff.cgg.teichmaa.chaosultra.rendering.model.*;
 import cz.cuni.mff.cgg.teichmaa.chaosultra.util.FloatPrecision;
+import cz.cuni.mff.cgg.teichmaa.chaosultra.util.JavaHelpers;
 import jcuda.CudaException;
 import jcuda.NativePointerObject;
 import jcuda.Pointer;
@@ -240,6 +241,7 @@ public class CudaFractalRenderer implements FractalRenderer {
                 cuCtxSynchronize();
         } catch (CudaException e) {
             logger.logError("Error just after launching a kernel:" + e.getMessage());
+            if(JavaHelpers.isDebugMode()) throw e;
         }
     }
 
@@ -312,6 +314,7 @@ public class CudaFractalRenderer implements FractalRenderer {
                             cuCtxSynchronize();
                     } catch (CudaException e) {
                         logger.logError("Error just after launching a kernel:" + e.getMessage());
+                        if(JavaHelpers.isDebugMode()) throw e;
                     }
                 } finally {
                     JCuda.cudaDestroySurfaceObject(surfaceOutput);
@@ -323,6 +326,7 @@ public class CudaFractalRenderer implements FractalRenderer {
             }
         } catch (CudaException | FractalRendererException e) {
             logger.logError("Error during kernel launch preparation:" + e.getMessage());
+            if(JavaHelpers.isDebugMode()) throw e;
         }
 
         long end = System.currentTimeMillis();

@@ -18,4 +18,8 @@ public class JavaHelpers {
         if(numberOfUpNesting < 0 ) throw new IllegalArgumentException("must be non-negative");
         return Thread.currentThread().getStackTrace()[2 + numberOfUpNesting].getMethodName();
     }
+
+    public static boolean isDebugMode(){
+        return Boolean.toString(true).equals(System.getProperty("debug"));
+    }
 }

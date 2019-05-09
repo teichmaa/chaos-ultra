@@ -50,6 +50,7 @@ public class ModuleJulia extends FractalRenderingModule {
     @Override
     protected void supplyDefaultValues(DefaultFractalModel model) {
         super.supplyDefaultValues(model);
+        model.setMaxIterations(400);
         model.setFractalCustomParams("-0.4;0.6");
     }
 }
