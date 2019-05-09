@@ -1,10 +1,15 @@
 package cz.cuni.mff.cgg.teichmaa.chaosultra.cudarenderer;
 
 import cz.cuni.mff.cgg.teichmaa.chaosultra.rendering.model.DefaultFractalModel;
+import cz.cuni.mff.cgg.teichmaa.chaosultra.util.PointDoubleReadable;
 import jcuda.CudaException;
+import jcuda.Pointer;
+import jcuda.Sizeof;
+import jcuda.driver.CUdeviceptr;
 import jcuda.driver.CUmodule;
 import jcuda.driver.CUresult;
 import jcuda.driver.JCudaDriver;
+import jcuda.runtime.cudaMemcpyKind;
 
 import java.io.Closeable;
 import java.io.File;
@@ -14,7 +19,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static jcuda.driver.JCudaDriver.cuModuleGetGlobal;
 import static jcuda.driver.JCudaDriver.cuModuleLoad;
+import static jcuda.runtime.JCuda.cudaMemcpy;
 
 /**
  * A structure of JCuda classes, together representing a CUDA module (=1 ptx file) used by CudaFractalRenderer class.
@@ -140,6 +147,45 @@ public abstract class FractalRenderingModule implements Closeable {
     }
 
     public abstract void setFractalCustomParameters(String params);
+
+    /**
+     *
+     * @param nameOfTheConstant name of the constant as declared in the cuda source.
+     * @return pointer to the constant, and allocated memory size
+     */
+    private CuSizedDeviceptr getDeviceConstantMemoryPointer(String nameOfTheConstant){
+        //from https://github.com/jcuda/jcuda/issues/17
+        CUdeviceptr result = new CUdeviceptr();
+        long[] paramSizeArray = {0};
+        cuModuleGetGlobal(result, paramSizeArray, getModule(), nameOfTheConstant);
+        return CuSizedDeviceptr.of(result, paramSizeArray[0]);
+    }
+
+    /**
+     *
+     * @param nameOfTheConstant name of the constant as declared in the cuda source.
+     * @param value value to write
+     */
+    protected void writeToConstantMemory(String nameOfTheConstant, PointDoubleReadable value){
+        CuSizedDeviceptr sizedPtr = getDeviceConstantMemoryPointer(nameOfTheConstant);
+        if(sizedPtr.getSize() < 2 * Sizeof.DOUBLE)
+            throw new IllegalArgumentException("Attempt to write PointDouble to device memory allocated to size " + sizedPtr.getSize());
+        double[] source = new double[]{value.getX(), value.getY()};
+        cudaMemcpy(sizedPtr.getPtr(), Pointer.to(source), sizedPtr.getSize(), cudaMemcpyKind.cudaMemcpyHostToDevice);
+    }
+
+    /**
+     *
+     * @param nameOfTheConstant name of the constant as declared in the cuda source.
+     * @param value value to write
+     */
+    protected void writeToConstantMemory(String nameOfTheConstant, double value){
+        CuSizedDeviceptr sizedPtr = getDeviceConstantMemoryPointer(nameOfTheConstant);
+        if(sizedPtr.getSize() < Sizeof.DOUBLE)
+            throw new IllegalArgumentException("Attempt to write double to device memory allocated to size " + sizedPtr.getSize());
+        double[] source = new double[]{value};
+        cudaMemcpy(sizedPtr.getPtr(), Pointer.to(source), sizedPtr.getSize(), cudaMemcpyKind.cudaMemcpyHostToDevice);
+    }
 
     /**
      * @param params list of numbers, delimited by comma `,` or semicolon `;`.

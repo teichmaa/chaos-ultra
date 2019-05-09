@@ -29,6 +29,10 @@ public class RenderingController extends MouseAdapter {
     private final RenderingModeFSM currentMode = new RenderingModeFSM();
 
     public RenderingController(GLCanvas target, GUIPresenter guiPresenter) {
+        if (singleton == null) {
+            singleton = this;
+        } else throw new IllegalStateException("Cannot instantiate more than one RenderingController");
+
         this.guiPresenter = guiPresenter;
         glView = new GLRenderer(this, model, currentMode, target);
         animator = new Animator(target);
@@ -40,14 +44,13 @@ public class RenderingController extends MouseAdapter {
 //            lastFramesRenderTime.put(mode, new CyclicBuffer(lastFramesRenderTimeBufferLength, shortestFrameRenderTime));
 //        }
 
-        if (singleton == null) {
-            singleton = this;
-        } else throw new IllegalStateException("Cannot instantiate more than one RenderingController");
+        model.setErrorLoggedCallback(() -> guiPresenter.onModelUpdated(model.copy()));
     }
 
     @Override
     public void mouseWheelMoved(MouseWheelEvent e) {
         assert SwingUtilities.isEventDispatchThread();
+        super.mouseWheelMoved(e);
 
         model.getLastMousePosition().setXYFrom(e);
         model.getMouseFocus().setXYFrom(e);
@@ -58,6 +61,7 @@ public class RenderingController extends MouseAdapter {
     @Override
     public void mouseDragged(MouseEvent e) {
         assert SwingUtilities.isEventDispatchThread();
+        super.mouseDragged(e);
 
         if (SwingUtilities.isLeftMouseButton(e)) {
             double canvasToZoomCoeff = model.getPlaneSegment().getSegmentHeight() / model.getCanvasHeight();
@@ -77,7 +81,9 @@ public class RenderingController extends MouseAdapter {
     @Override
     public void mousePressed(MouseEvent e) {
         assert SwingUtilities.isEventDispatchThread();
+        super.mousePressed(e);
 
+        System.out.println("pressed");
         model.getLastMousePosition().setXYFrom(e);
         model.getMouseFocus().setXYFrom(e);
         if (SwingUtilities.isRightMouseButton(e) && SwingUtilities.isLeftMouseButton(e)) {
@@ -101,6 +107,7 @@ public class RenderingController extends MouseAdapter {
     @Override
     public void mouseReleased(MouseEvent e) {
         assert SwingUtilities.isEventDispatchThread();
+        super.mouseReleased(e);
 
         animator.stop();
         if (SwingUtilities.isLeftMouseButton(e) && currentMode.isMoving()) {

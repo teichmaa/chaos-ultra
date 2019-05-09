@@ -1,6 +1,6 @@
 package cz.cuni.mff.cgg.teichmaa.chaosultra.util;
 
-public class PointDoubleImmutable {
+public class PointDoubleImmutable implements PointDoubleReadable {
     private final double x;
     private final double y;
 
@@ -13,10 +13,12 @@ public class PointDoubleImmutable {
         return new PointDoubleImmutable(x, y);
     }
 
+    @Override
     public double getX() {
         return x;
     }
 
+    @Override
     public double getY() {
         return y;
     }

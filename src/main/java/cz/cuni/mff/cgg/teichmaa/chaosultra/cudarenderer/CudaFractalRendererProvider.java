@@ -2,7 +2,8 @@ package cz.cuni.mff.cgg.teichmaa.chaosultra.cudarenderer;
 
 import cz.cuni.mff.cgg.teichmaa.chaosultra.cudarenderer.modules.ModuleJulia;
 import cz.cuni.mff.cgg.teichmaa.chaosultra.cudarenderer.modules.ModuleMandelbrot;
-import cz.cuni.mff.cgg.teichmaa.chaosultra.cudarenderer.modules.ModuleNewton;
+import cz.cuni.mff.cgg.teichmaa.chaosultra.cudarenderer.modules.ModuleNewtonGeneric;
+import cz.cuni.mff.cgg.teichmaa.chaosultra.cudarenderer.modules.ModuleNewtonWired;
 import cz.cuni.mff.cgg.teichmaa.chaosultra.rendering.FractalRenderer;
 import cz.cuni.mff.cgg.teichmaa.chaosultra.rendering.FractalRendererProvider;
 
@@ -22,7 +23,8 @@ public class CudaFractalRendererProvider implements FractalRendererProvider {
         //register new fractals here:
         modules.add(ModuleJulia.class);
         modules.add(ModuleMandelbrot.class);
-        modules.add(ModuleNewton.class);
+        modules.add(ModuleNewtonWired.class);
+        modules.add(ModuleNewtonGeneric.class);
 
         //end register section
 

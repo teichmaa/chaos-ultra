@@ -3,9 +3,9 @@ package cz.cuni.mff.cgg.teichmaa.chaosultra.cudarenderer.modules;
 import cz.cuni.mff.cgg.teichmaa.chaosultra.cudarenderer.FractalRenderingModule;
 import cz.cuni.mff.cgg.teichmaa.chaosultra.rendering.model.DefaultFractalModel;
 
-public class ModuleNewton extends FractalRenderingModule {
-    public ModuleNewton() {
-        super("newton", "newton");
+public class ModuleNewtonWired extends FractalRenderingModule {
+    public ModuleNewtonWired() {
+        super("newton_wired", "newton wired");
     }
 
     @Override

@@ -106,8 +106,11 @@ class GLRenderer implements GLView {
             }
 
             final GL2 gl = drawable.getGL().getGL2();
-            doBeforeDisplay.forEach(c -> c.accept(gl));
-            doBeforeDisplay.clear();
+            try {
+                doBeforeDisplay.forEach(c -> c.accept(gl));
+            } finally {
+                doBeforeDisplay.clear(); //do not repeat the functions if there has been an exception
+            }
             if (doNotRenderRequested) {
                 doNotRenderRequested = false;
                 return;
@@ -250,7 +253,11 @@ class GLRenderer implements GLView {
 
     @Override
     public void onFractalCustomParamsUpdated() {
-        fractalRenderer.setFractalCustomParams(model.getFractalCustomParams());
+        try {
+            fractalRenderer.setFractalCustomParams(model.getFractalCustomParams());
+        } catch (Exception e){
+            model.logError(e.getMessage());
+        }
     }
 
     @Override

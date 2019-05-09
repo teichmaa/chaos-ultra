@@ -1,6 +1,6 @@
 package cz.cuni.mff.cgg.teichmaa.chaosultra.util;
 
-public class PointDouble {
+public class PointDouble implements PointDoubleReadable {
     private double x;
     private double y;
 
@@ -13,6 +13,7 @@ public class PointDouble {
         this.y = y;
     }
 
+    @Override
     public double getX() {
         return x;
     }
@@ -21,6 +22,7 @@ public class PointDouble {
         this.x = x;
     }
 
+    @Override
     public double getY() {
         return y;
     }
