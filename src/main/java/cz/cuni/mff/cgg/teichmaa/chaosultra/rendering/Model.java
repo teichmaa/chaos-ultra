@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Consumer;
 
 import static cz.cuni.mff.cgg.teichmaa.chaosultra.rendering.FractalRenderer.SUPER_SAMPLING_MAX_LEVEL;
 
@@ -270,5 +269,17 @@ class Model implements RenderingModel, GUIModel, DefaultFractalModel {
 
     public void setErrorLoggedCallback(Runnable errorLoggedCallback) {
         this.errorLoggedCallback = errorLoggedCallback;
+    }
+
+    public void setRenderingValuesToDefault() {
+        setPlaneSegmentFromCenter(0, 0, 4);
+        setMaxIterations(200);
+        setSuperSamplingLevel(2);
+        setUseAdaptiveSuperSampling(true);
+        setUseFoveatedRendering(true);
+        setUseSampleReuse(false); //todo back to true
+        setAutomaticQuality(true);
+        setVisualiseSampleCount(false);
+        setZooming(false);
     }
 }

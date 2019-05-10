@@ -151,18 +151,10 @@ public class RenderingController extends MouseAdapter {
         animator.stop();
         currentMode.resetState();
 
-        model.setPlaneSegmentFromCenter(0, 0, 4);
-        model.setMaxIterations(200);
-        model.setSuperSamplingLevel(2);
-        model.setUseAdaptiveSuperSampling(true);
-        model.setUseFoveatedRendering(true);
-        model.setUseSampleReuse(false); //todo back to true
-        model.setAutomaticQuality(true);
-        model.setVisualiseSampleCount(false);
-        onModelUpdated();
-        model.setFractalCustomParams("");
+        model.setRenderingValuesToDefault();
+        glView.showDefaultView();
 
-        repaint();
+        onModelUpdated();
     }
 
     private void onModelUpdated() {

@@ -146,7 +146,9 @@ public abstract class FractalRenderingModule implements Closeable {
         initialized = false;
     }
 
-    public abstract void setFractalCustomParameters(String params);
+    public void setFractalCustomParameters(String params) {
+
+    }
 
     /**
      *

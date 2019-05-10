@@ -23,6 +23,7 @@ public class CudaFractalRendererProvider implements FractalRendererProvider {
         modules.add(ModuleNewtonWired.class);
         modules.add(ModuleNewtonGeneric.class);
         modules.add(ModuleNewtonIterations.class);
+        modules.add(ModuleTest.class);
 
         //end register section
 

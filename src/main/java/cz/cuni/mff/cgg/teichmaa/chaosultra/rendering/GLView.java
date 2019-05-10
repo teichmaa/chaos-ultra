@@ -14,4 +14,6 @@ public interface GLView extends GLEventListener {
     void onFractalCustomParamsUpdated();
 
     void repaint();
+
+    void showDefaultView();
 }

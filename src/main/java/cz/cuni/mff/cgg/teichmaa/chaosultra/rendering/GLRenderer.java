@@ -280,6 +280,7 @@ class GLRenderer implements GLView {
             fractalRenderer.supplyDefaultValues(model);
             fractalRenderer.setFractalCustomParams(model.getFractalCustomParams());
             fractalRenderer.initializeRendering(GLParams.of(outputTexture, paletteTexture));
+            controller.showDefaultView();
         });
     }
 
@@ -293,4 +294,10 @@ class GLRenderer implements GLView {
         fractalRenderer.launchDebugKernel();
     }
 
+    @Override
+    public void showDefaultView() {
+        fractalRenderer.supplyDefaultValues(model);
+        fractalRenderer.setFractalCustomParams(model.getFractalCustomParams());
+        repaint();
+    }
 }
