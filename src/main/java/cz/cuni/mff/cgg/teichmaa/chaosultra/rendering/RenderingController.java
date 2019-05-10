@@ -156,7 +156,7 @@ public class RenderingController extends MouseAdapter {
         model.setSuperSamplingLevel(2);
         model.setUseAdaptiveSuperSampling(true);
         model.setUseFoveatedRendering(true);
-        model.setUseSampleReuse(true);
+        model.setUseSampleReuse(false); //todo back to true
         model.setAutomaticQuality(true);
         model.setVisualiseSampleCount(false);
         onModelUpdated();
@@ -227,7 +227,7 @@ public class RenderingController extends MouseAdapter {
         animator.stop();
         currentMode.resetState();
         showDefaultView();
-        glView.onFractalChanged(fractalName);
+        glView.onFractalChanged(fractalName, false);
         model.setSampleReuseCacheDirty(true);
         repaint();
     }
@@ -284,4 +284,9 @@ public class RenderingController extends MouseAdapter {
         return glView;
     }
 
+    public void reloadFractal() {
+        glView.onFractalChanged(model.getFractalName(), true);
+        model.setSampleReuseCacheDirty(true);
+        repaint();
+    }
 }

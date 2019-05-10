@@ -87,6 +87,20 @@ struct pixel_info_t{
   float weight;
 };
 
+struct color_t
+{
+  union
+  {
+     char r;
+     char g;
+     char b;
+     char a;
+  };
+  unsigned int intValue;
+};
+     
+
+
 class ColorsRGBA{ 
 public:
 //when human read, it is abgr, because of endianity

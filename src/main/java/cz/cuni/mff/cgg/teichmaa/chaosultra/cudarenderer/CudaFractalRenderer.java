@@ -220,8 +220,10 @@ public class CudaFractalRenderer implements FractalRenderer {
         // Following the Jcuda API, kernel heuristicsParams is a pointer to an array of pointers which point to the actual values.
         Pointer kernelParams = Pointer.to(kernel.getKernelParams());
         CUfunction kernelFunction = kernel.getFunction();
-        int gridDimX = width / BLOCK_DIM_X;
-        int gridDimY = height / BLOCK_DIM_Y;
+        int gridDimX = (width + BLOCK_DIM_X - 1) / BLOCK_DIM_X;
+        int gridDimY = (height + BLOCK_DIM_Y - 1) / BLOCK_DIM_Y;
+
+
 
         if (gridDimX <= 0 || gridDimY <= 0) return;
         if (gridDimX > CUDA_MAX_GRID_DIM) {
@@ -281,8 +283,8 @@ public class CudaFractalRenderer implements FractalRenderer {
                 try {
                     // Set up the kernel parameters: A pointer to an array
                     // of pointers which point to the actual values.
-                    int gridDimX = getWidth() / BLOCK_DIM_X;
-                    int gridDimY = getHeight() / BLOCK_DIM_Y;
+                    int gridDimX = (getWidth() + BLOCK_DIM_X - 1) / BLOCK_DIM_X;
+                    int gridDimY = (getHeight() + BLOCK_DIM_Y - 1) / BLOCK_DIM_Y;
 
                     NativePointerObject[] composeParamsArr = kernel.getKernelParams();
                     {

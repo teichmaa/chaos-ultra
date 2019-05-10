@@ -3,7 +3,7 @@ package cz.cuni.mff.cgg.teichmaa.chaosultra.rendering;
 import com.jogamp.opengl.GLEventListener;
 
 public interface GLView extends GLEventListener {
-    void onFractalChanged(String fractalName);
+    void onFractalChanged(String fractalName, boolean forceReload);
 
     void debugRightBottomPixel();
 

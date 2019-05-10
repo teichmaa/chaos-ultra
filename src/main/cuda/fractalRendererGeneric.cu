@@ -2,7 +2,7 @@
 #include <math.h>
 #include <float.h>
 #include "helpers.cuh"
-#include "fractal.cuh"
+#include "fractals/fractal.cuh"
 
 typedef unsigned int uint;
 using Pointf = Point<float>;
@@ -66,18 +66,6 @@ __device__ const Point<uint> getImageIndexes(){
   const uint inblock_idx_y = (threadID / blockWidth) * warpH + (threadID / warpH) % warpH;
   const uint idx_x = blockDim.x * blockIdx.x + inblock_idx_x;
   const uint idx_y = blockDim.y * blockIdx.y + inblock_idx_y;
-
-  // does this fix the right bottom corner problem?
-  // idx_x = blockIdx.x * blockDim.x + threadIdx.x;
-  // idx_y = blockIdx.y * blockDim.y + threadIdx.y;
-
-  // { //debug
-  //   uint warpid = threadID / warpH;
-  //   if(idx_x < 20 && idx_y < 20){
-  //     //printf("bw:%u\n", blockWidth);
-  //     printf("%u\t%u\t%u\t%u\t%u\n", threadIdx.x, threadIdx.y, threadID ,inblock_idx_x, inblock_idx_y);
-  //   }
-  // }
   return Point<uint>(idx_x, idx_y);
 }
 

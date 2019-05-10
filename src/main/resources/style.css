@@ -11,7 +11,7 @@ TextField, Button {
 }
 
 ChoiceBox {
-
+    -fx-padding: 0 10;
 }
 
 .mainVBox{

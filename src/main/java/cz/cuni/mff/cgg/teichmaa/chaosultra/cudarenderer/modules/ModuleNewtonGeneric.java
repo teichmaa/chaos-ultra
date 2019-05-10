@@ -8,6 +8,7 @@ import cz.cuni.mff.cgg.teichmaa.chaosultra.util.PointDouble;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 public class ModuleNewtonGeneric extends FractalRenderingModule {
 
@@ -17,6 +18,10 @@ public class ModuleNewtonGeneric extends FractalRenderingModule {
 
     public ModuleNewtonGeneric() {
         super("newton_generic", "newton generic");
+    }
+
+    protected ModuleNewtonGeneric(String ptxFileName, String fractalName){
+        super(ptxFileName, fractalName);
     }
 
     private List<Double> coefficients;
@@ -65,6 +70,6 @@ public class ModuleNewtonGeneric extends FractalRenderingModule {
         model.setMaxIterations(100);
         model.setFractalCustomParams("{ \"coefficients\" : [1, 0, 0, -1], \"roots\" : [ [1,0], [-0.5,0.86602540378] , [-0.5,-0.86602540378] ] }");
         //other nice value, is, for example:
-       // model.setFractalCustomParams("{ \"coefficients\" : [1, 0, -2, 2], \"roots\" : [ [-1.7692923542386314,0], [0.884646177119315707620204,0.589742805022205501647280] , [0.884646177119315707,-0.589742805022205501] ] }");
+        // model.setFractalCustomParams("{ \"coefficients\" : [1, 0, -2, 2], \"roots\" : [ [-1.7692923542386314,0], [0.884646177119315707620204,0.589742805022205501647280] , [0.884646177119315707,-0.589742805022205501] ] }");
     }
 }

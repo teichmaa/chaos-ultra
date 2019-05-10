@@ -198,19 +198,29 @@ public class PresenterFX implements Initializable, GUIPresenter {
         SwingUtilities.invokeLater(() -> renderingController.setFractalCustomParams(fractalCustomParams.getText().trim()));
     }
 
+    public static Boolean once = true;
+
     public void onModelUpdated(GUIModel model) {
         Platform.runLater(() -> {
+            if (fractalChoiceBox.getItems().isEmpty()){
+                fractalChoiceBox.setItems(FXCollections.observableArrayList(model.getAvailableFractals()).sorted());
+            }
+
             center_x.setText(Double.toString(model.getPlaneSegment().getCenterX()));
             center_y.setText(Double.toString(model.getPlaneSegment().getCenterY()));
             zoom.setText(Double.toString(model.getPlaneSegment().getZoom()));
-            precision.setText(model.getFloatingPointPrecision().toString());
+
             superSamplingLevel.setText(Integer.toString(model.getSuperSamplingLevel()));
             maxIterations.setText(Integer.toString(model.getMaxIterations()));
+
+            precision.setText(model.getFloatingPointPrecision().toString());
             dimensions.setText("" + model.getCanvasWidth() + " " + UNICODE_TIMES_CHAR + " " + model.getCanvasHeight());
-            fractalChoiceBox.setItems(FXCollections.observableArrayList(model.getAvailableFractals()));
+
             fractalCustomParams.setText(model.getFractalCustomParams());
+
             model.getNewlyLoggedErrors().forEach(c -> errorsTextArea.appendText(timestamp() + c + System.lineSeparator()));
             errorsTextArea.selectPositionCaret(errorsTextArea.getLength()); //scroll to end
+
             useSampleReuse.setSelected(model.isUseSampleReuse());
         });
     }
@@ -224,5 +234,9 @@ public class PresenterFX implements Initializable, GUIPresenter {
     @FXML
     private void clearErrors(MouseEvent mouseEvent) {
         errorsTextArea.setText("");
+    }
+
+    public void reloadFractal(ActionEvent actionEvent) {
+        renderingController.reloadFractal();
     }
 }

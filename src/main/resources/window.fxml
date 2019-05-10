@@ -1,18 +1,16 @@
-<?import javafx.embed.swing.SwingNode?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <HBox fx:controller="cz.cuni.mff.cgg.teichmaa.chaosultra.gui.PresenterFX"
       stylesheets="@style.css"
       xmlns:fx="http://javafx.com/fxml">
-    <SwingNode fx:id="swingNode" HBox.hgrow="ALWAYS"/>
 
-    <ScrollPane hbarPolicy="NEVER" vbarPolicy="AS_NEEDED">
+    <ScrollPane hbarPolicy="NEVER">
         <VBox styleClass="mainVBox">
             <VBox prefWidth="250">
 
                 <VBox styleClass="topBox">
                     <Label>choose fractal:</Label>
-                    <ChoiceBox fx:id="fractalChoiceBox" prefWidth="180"/>
+                    <ChoiceBox fx:id="fractalChoiceBox" maxWidth="Infinity" />
                     <VBox>
                         <Label>Fractal custom parameters:</Label>
                         <HBox>
@@ -22,7 +20,7 @@
                     </VBox>
                 </VBox>
 
-                <TitledPane text="general parameters">
+                <TitledPane text="general parameters" expanded="false">
                     <VBox>
                         <HBox>
                             <Label>center x:</Label>
@@ -50,7 +48,7 @@
                 </TitledPane>
 
 
-                <TitledPane text="status">
+                <TitledPane text="status" expanded="false">
                     <VBox>
                         <HBox>
                             <Label styleClass="slimLabel">Floating point precision:</Label>
@@ -63,7 +61,7 @@
                     </VBox>
                 </TitledPane>
 
-                <TitledPane text="heuristics" expanded="false">
+                <TitledPane text="heuristics" expanded="true">
                     <VBox>
                         <HBox>
                             <Label styleClass="slimLabel">adaptive SS:</Label>
@@ -84,12 +82,12 @@
                         <Separator/>
                         <HBox>
                             <Label styleClass="slimLabel">visualise sample count:</Label>
-                            <CheckBox fx:id="visualiseSampleCount" selected="false"/>
+                            <CheckBox fx:id="visualiseSampleCount" selected="true"/>
                         </HBox>
                     </VBox>
                 </TitledPane>
 
-                <TitledPane text="additional functionality" expanded="false">
+                <TitledPane text="additional functionality" expanded="true">
                     <VBox>
                         <VBox>
                             <Label>Mandelbrot premade views:</Label>
@@ -109,6 +107,7 @@
                                 <Button text="save as image" onAction="#saveImageClicked"/>
                                 <Button text="dbg1: fractal" onAction="#debugButton1Clicked"/>
                                 <Button text="dbg2: right btm pixel" onAction="#debugButton2Clicked"/>
+                                <Button text="reload" onAction="#reloadFractal" />
                             </FlowPane>
                         </VBox>
                     </VBox>

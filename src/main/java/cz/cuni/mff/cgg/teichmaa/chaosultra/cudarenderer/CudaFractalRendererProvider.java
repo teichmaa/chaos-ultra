@@ -1,9 +1,6 @@
 package cz.cuni.mff.cgg.teichmaa.chaosultra.cudarenderer;
 
-import cz.cuni.mff.cgg.teichmaa.chaosultra.cudarenderer.modules.ModuleJulia;
-import cz.cuni.mff.cgg.teichmaa.chaosultra.cudarenderer.modules.ModuleMandelbrot;
-import cz.cuni.mff.cgg.teichmaa.chaosultra.cudarenderer.modules.ModuleNewtonGeneric;
-import cz.cuni.mff.cgg.teichmaa.chaosultra.cudarenderer.modules.ModuleNewtonWired;
+import cz.cuni.mff.cgg.teichmaa.chaosultra.cudarenderer.modules.*;
 import cz.cuni.mff.cgg.teichmaa.chaosultra.rendering.FractalRenderer;
 import cz.cuni.mff.cgg.teichmaa.chaosultra.rendering.FractalRendererProvider;
 
@@ -25,6 +22,7 @@ public class CudaFractalRendererProvider implements FractalRendererProvider {
         modules.add(ModuleMandelbrot.class);
         modules.add(ModuleNewtonWired.class);
         modules.add(ModuleNewtonGeneric.class);
+        modules.add(ModuleNewtonIterations.class);
 
         //end register section
 
@@ -41,12 +39,12 @@ public class CudaFractalRendererProvider implements FractalRendererProvider {
     private CudaFractalRenderer activeRenderer;
 
     public FractalRenderer getDefaultRenderer() {
-        return getRenderer("mandelbrot");
+        return getRenderer("mandelbrot", false);
     }
 
-    public FractalRenderer getRenderer(String fractalName) {
+    public FractalRenderer getRenderer(String fractalName, boolean forceReload) {
         if (activeRenderer != null) {
-            if (activeRenderer.getFractalName().equals(fractalName))
+            if (activeRenderer.getFractalName().equals(fractalName) && !forceReload)
                 return activeRenderer; //returning the current active renderer
             else {
                 activeRenderer.close(); //closing the previous renderer

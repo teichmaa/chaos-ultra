@@ -16,11 +16,12 @@ public interface FractalRendererProvider {
     FractalRenderer getDefaultRenderer();
 
     /**
-     *
+     * Creates or re-uses a fractal renderer and disposes the current one, if a new has been created.
      * @param fractalName name of the fractal, choosen from the set returned by {@code getAvailableFractals}
+     * @param forceReload force renderer reload even if asking a renderer that has already been loaded
      * @return a renderer implementation
      */
-    FractalRenderer getRenderer(String fractalName);
+    FractalRenderer getRenderer(String fractalName, boolean forceReload);
 
     Set<String> getAvailableFractals();
 }

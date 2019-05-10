@@ -272,11 +272,11 @@ class GLRenderer implements GLView {
     }
 
     @Override
-    public void onFractalChanged(String fractalName) {
+    public void onFractalChanged(String fractalName, boolean forceReload) {
         doBeforeDisplay.add(gl -> {
             if (fractalRenderer.getState() == FractalRendererState.readyToRender)
                 fractalRenderer.freeRenderingResources();
-            fractalRenderer = fractalRendererProvider.getRenderer(fractalName);
+            fractalRenderer = fractalRendererProvider.getRenderer(fractalName, forceReload);
             fractalRenderer.supplyDefaultValues(model);
             fractalRenderer.setFractalCustomParams(model.getFractalCustomParams());
             fractalRenderer.initializeRendering(GLParams.of(outputTexture, paletteTexture));
