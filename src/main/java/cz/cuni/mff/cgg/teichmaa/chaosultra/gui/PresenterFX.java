@@ -30,7 +30,11 @@ public class PresenterFX implements Initializable, GUIPresenter {
     @FXML
     private TextField fractalCustomParams;
     @FXML
-    private Button renderButton;
+    private Button fractalCustomParamsOKBtn;
+    @FXML
+    private TitledPane generalParametersPane;
+    @FXML
+    private Button generalParametersOKBtn;
     @FXML
     private TextField center_x;
     @FXML
@@ -59,6 +63,7 @@ public class PresenterFX implements Initializable, GUIPresenter {
     private RenderingController renderingController;
 
     private static PresenterFX singleton = null;
+
 
     static PresenterFX getSingleton() {
         return singleton;
@@ -90,6 +95,21 @@ public class PresenterFX implements Initializable, GUIPresenter {
         useSampleReuse.selectedProperty().addListener((__, ___, value) -> SwingUtilities.invokeLater(
                 () -> renderingController.setUseSampleReuse(value))
         );
+
+        fractalCustomParamsOKBtn.defaultButtonProperty().bind(fractalCustomParams.focusedProperty());
+
+        generalParametersOKBtn.defaultButtonProperty().bind(
+                generalParametersPane.focusedProperty().or(
+                        center_x.focusedProperty().or(
+                                center_y.focusedProperty().or(
+                                        zoom.focusedProperty().or(
+                                                maxIterations.focusedProperty().or(
+                                                        superSamplingLevel.focusedProperty()
+                                                )
+                                        )
+                                )
+                        )
+                ));
     }
 
     void setRenderingController(RenderingController renderingController) {

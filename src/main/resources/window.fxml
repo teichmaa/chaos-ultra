@@ -15,12 +15,13 @@
                         <Label>Fractal custom parameters:</Label>
                         <HBox>
                             <TextField fx:id="fractalCustomParams" HBox.hgrow="ALWAYS"/>
-                            <Button text="set" onAction="#fractalSpecificParamsSetClicked"/>
+                            <Button fx:id="fractalCustomParamsOKBtn" text="set"
+                                    onAction="#fractalSpecificParamsSetClicked"/>
                         </HBox>
                     </VBox>
                 </VBox>
 
-                <TitledPane text="general parameters" expanded="false">
+                <TitledPane text="general parameters" expanded="false" fx:id="generalParametersPane">
                     <VBox>
                         <HBox>
                             <Label>center x:</Label>
@@ -43,7 +44,7 @@
                             <Label>sup. samp. lvl:</Label>
                             <TextField fx:id="superSamplingLevel" text="32" HBox.hgrow="ALWAYS"/>
                         </HBox>
-                        <Button text="set" fx:id="renderButton" onAction="#renderClicked"/>
+                        <Button text="set" fx:id="generalParametersOKBtn" onAction="#renderClicked"/>
                     </VBox>
                 </TitledPane>
 
