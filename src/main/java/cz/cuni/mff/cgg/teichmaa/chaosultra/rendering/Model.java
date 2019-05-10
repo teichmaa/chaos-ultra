@@ -277,7 +277,7 @@ class Model implements RenderingModel, GUIModel, DefaultFractalModel {
         setSuperSamplingLevel(2);
         setUseAdaptiveSuperSampling(true);
         setUseFoveatedRendering(true);
-        setUseSampleReuse(false); //todo back to true
+        setUseSampleReuse(true);
         setAutomaticQuality(true);
         setVisualiseSampleCount(false);
         setZooming(false);

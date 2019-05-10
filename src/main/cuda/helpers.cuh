@@ -56,10 +56,10 @@ template <class T> struct Point {
   __device__ const Point<T> operator% (const Point<T>& b) const{
     return Point<T>(x%b.x, y%b.y);
   }
-  __device__ unsigned int manhattanDistanceTo (const Point<T>& b){
+  __device__ T manhattanDistanceTo (const Point<T>& b){
     return abs(x-b.x)+abs(y-b.y);
   }
-  __device__ float distanceTo (const Point<T>& b){
+  __device__ T distanceTo (const Point<T>& b){
   return sqrtf((x-b.x)*(x-b.x)+(y-b.y)*(y-b.y));
   }
   template <class S> __device__ Point<S> cast() {
@@ -83,8 +83,21 @@ template <class T> struct Rectangle {
 };
 
 struct pixel_info_t{
-  unsigned int value;
-  float weight;
+    unsigned int value;
+    float weight;
+    __device__ pixel_info_t(unsigned int value, float weight)
+      : value(value), weight(weight)
+    {
+    }
+    __device__ pixel_info_t(unsigned int value, unsigned int weight)
+      : value(value), weight((float) weight)
+    {
+    }
+    __device__ pixel_info_t(const pixel_info_t & b){
+      value = b.value;
+      weight = b.weight;
+    }
+    __device__ pixel_info_t(){}
 };
 
 struct color_t
@@ -97,6 +110,7 @@ struct color_t
      char a;
   };
   unsigned int intValue;
+
 };
      
 
@@ -108,8 +122,8 @@ public:
   static constexpr const unsigned int BLACK = 0xff000000;
   static constexpr const unsigned int WHITE = 0xffffffff;
   static constexpr const unsigned int PINK  = 0xffb469ff;
-  static constexpr const unsigned int YELLOW= 0xff00ffff;
   static constexpr const unsigned int GOLD  = 0xff00d7ff;
+  static constexpr const unsigned int YELLOW= 0xff00ffff;
   static constexpr const unsigned int BLUE  = 0xffff0000;
   static constexpr const unsigned int GREEN = 0xff00ff00;
   static constexpr const unsigned int RED   = 0xff0000ff;

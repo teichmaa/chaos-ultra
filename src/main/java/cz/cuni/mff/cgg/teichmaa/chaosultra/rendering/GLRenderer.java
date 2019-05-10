@@ -171,9 +171,10 @@ class GLRenderer implements GLView {
                 setParamsToBeRenderedIn(desiredFrameRenderTime);
             //pridat sem currentMode.getHighQualityIteration()
             //   a do RenderingMode::step dat highQIteration++
+            if (model.getSuperSamplingLevel() == SUPER_SAMPLING_MAX_LEVEL)
+                stateModel.resetState();
         }
-        if (model.getSuperSamplingLevel() == SUPER_SAMPLING_MAX_LEVEL)
-            stateModel.resetState();
+
     }
 
     private void setParamsToBeRenderedIn(int ms) {

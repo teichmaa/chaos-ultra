@@ -69,9 +69,12 @@ __device__ const Point<uint> getImageIndexes(){
   return Point<uint>(idx_x, idx_y);
 }
 
+/**
+ * Get a correct pointer to pixel_info of given pixel in given cuda 2D array
+ */
 __device__ __forceinline__
-pixel_info_t* getPtrToPixel(pixel_info_t** array2D, long pitch, uint x, uint y){
-  return (((pixel_info_t*)((char*)array2D + y * pitch)) + x);
+pixel_info_t* getPtrToPixelInfo(pixel_info_t** array2D,const long pitch,const Point<uint> pixel){
+  return (((pixel_info_t*)((char*)array2D + pixel.y * pitch)) + pixel.x);
 }
 
 __device__ __forceinline__
@@ -160,9 +163,9 @@ void fractalRenderMain(pixel_info_t** output, long outputPitch, Pointi outputSiz
     result = maxSuperSampling * visualityAmplifyCoeff;
   }
 
-  pixel_info_t* pOutput = getPtrToPixel(output, outputPitch, idx.x, idx.y);
-  pOutput->value = result;
-  pOutput->weight = (float) maxSuperSampling;
+  pixel_info_t* pOutput = getPtrToPixelInfo(output, outputPitch, idx);
+  * pOutput = pixel_info_t(result, maxSuperSampling);
+  //pOutput->value = 0;
   ASSERT(pOutput->weight > 0);
 }
 
@@ -235,20 +238,18 @@ void fractalRenderAdvanced(pixel_info_t** output, long outputPitch, Pointi outpu
   ASSERT(idx.x < outputSize.x);
   ASSERT(idx.y < outputSize.y);
 
-  //sample reusal:
+  //sample reuse:
   bool reusingSample = false;
-  uint reusalResult;
-  float reusalWeight;
+  pixel_info_t reused;
   if(flags & USE_SAMPLE_REUSE_FLAG_MASK){
     const Point<Real> originr = getWarpingOrigin(Point<Real>(idx.x, idx.y),outputSize.cast<Real>(),image, imageReused);
-    const Point<int> origin = Point<int>((int)round(originr.x), (int)round(originr.y)); //it is important to convert to signed int, not uint (because the value may be negative)
+    const Point<int> origin = Point<int>((int)round(originr.x), (int)round(originr.y)); //it is important to convert to signed int, not uint, because the value may be negative
     if(origin.x < 0 || origin.x >= outputSize.x || origin.y < 0 || origin.y >= outputSize.y){
       reusingSample = false;
     }
     else{
-      pixel_info_t* pInput = getPtrToPixel(input, inputPitch, origin.x, origin.y);
-      reusalResult = pInput->value;
-      reusalWeight = (float) pInput->weight;
+      pixel_info_t* pInput = getPtrToPixelInfo(input, inputPitch, Point<uint>(origin.x, origin.y));
+      reused = * pInput;
       reusingSample = true;
     }
   }
@@ -257,39 +258,32 @@ void fractalRenderAdvanced(pixel_info_t** output, long outputPitch, Pointi outpu
   uint sampleCount = maxSuperSampling;
   if (flags & USE_FOVEATION_FLAG_MASK)
     sampleCount = getAdvisedSampleCount(idx, focus, maxSuperSampling);
-  if((!reusingSample || reusalWeight == 0) && sampleCount == 0)  sampleCount = 1; //at least one sample has to be taken somewhere
-      //indeed, it may happen that reusalWeight == 0, because reusalWeight decreases in time (see reusedSampleDegradateCoeff)
+  if((!reusingSample || reused.weight == 0) && sampleCount == 0)  sampleCount = 1; //at least one sample has to be taken somewhere
+      //indeed, it may happen that reusedWeight == 0, because reusedWeight decreases in time (see reusedSampleDegradateCoeff)
   uint renderResult = sampleTheFractal(idx, outputSize, image, maxIterations, sampleCount, flags & USE_ADAPTIVE_SS_FLAG_MASK);
   ASSERT(reusingSample || sampleCount > 0);
 
   //combine reused and generated samples:
-  uint result;
-  float resultWeight;
+  pixel_info_t result;
   if(reusingSample){
     if(sampleCount == 0){
-      result = reusalResult;
-      resultWeight = reusalWeight;    
+      result = reused;   
     }else{
-      const float reusedSampleDegradateCoeff = 0.6; // must be <=1
-      if(flags & IS_ZOOMING_FLAG_MASK)
-        reusalWeight *= reusedSampleDegradateCoeff;
-      resultWeight = reusalWeight + sampleCount;    
-      result = (reusalResult * reusalWeight + renderResult * sampleCount) / (resultWeight);
+      const float reusedSampleDegradateCoeff = 1 / (float) 255; // must be <=1
+      if(flags & IS_ZOOMING_FLAG_MASK){
+        reused.weight *= reusedSampleDegradateCoeff;
+      }
+      result.weight = reused.weight + sampleCount;    
+      result.value = (reused.value * reused.weight + renderResult * sampleCount) / (result.weight);
     }
   }else{
-    result = renderResult;
-    resultWeight = sampleCount;
+    result.value = renderResult;
+    result.weight = sampleCount;
   }
 
-// //debug pravy dolni roh:
-//       uint qqq = 16;
-//   if(idx.x >= width-qqq || idx.y >= height-qqq)      
-//       result = maxIterations;
-
-  pixel_info_t* pOutput = getPtrToPixel(output, outputPitch, idx.x, idx.y);
-  pOutput->value = result;
-  pOutput->weight = resultWeight;
-  ASSERT(resultWeight > 0);
+  pixel_info_t* pOutput = getPtrToPixelInfo(output, outputPitch, idx);
+  * pOutput = pixel_info_t(result.value, result.weight);
+  ASSERT(result.weight > 0);
 }
 
 
@@ -319,10 +313,11 @@ extern "C" __global__
 void compose(pixel_info_t** inputMain, long inputMainPitch, pixel_info_t** inputBcg, long inputBcgPitch, cudaSurfaceObject_t  surfaceOutput, uint width, uint height, cudaSurfaceObject_t colorPalette, uint paletteLength){
     const uint idx_x = blockDim.x * blockIdx.x + threadIdx.x;
     const uint idx_y = blockDim.y * blockIdx.y + threadIdx.y;
+    const Point<uint> idx(idx_x, idx_y);
     if(idx_x >= width || idx_y >= height) return;
 
     pixel_info_t* pResult;
-    pResult = getPtrToPixel(inputMain, inputMainPitch, idx_x, idx_y);
+    pResult = getPtrToPixelInfo(inputMain, inputMainPitch, idx);
     uint result = pResult->value;
 
     uint resultColor;
@@ -341,6 +336,7 @@ void fractalRenderUnderSampled(pixel_info_t** output, long outputPitch, uint wid
   //work only at every Nth pixel:
   const uint idx_x = (blockDim.x * blockIdx.x + threadIdx.x) * underSamplingLevel;
   const uint idx_y = (blockDim.y * blockIdx.y + threadIdx.y) * underSamplingLevel;
+  const Point<uint> idx(idx_x, idx_y);
   if(idx_x >= width-underSamplingLevel || idx_y >= height-underSamplingLevel) return;
   
   //We are in a complex plane from (left_bottom) to (right_top), so we scale the pixels to it
@@ -355,9 +351,8 @@ void fractalRenderUnderSampled(pixel_info_t** output, long outputPitch, uint wid
   for(uint x = 0; x < underSamplingLevel; x++){
     for(uint y = 0; y < underSamplingLevel; y++){
       //surf2Dwrite(resultColor, surfaceOutput, (idx_x + x) * sizeof(unsigned uint), (idx_y+y));
-      pixel_info_t* pOutput = getPtrToPixel(output, outputPitch, idx_x+x, idx_y+y);
-      pOutput->value = escapeTime;
-      pOutput->weight = 1 / (float) underSamplingLevel;
+      pixel_info_t* pOutput = getPtrToPixelInfo(output, outputPitch, idx);
+      * pOutput = pixel_info_t(escapeTime, 1 / (float) underSamplingLevel);
     }
   }
 
