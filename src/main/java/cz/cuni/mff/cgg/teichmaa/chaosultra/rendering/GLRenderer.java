@@ -150,7 +150,7 @@ class GLRenderer implements GLView {
 
     private void determineRenderingModeQuality() {
         assert SwingUtilities.isEventDispatchThread();
-        if (!model.isAutomaticQuality()) return;
+        if (!model.isUseAutomaticQuality()) return;
         if (stateModel.isWaiting() && stateModel.wasProgressiveRendering()) {
             model.setSuperSamplingLevel(10); //todo lol proc zrovna deset, kde se to vzalo?
             return;

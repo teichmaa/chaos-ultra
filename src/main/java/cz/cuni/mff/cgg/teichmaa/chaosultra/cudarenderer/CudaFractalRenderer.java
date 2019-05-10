@@ -153,6 +153,8 @@ public class CudaFractalRenderer implements FractalRenderer {
     public void renderFast(RenderingModel model) {
         if(state != FractalRendererState.readyToRender) throw new IllegalStateException("Renderer has to be initialized first");
 
+        setModuleConstants(model);
+
         if (model.isSampleReuseCacheDirty() || memory.isPrimary2DBufferDirty() || lastRendering == null) {
             //if there is nothing to reuse, then create it
             renderQuality(model);
@@ -188,6 +190,8 @@ public class CudaFractalRenderer implements FractalRenderer {
     public void renderQuality(RenderingModel model) {
         if(state != FractalRendererState.readyToRender) throw new IllegalStateException("Renderer has to be initialized first");
 
+        setModuleConstants(model);
+
         updateFloatPrecision(model);
         KernelMain kernelMain;
         switch (model.getFloatingPointPrecision()){
@@ -211,6 +215,10 @@ public class CudaFractalRenderer implements FractalRenderer {
         lastRendering = model.copy();
         memory.setPrimary2DBufferDirty(false);
         model.setSampleReuseCacheDirty(false);
+    }
+
+    private void setModuleConstants(RenderingModel model) {
+        // module.writeToConstantMemory("visualize_sample_count", model.isVisualiseSampleCount());
     }
 
     private void launchRenderingKernel(boolean async, RenderingKernel kernel, PublicErrorLogger logger) {

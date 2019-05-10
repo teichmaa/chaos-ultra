@@ -28,4 +28,12 @@ public interface GUIModel {
     List<String> getNewlyLoggedErrors();
 
     boolean isUseSampleReuse();
+
+    boolean isVisualiseSampleCount();
+
+    boolean isUseAutomaticQuality();
+
+    boolean isUseFoveatedRendering();
+
+    boolean isUseAdaptiveSuperSampling();
 }

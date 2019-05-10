@@ -145,7 +145,7 @@ public class PresenterFX implements Initializable, GUIPresenter {
     }
 
     @FXML
-    private void example0Clicked(ActionEvent actionEvent) {
+    private void defaultViewClicked(ActionEvent actionEvent) {
         SwingUtilities.invokeLater(() ->
                 renderingController.showDefaultView()
         );
@@ -241,7 +241,11 @@ public class PresenterFX implements Initializable, GUIPresenter {
             model.getNewlyLoggedErrors().forEach(c -> errorsTextArea.appendText(timestamp() + c + System.lineSeparator()));
             errorsTextArea.selectPositionCaret(errorsTextArea.getLength()); //scroll to end
 
+            visualiseSampleCount.setSelected(model.isVisualiseSampleCount());
             useSampleReuse.setSelected(model.isUseSampleReuse());
+            useAutomaticQuality.setSelected(model.isUseAutomaticQuality());
+            useAdaptiveSS.setSelected(model.isUseAdaptiveSuperSampling());
+            useFoveatedRendering.setSelected(model.isUseFoveatedRendering());
         });
     }
 

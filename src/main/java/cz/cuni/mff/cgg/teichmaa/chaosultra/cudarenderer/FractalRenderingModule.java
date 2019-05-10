@@ -190,6 +190,18 @@ public abstract class FractalRenderingModule implements Closeable {
     }
 
     /**
+     * @param nameOfTheConstant name of the constant as declared in the cuda source.
+     * @param value             value to write
+     */
+    void writeToConstantMemory(String nameOfTheConstant, boolean value) {
+        CuSizedDeviceptr sizedPtr = getDeviceConstantMemoryPointer(nameOfTheConstant);
+        if (sizedPtr.getSize() < 1)
+            throw new IllegalArgumentException("Attempt to write boolean to device memory allocated to size " + sizedPtr.getSize());
+        int[] source = new int[]{value ? 1 : 0};
+        cudaMemcpy(sizedPtr.getPtr(), Pointer.to(source), sizedPtr.getSize(), cudaMemcpyKind.cudaMemcpyHostToDevice);
+    }
+
+    /**
      *
      * @param nameOfTheConstant name of the constant as declared in the cuda source.
      * @param value value to write

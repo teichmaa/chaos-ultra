@@ -179,7 +179,7 @@ class Model implements RenderingModel, GUIModel, DefaultFractalModel {
     }
 
     @Override
-    public boolean isAutomaticQuality() {
+    public boolean isUseAutomaticQuality() {
         return automaticQuality;
     }
 

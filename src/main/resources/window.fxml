@@ -90,22 +90,25 @@
 
                 <TitledPane text="additional functionality" expanded="true">
                     <VBox>
+                        <FlowPane maxWidth="200">
+                            <Button text="save as image" onAction="#saveImageClicked"/>
+                            <Button text="reset to default" onAction="#defaultViewClicked"/>
+                        </FlowPane>
                         <VBox>
                             <Label>Mandelbrot premade views:</Label>
                             <FlowPane maxWidth="200">
-                                <Button text="default view" onAction="#example0Clicked"/>
-                                <Button text="example1" onAction="#example1Clicked"/>
-                                <Button text="example2" onAction="#example2Clicked"/>
-                                <Button text="example3" onAction="#example3Clicked"/>
-                                <Button text="example4" onAction="#example4Clicked"/>
-                                <Button text="example5" onAction="#example5Clicked"/>
+
+                                <Button text="MbrotExample1" onAction="#example1Clicked"/>
+                                <Button text="MbrotExample2" onAction="#example2Clicked"/>
+                                <Button text="MbrotExample3" onAction="#example3Clicked"/>
+                                <Button text="MbrotExample4" onAction="#example4Clicked"/>
+                                <Button text="MbrotExample5" onAction="#example5Clicked"/>
                             </FlowPane>
                         </VBox>
 
-                        <VBox styleClass="addVPadding">
-                            <Label>Other functions:</Label>
+                        <VBox>
+                            <Label>Debugging functions:</Label>
                             <FlowPane maxWidth="200">
-                                <Button text="save as image" onAction="#saveImageClicked"/>
                                 <Button text="dbg1: fractal" onAction="#debugButton1Clicked"/>
                                 <Button text="dbg2: right btm pixel" onAction="#debugButton2Clicked"/>
                                 <Button text="reload" onAction="#reloadFractal" />
