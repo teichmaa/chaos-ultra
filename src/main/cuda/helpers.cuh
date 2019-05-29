@@ -100,18 +100,21 @@ struct pixel_info_t{
     __device__ pixel_info_t(){}
 };
 
-struct color_t
+struct rgba{
+  char r;
+  char g;
+  char b;
+  char a;
+};
+
+typedef struct color_t
 {
   union
   {
-     char r;
-     char g;
-     char b;
-     char a;
+    unsigned int intValue;
+    struct rgba rgba;
   };
-  unsigned int intValue;
-
-};
+} color_t;
      
 
 

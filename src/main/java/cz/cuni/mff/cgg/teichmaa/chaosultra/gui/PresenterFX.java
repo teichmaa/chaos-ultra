@@ -180,8 +180,6 @@ public class PresenterFX implements Initializable, GUIPresenter {
         center_x.setText("-0.57675236");
         center_y.setText("0.4625193");
         zoom.setText("0.029995363");
-        superSamplingLevel.setText("32");
-        useAdaptiveSS.setSelected(false);
         render();
     }
 
@@ -190,8 +188,6 @@ public class PresenterFX implements Initializable, GUIPresenter {
         center_x.setText("-0.551042868375875");
         center_y.setText("0.62714332109057");
         zoom.setText("8.00592947491907E-09");
-        superSamplingLevel.setText("8");
-        useAdaptiveSS.setSelected(false);
         maxIterations.setText("3000");
         render();
     }

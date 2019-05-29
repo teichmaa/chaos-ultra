@@ -8,7 +8,7 @@
 //    x ... for real part (corresponding to geometric x-axis)
 //    y ... for imag part (corresponding to geometric y-axis)
 
-template <class Real> __device__ __forceinline__
+template <class Real> __device__ 
 unsigned int iterate(unsigned int maxIterations, Point<Real> c){
   Point<Real> z(0,0);
   Real zx_new;

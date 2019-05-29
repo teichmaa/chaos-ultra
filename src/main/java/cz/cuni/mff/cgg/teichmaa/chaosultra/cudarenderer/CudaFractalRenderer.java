@@ -35,6 +35,10 @@ public class CudaFractalRenderer implements FractalRenderer {
     private static final int BLOCK_DIM_X = 32;
     private static final int BLOCK_DIM_Y = 32;
     private static final int DEFAULT_UNDER_SAMPLING_LEVEL = 4;
+    /**
+     * Name of the "visualise sample count" cuda constant in the cuda module
+     */
+    private static final String VISUALIZE_SAMPLE_COUNT_CONSTANT_NAME = "VISUALIZE_SAMPLE_COUNT";
 
     static {
         CudaHelpers.cudaInit();
@@ -178,6 +182,7 @@ public class CudaFractalRenderer implements FractalRenderer {
         k.setParamsFromModel(model);
         k.setInput(memory.getPrimary2DBuffer(), memory.getPrimary2DBufferPitch());
         k.setOutput(memory.getSecondary2DBuffer(), memory.getSecondary2DBufferPitch());
+        kernelCompose.setParamsFromModel(model);
 
         launchRenderingKernel(false, k, model);
         memory.switch2DBuffers();
@@ -208,6 +213,7 @@ public class CudaFractalRenderer implements FractalRenderer {
         memory.resetBufferOrder();
         kernelMain.setParamsFromModel(model);
         kernelMain.setOutput(memory.getPrimary2DBuffer(), memory.getPrimary2DBufferPitch());
+        kernelCompose.setParamsFromModel(model);
 
         launchRenderingKernel(false, kernelMain, model);
         launchDrawingKernel(false, kernelCompose, model);
@@ -218,7 +224,11 @@ public class CudaFractalRenderer implements FractalRenderer {
     }
 
     private void setModuleConstants(RenderingModel model) {
-        // module.writeToConstantMemory("visualize_sample_count", model.isVisualiseSampleCount());
+        if (lastRendering == null ||
+                model.isVisualiseSampleCount() != lastRendering.isVisualiseSampleCount()
+        ) {
+            module.writeToConstantMemory(VISUALIZE_SAMPLE_COUNT_CONSTANT_NAME, model.isVisualiseSampleCount());
+        }
     }
 
     private void launchRenderingKernel(boolean async, RenderingKernel kernel, PublicErrorLogger logger) {
@@ -289,11 +299,11 @@ public class CudaFractalRenderer implements FractalRenderer {
                     JCuda.cudaCreateSurfaceObject(surfacePalette, surfaceDesc);
                 }
                 try {
-                    // Set up the kernel parameters: A pointer to an array
-                    // of pointers which point to the actual values.
                     int gridDimX = (getWidth() + BLOCK_DIM_X - 1) / BLOCK_DIM_X;
                     int gridDimY = (getHeight() + BLOCK_DIM_Y - 1) / BLOCK_DIM_Y;
 
+                    // Set up the kernel parameters: A pointer to an array
+                    // of pointers which point to the actual values.
                     NativePointerObject[] composeParamsArr = kernel.getKernelParams();
                     {
                         //TODO this pattern has to be changed and updated to java style

@@ -128,13 +128,12 @@ class GLRenderer implements GLView {
                 controller.zoomAt(model.getLastMousePosition(), stateModel.getZoomingDirection());
             }
 
-            determineRenderingModeQuality();
             render(drawable.getGL().getGL2());
 
             long endTime = System.currentTimeMillis();
             lastFrameRenderTime = (int) (endTime - startTime);
             //lastFramesRenderTime.get(currentMode.getCurrent()).add((int) (endTime - startTime));
-//        System.out.println("" + lastFrameRenderTime + " ms (frame total render time)");
+//            System.out.println("" + lastFrameRenderTime + " ms (frame total render time)");
             controller.onRenderingDone();
         } catch (Exception e) {
             model.logError(e.getMessage());
@@ -195,7 +194,10 @@ class GLRenderer implements GLView {
     }
 
     private void render(final GL2 gl) {
+        determineRenderingModeQuality();
+
         model.setZooming(stateModel.isZooming());
+
         if (stateModel.wasProgressiveRendering()) {
             fractalRenderer.renderQuality(model);
         } else {

@@ -8,9 +8,10 @@ typedef unsigned int uint;
 using Pointf = Point<float>;
 using Pointi = Point<uint>;
 
-__device__ const float PI_F = 3.14159265358979f;
-__device__ const uint MAX_SS_LEVEL = 256;
+constexpr float PI_F = 3.14159265358979f;
+constexpr uint MAX_SS_LEVEL = 256;
 
+__constant__ bool VISUALIZE_SAMPLE_COUNT = false;
 
 extern "C" __global__
 void init(){
@@ -66,6 +67,10 @@ __device__ const Point<uint> getImageIndexes(){
   const uint inblock_idx_y = (threadID / blockWidth) * warpH + (threadID / warpH) % warpH;
   const uint idx_x = blockDim.x * blockIdx.x + inblock_idx_x;
   const uint idx_y = blockDim.y * blockIdx.y + inblock_idx_y;
+  //TODO debug only: use original values instead
+  // const uint idx_x = blockDim.x * blockIdx.x + threadIdx.x; 
+  // const uint idx_y = blockDim.y * blockIdx.y + threadIdx.y;
+  
   return Point<uint>(idx_x, idx_y);
 }
 
@@ -77,27 +82,35 @@ pixel_info_t* getPtrToPixelInfo(pixel_info_t** array2D,const long pitch,const Po
   return (((pixel_info_t*)((char*)array2D + pixel.y * pitch)) + pixel.x);
 }
 
+/// sampleCount will be trimmed to be lesser or equal to sampleCount100Percent. 
+/// samples will be colorized in linear grayscale from black (0) to white (sampleCount100Percent)
 __device__ __forceinline__
-uint colorizeSampleCount(uint sampleCount){
-  const uint sampleCount100Percent = 25;
+uint colorizeSampleCount(uint sampleCount, uint sampleCount100Percent = 25){
   sampleCount = min(sampleCount, sampleCount100Percent);
   float sampleCountRel = sampleCount / (float) sampleCount100Percent;
-  uint gray = (uint) (255 * sampleCountRel);
-  return 0xff000000 + gray + (gray << 2) + (gray << 4);
+  color_t result;
+  result.rgba.r = 255 * sampleCountRel;
+  result.rgba.g = 255 * sampleCountRel;
+  result.rgba.b = 255 * sampleCountRel;
+  result.rgba.a = 0xff;
+  return result.intValue;
 }
 
 /// param sampleCount: Maximum number of samples to take. Actual number of samples taken will be stored here before returning. If adaptiveSS==false, the value will not change.
 template <class Real> __device__
 uint sampleTheFractal(Pointi pixel, Pointi size, Rectangle<Real> image, uint maxIterations,uint & sampleCount, bool adaptiveSS){
   const uint adaptiveTreshold = 10;
-  uint r[adaptiveTreshold];
+  uint samples[adaptiveTreshold];
 
   //We are in a complex plane from (left_bottom) to (right_top), so we scale the pixels to it
   Point<Real> pixelSize = image.size() / size.cast<Real>();
   
+  uint result;
   uint escapeTimeSum = 0;
   ASSERT (sampleCount <= MAX_SS_LEVEL);
   for(uint i = 0; i < sampleCount; i++){
+
+    //todo tady bych radeji neco jako deltas[sampleCount]; createDeltas(& deltas) nebo tak. Zkratka abych nesamploval takhle primitivne po diagonale, ale lip. Random sampling na to samozrejme je nejlepsi, ale to asi fakt ma overhead? Nevim, jestli mam cas to merit.
     Point<Real> delta = Point<Real>(i / (Real) sampleCount);
     
     // c = {LBx, RTy} {+,-} ((pixel+delta) * pixelSize)
@@ -107,21 +120,36 @@ uint sampleTheFractal(Pointi pixel, Pointi size, Rectangle<Real> image, uint max
     uint escapeTime = iterate(maxIterations, c);
     escapeTimeSum += escapeTime;
     if(i < adaptiveTreshold){
-      r[i] = escapeTime;
+      samples[i] = escapeTime;
     }
 
-    //todo this process should ideally adaptive, at least dynamic. Not predefined like.
-    if(( i== 2 || i == adaptiveTreshold) && adaptiveSS){ //decide whether to continue with supersampling or not
+    //todo refactor
+    if(adaptiveSS && ( i > 0 && i < adaptiveTreshold) || (i == sampleCount / 2) ){ //decide whether to continue with supersampling or not
+
       Real mean = escapeTimeSum / (i+1);
-      Real dispersion = computeDispersion(r, i, mean);
-      float dispersionMax = (i==2) ? 0.01 : 0.1;
-      if(__ALL(dispersion <= dispersionMax )){
-        sampleCount = i+1; //effectively disabling high SS and storing info about actual number of samples taken
+      Real dispersion = computeDispersion(samples, i, mean);       //todo toto do else vetve
+
+      constexpr float epsilon = 0.01;
+
+      if(i == 1 && __ALL(samples[0] == samples[1])){
+        sampleCount = i+1; //terminating this cycle and storing info about actual number of samples taken
+        //result = 255 * 0;  // blue  //this is for hypothesis testing only
+      } 
+      else if(__ALL(dispersion < epsilon)){ // uniform distribution
+        sampleCount = i+1; //terminating this cycle and storing info about actual number of samples taken
+        //result = 255 * 6;  //dark blue  //this is for hypothesis testing only
       }
-      //else we are on an chaotic edge, thus as many samples as possible are needed
+      else if(__ALL(dispersion <= 1) && i >= sampleCount / 2){ //binomial distribution - not that much chaotic -- take up to half of max allowed samples
+        sampleCount = i+1; //terminating this cycle and storing info about actual number of samples taken
+       // result = 255 * 2;  // green  //this is for hypothesis testing only
+      }
+      //else dispersion > 1 -- chaos: as many samples as possible are needed
+      else{
+        //result = 255 * 4; //red  //this is for hypothesis testing only
+      }
     }
   }
-  uint result = escapeTimeSum / sampleCount; 
+  result = escapeTimeSum / sampleCount;
   return result;
    
 
@@ -135,7 +163,6 @@ uint sampleTheFractal(Pointi pixel, Pointi size, Rectangle<Real> image, uint max
 } 
 
 __device__ const uint USE_ADAPTIVE_SS_FLAG_MASK = (1 << 0);
-__device__ const uint VISUALISE_SAMPLE_COUNT_FLAG_MASK = (1 << 1);
 __device__ const uint USE_FOVEATION_FLAG_MASK = (1 << 2);
 __device__ const uint USE_SAMPLE_REUSE_FLAG_MASK = (1 << 3);
 __device__ const uint IS_ZOOMING_FLAG_MASK = (1 << 4);
@@ -158,10 +185,6 @@ void fractalRenderMain(pixel_info_t** output, long outputPitch, Pointi outputSiz
   
   //the value of maxSuperSampling will be changed by the calee
   uint result = sampleTheFractal(idx, outputSize, image, maxIterations, maxSuperSampling, flags & USE_ADAPTIVE_SS_FLAG_MASK);
-
-  if(flags & VISUALISE_SAMPLE_COUNT_FLAG_MASK){
-    result = maxSuperSampling * visualityAmplifyCoeff;
-  }
 
   pixel_info_t* pOutput = getPtrToPixelInfo(output, outputPitch, idx);
   * pOutput = pixel_info_t(result, maxSuperSampling);
@@ -309,8 +332,9 @@ void fractalRenderAdvancedDouble(pixel_info_t** output, long outputPitch, Pointi
 
 }
 
+/// param maxSuperSampling: is here only for the purpose of visualizing the sample count
 extern "C" __global__
-void compose(pixel_info_t** inputMain, long inputMainPitch, pixel_info_t** inputBcg, long inputBcgPitch, cudaSurfaceObject_t  surfaceOutput, uint width, uint height, cudaSurfaceObject_t colorPalette, uint paletteLength){
+void compose(pixel_info_t** inputMain, long inputMainPitch, pixel_info_t** inputBcg, long inputBcgPitch, cudaSurfaceObject_t  surfaceOutput, uint width, uint height, cudaSurfaceObject_t colorPalette, uint paletteLength, uint maxSuperSampling){
     const uint idx_x = blockDim.x * blockIdx.x + threadIdx.x;
     const uint idx_y = blockDim.y * blockIdx.y + threadIdx.y;
     const Point<uint> idx(idx_x, idx_y);
@@ -321,9 +345,8 @@ void compose(pixel_info_t** inputMain, long inputMainPitch, pixel_info_t** input
     uint result = pResult->value;
 
     uint resultColor;
-    //if(flags & VISUALISE_SAMPLE_COUNT_FLAG_MASK)  //todo tento kernel nema flags
-    if(false){ 
-      resultColor = colorizeSampleCount(result); //todo pass sample count here
+    if(VISUALIZE_SAMPLE_COUNT){ 
+      resultColor = colorizeSampleCount(pResult->weight, maxSuperSampling);
     } else{
       resultColor = colorize(colorPalette, paletteLength, result);
     }
