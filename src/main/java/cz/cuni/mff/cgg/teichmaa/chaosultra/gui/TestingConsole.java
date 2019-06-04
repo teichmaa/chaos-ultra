@@ -27,7 +27,7 @@ public class TestingConsole {
 
     private static float screenDistance = 60; //in cm
 
-    private static int getAdvicedSampleCount(int x, int y, int focusx, int focusy, int maxSuperSamplingLevel) {
+    private static int getAdvicedSampleCount(int x, int y, int focusx, int focusy, int maxSuperSampling) {
         float pixelRealWidthInCm = 0.02652f; //todo this value should probably be entered by the user. From http://www.prismo.ch/comparisons/desktop.php
         float focusDistance = manhattanDistanceTo(x, y, focusx, focusy) * pixelRealWidthInCm; //distance to focus, translated to cm
         float visualAngle = 2 * (float) Math.atan(focusDistance / screenDistance) * 180/(float)Math.PI; //from https://en.wikipedia.org/wiki/Visual_angle
@@ -37,7 +37,7 @@ public class TestingConsole {
         float relativeQuality = 1 / (visualAngle - fovealViewLimit + 1);  //todo it would be better to use another hyperbolic model, which reaches zero at around 70
         if (visualAngle <= fovealViewLimit) relativeQuality = 1;
 
-        return (int) (maxSuperSamplingLevel * relativeQuality);
+        return (int) (maxSuperSampling * relativeQuality);
     }
 
     private static int manhattanDistanceTo(int ax, int ay, int bx, int by) {

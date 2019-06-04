@@ -151,7 +151,8 @@ class GLRenderer implements GLView {
         assert SwingUtilities.isEventDispatchThread();
         if (!model.isUseAutomaticQuality()) return;
         if (stateModel.isWaiting() && stateModel.wasProgressiveRendering()) {
-            model.setSuperSamplingLevel(10); //todo lol proc zrovna deset, kde se to vzalo?
+            model.setMaxSuperSampling(10); //todo lol proc zrovna deset, kde se to vzalo?
+            //aha, uz to chapu, tohle je pro to, aby se mi to po HQ nesekalo a vratilo se to zpatky na neco rychleho (?? default??)
             return;
         }
 
@@ -163,14 +164,14 @@ class GLRenderer implements GLView {
         } else if (stateModel.isWaiting()) {
             setParamsToBeRenderedIn(shortestFrameRenderTime * 2);
         } else if (stateModel.isProgressiveRendering()) {
-            int desiredFrameRenderTime = shortestFrameRenderTime * 2 << stateModel.getProgressiveRenderingLevel();
+            int desiredFrameRenderTime = shortestFrameRenderTime * 2 << stateModel.getProgressiveRenderingLevel(); //exponentially increasing the desired render time
             if (desiredFrameRenderTime > maxFrameRenderTime)
-                stateModel.resetState();
+                stateModel.resetState(); //if this is the maximal quality that we want to achieve, stop progressive rendering
             else
                 setParamsToBeRenderedIn(desiredFrameRenderTime);
             //pridat sem currentMode.getHighQualityIteration()
             //   a do RenderingMode::step dat highQIteration++
-            if (model.getSuperSamplingLevel() == SUPER_SAMPLING_MAX_LEVEL)
+            if (model.getMaxSuperSampling() == SUPER_SAMPLING_MAX_LEVEL)
                 stateModel.resetState();
         }
 
@@ -188,9 +189,9 @@ class GLRenderer implements GLView {
         //TODO tahle funkce potrebuje jeste hodne dotahnout
 
         //int mean = Math.round(lastFramesRenderTime.get(currentMode.getCurrent()).getMeanValue());
-        int newSS = Math.round(model.getSuperSamplingLevel() * ms / (float) Math.max(1, lastFrameRenderTime));
+        int newSS = Math.round(model.getMaxSuperSampling() * ms / (float) Math.max(1, lastFrameRenderTime));
         newSS = Math.max(1, Math.min(newSS, SUPER_SAMPLING_MAX_LEVEL));
-        model.setSuperSamplingLevel(newSS);
+        model.setMaxSuperSampling(newSS);
     }
 
     private void render(final GL2 gl) {

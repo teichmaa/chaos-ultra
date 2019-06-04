@@ -36,6 +36,6 @@ public class KernelCompose extends CudaKernel {
     @Override
     public void setParamsFromModel(RenderingModel model) {
         super.setParamsFromModel(model);
-        getKernelParams()[PARAM_IDX_MAX_SUPER_SAMPLING] = CudaHelpers.pointerTo(model.getSuperSamplingLevel());
+        getKernelParams()[PARAM_IDX_MAX_SUPER_SAMPLING] = CudaHelpers.pointerTo(model.getMaxSuperSampling());
     }
 }

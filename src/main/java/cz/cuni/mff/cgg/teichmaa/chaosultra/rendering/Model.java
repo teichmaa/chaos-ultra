@@ -38,7 +38,7 @@ class Model implements RenderingModel, GUIModel, DefaultFractalModel {
     private boolean zooming;
     private boolean useSampleReuse;
     private boolean sampleReuseCacheDirty;
-    private int superSamplingLevel;
+    private int maxSuperSampling;
     private boolean useAdaptiveSuperSampling;
     private boolean visualiseSampleCount;
     private boolean automaticQuality;
@@ -66,7 +66,7 @@ class Model implements RenderingModel, GUIModel, DefaultFractalModel {
         copy.maxIterations = this.maxIterations;
         copy.planeSegment = this.planeSegment.copy();
         copy.useSampleReuse = this.useSampleReuse;
-        copy.superSamplingLevel = this.superSamplingLevel;
+        copy.maxSuperSampling = this.maxSuperSampling;
         copy.useAdaptiveSuperSampling = this.useAdaptiveSuperSampling;
         copy.visualiseSampleCount = this.visualiseSampleCount;
         copy.automaticQuality = this.automaticQuality;
@@ -146,15 +146,15 @@ class Model implements RenderingModel, GUIModel, DefaultFractalModel {
     }
 
     @Override
-    public int getSuperSamplingLevel() {
-        return superSamplingLevel;
+    public int getMaxSuperSampling() {
+        return maxSuperSampling;
     }
 
     @Override
     /** Always clamps the value to be at least 1 and at most SUPER_SAMPLING_MAX_LEVEL
      */
-    public void setSuperSamplingLevel(int superSamplingLevel) {
-        this.superSamplingLevel = Math.max(1, Math.min(superSamplingLevel, SUPER_SAMPLING_MAX_LEVEL));
+    public void setMaxSuperSampling(int maxSuperSampling) {
+        this.maxSuperSampling = Math.max(1, Math.min(maxSuperSampling, SUPER_SAMPLING_MAX_LEVEL));
     }
 
     @Override
@@ -274,7 +274,7 @@ class Model implements RenderingModel, GUIModel, DefaultFractalModel {
     public void setRenderingValuesToDefault() {
         setPlaneSegmentFromCenter(0, 0, 4);
         setMaxIterations(200);
-        setSuperSamplingLevel(2);
+        setMaxSuperSampling(2);
         setUseAdaptiveSuperSampling(true);
         setUseFoveatedRendering(true);
         setUseSampleReuse(true);

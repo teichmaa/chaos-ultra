@@ -21,6 +21,6 @@ public class ModuleMandelbrot extends FractalRenderingModule {
         super.supplyDefaultValues(model);
         model.setPlaneSegmentFromCenter(-0.5, 0, 2);
         model.setMaxIterations(800);
-        model.setSuperSamplingLevel(5);
+        model.setMaxSuperSampling(5);
     }
 }

@@ -44,7 +44,7 @@ public interface FractalRenderer extends Closeable {
     /**
      * Should use any available means to reduce the computational complexity of fractal sampling.
      * <br />
-     * The implementation is expected be scalable; in the sense that the lower the values of {@code maxIterations} and {@code superSamplingLevel}, the faster computation time.
+     * The implementation is expected be scalable; in the sense that the lower the values of {@code maxIterations} and {@code maxSuperSampling}, the faster computation time.
      * @throws FractalRendererException upon rendering error
      * @param model model with data to render
      */
@@ -53,7 +53,7 @@ public interface FractalRenderer extends Closeable {
     /**
      * Should provide high quality images with little artifacts, at the cost of taking longer time to compute.
      * <br />
-     * The implementation is expected be scalable; in the sense that the higher the values of {@code maxIterations} and {@code superSamplingLevel}, the higher visual quality.
+     * The implementation is expected be scalable; in the sense that the higher the values of {@code maxIterations} and {@code maxSuperSampling}, the higher visual quality.
      * @throws FractalRendererException upon rendering error
      * @param model model with data to render
      */

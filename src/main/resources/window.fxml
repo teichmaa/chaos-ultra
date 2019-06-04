@@ -41,8 +41,8 @@
                             <TextField fx:id="maxIterations" text="2000" HBox.hgrow="ALWAYS"/>
                         </HBox>
                         <HBox>
-                            <Label>sup. samp. lvl:</Label>
-                            <TextField fx:id="superSamplingLevel" text="32" HBox.hgrow="ALWAYS"/>
+                            <Label>max super sampling:</Label>
+                            <TextField fx:id="maxSuperSampling" text="32" HBox.hgrow="ALWAYS"/>
                         </HBox>
                         <Button text="set" fx:id="generalParametersOKBtn" onAction="#renderClicked"/>
                     </VBox>

@@ -9,7 +9,7 @@ using Pointf = Point<float>;
 using Pointi = Point<uint>;
 
 constexpr float PI_F = 3.14159265358979f;
-constexpr uint MAX_SS_LEVEL = 256;
+constexpr uint MAX_SUPER_SAMPLING = 256;
 
 __constant__ bool VISUALIZE_SAMPLE_COUNT = false;
 
@@ -96,26 +96,33 @@ uint colorizeSampleCount(uint sampleCount, uint sampleCount100Percent = 25){
   return result.intValue;
 }
 
+/// param pixel: pixel to sample
+/// param gridSize: size of the grid of pixels (usually the output texture).
+/// param image: segment of the complex plane that is to be rendered as an image.gridSize}.
 /// param sampleCount: Maximum number of samples to take. Actual number of samples taken will be stored here before returning. If adaptiveSS==false, the value will not change.
 template <class Real> __device__
-uint sampleTheFractal(Pointi pixel, Pointi size, Rectangle<Real> image, uint maxIterations,uint & sampleCount, bool adaptiveSS){
+uint sampleTheFractal(Pointi pixel, Pointi gridSize, Rectangle<Real> image, uint maxIterations,uint & sampleCount, bool adaptiveSS){
   const uint adaptiveTreshold = 10;
   uint samples[adaptiveTreshold];
 
   //We are in a complex plane from (left_bottom) to (right_top), so we scale the pixels to it
-  Point<Real> pixelSize = image.size() / size.cast<Real>();
+  Point<Real> pixelSize = image.size() / gridSize.cast<Real>();
   
   uint result;
   uint escapeTimeSum = 0;
-  ASSERT (sampleCount <= MAX_SS_LEVEL);
+  ASSERT (sampleCount <= MAX_SUPER_SAMPLING);
   for(uint i = 0; i < sampleCount; i++){
 
     //todo tady bych radeji neco jako deltas[sampleCount]; createDeltas(& deltas) nebo tak. Zkratka abych nesamploval takhle primitivne po diagonale, ale lip. Random sampling na to samozrejme je nejlepsi, ale to asi fakt ma overhead? Nevim, jestli mam cas to merit.
     Point<Real> delta = Point<Real>(i / (Real) sampleCount);
+    //todo jako druhou deltu zvolit pixelSize / 2.
     
-    // c = {LBx, RTy} {+,-} ((pixel+delta) * pixelSize)
-    const Point<Real> c = Point<Real>(image.left_bottom.x, image.right_top.y) +
-      Point<Real>(1,-1) * (pixel.cast<Real>() + delta) * pixelSize;
+    constexpr Point<Real> flipYAxis = Point<Real>(1,-1);
+    const Point<Real> image_left_top = Point<Real>(image.left_bottom.x, image.right_top.y);
+
+    /// a point in the complex plane that is to be rendered
+    // c = {LT} {+,-} ((pixel+delta) * pixelSize)
+    const Point<Real> c = image_left_top + flipYAxis * (pixel.cast<Real>() + delta) * pixelSize;
 
     uint escapeTime = iterate(maxIterations, c);
     escapeTimeSum += escapeTime;
@@ -169,6 +176,7 @@ __device__ const uint IS_ZOOMING_FLAG_MASK = (1 << 4);
 
 __device__ const uint visualityAmplifyCoeff = 10;
 
+/// param image: segment of the complex plane that is to be rendered as an image
 template <class Real> __device__ __forceinline__
 void fractalRenderMain(pixel_info_t** output, long outputPitch, Pointi outputSize, Rectangle<Real> image, uint maxIterations, uint maxSuperSampling, uint flags)
 {
@@ -194,12 +202,12 @@ void fractalRenderMain(pixel_info_t** output, long outputPitch, Pointi outputSiz
 
 /// for given point <code>p</code> in the current image and given warping information, find cooridnates of the same point (=representing the same point in the fractal's complex plane) in the image being warped
 /// @param p: the point whose warping origin is being returned
-/// @param imageSize: width and height (in pixels) of current image
+/// @param gridSize: width and height (in pixels) of the grid we render on.
 /// @param currentImage: rectangle representing the part of the complex plane that is being rendered
 /// @param oldImage: rectangle representing the part of the complex plane that is being reused
 
 template <class Real> __device__ __forceinline__
-Point<Real> getWarpingOrigin(Point<Real> p, Point<Real> imageSize, Rectangle<Real> currentImage, Rectangle<Real> oldImage){
+Point<Real> getWarpingOrigin(Point<Real> p, Point<Real> gridSize, Rectangle<Real> currentImage, Rectangle<Real> oldImage){
 
       Point<Real> size_current = currentImage.size();
       Point<Real> size_reused = oldImage.size();
@@ -208,19 +216,46 @@ Point<Real> getWarpingOrigin(Point<Real> p, Point<Real> imageSize, Rectangle<Rea
       Point<Real> deltaReal;    
       deltaReal.x = currentImage.left_bottom.x - oldImage.left_bottom.x;
       deltaReal.y = oldImage.right_top.y - currentImage.right_top.y;
-      Point<Real> delta = deltaReal / size_current * imageSize;
+      Point<Real> delta = deltaReal / size_current * gridSize;
 
       Point<Real> result = (p * coeff) + delta;
-      return result;
+      //return result;
+
+
+      // novy pristup:
+      constexpr Point<Real> flipYAxis = Point<Real>(1,-1);
+      const Point<Real> current_image_left_top = Point<Real>(currentImage.left_bottom.x, currentImage.right_top.y);
+      const Point<Real> old_image_left_top =     Point<Real>(oldImage.left_bottom.x,     oldImage.right_top.y);
+      const Point<Real> currentPixelSize = currentImage.size() / gridSize.cast<Real>();
+      const Point<Real> oldPixelSize =     oldImage.size() /     gridSize.cast<Real>();
+
+
+      //tento aritmeticky vyraz by sel jiste zjednodustit; ale to je mi trochu jedno
+      //  taky by tomu sla pridat numericka stabilita, a to by za to mozna stalo
+      const Point<Real> p_in_complex_plane = current_image_left_top + flipYAxis * p.cast<Real>() * currentPixelSize;
+      const Point<Real> p_in_old_image = ( p_in_complex_plane - old_image_left_top ) / (oldPixelSize * flipYAxis);
+      //return p_in_old_image;
+
+
+
+      //numerically stable new approach:
+      // See documentation for explanation of these transformations.
+      // The basic idea is following:
+      //  1) Transform p to complex plane (via standard linear relationship, used e.g. by the method sampleTheFractal)
+      //  2) Transform the result then back to the grid-coordinate of the old image (via inverse relationship).
+      //  3) This mapping is then algebraically simplified for faster results and better numerical stability.
+      const Ponit<Real> translate = (current_image_left_top - old_image_left_top) / (oldPixelSize * flipYAxis);
+      const Ponit<Real> scale = currentImage.size().cast<Real>() / oldImage.size().cast<Real>();
+      return p * scale + translate;
 }
 
 __device__ float screenDistance = 60; //in cm; better be set by the user
 __device__ __forceinline__
 /// Returns how many samples this pixel should take, based on foveation.
-/// Value is between 0 and maxSuperSamplingLevel.
-/// Value in the focus will always be maxSuperSamplingLevel, values in the non-peripheral view will always be non-zero.
+/// Value is between 0 and maxSuperSampling.
+/// Value in the focus will always be maxSuperSampling, values in the non-peripheral view will always be non-zero.
 /// Returned value is the same for all pixels within a warp (the highest is taken).
-uint getAdvisedSampleCount(Pointi pixel, Pointi focus, uint maxSuperSamplingLevel){
+uint getAdvisedSampleCount(Pointi pixel, Pointi focus, uint maxSuperSampling){
   //per-warp normalisation, i.e. set all pixels from a warp to same value
   pixel = pixel - (pixel % Pointi(WARP_SIZE_X, WARP_SIZE_Y));
 
@@ -237,7 +272,7 @@ uint getAdvisedSampleCount(Pointi pixel, Pointi focus, uint maxSuperSamplingLeve
   float relativeQuality = (1/(fovealViewLimit-peripheralViewTreshold))*visualAngle+(-peripheralViewTreshold/(fovealViewLimit-peripheralViewTreshold)); 
   if(visualAngle <= fovealViewLimit) relativeQuality = 1;
 
-  uint result = maxSuperSamplingLevel * relativeQuality;
+  uint result = maxSuperSampling * relativeQuality;
   if(visualAngle <= peripheralViewTreshold)
     result = max(1, result); //always return at least 1 for pixels within the field of view
   return result;
@@ -309,7 +344,10 @@ void fractalRenderAdvanced(pixel_info_t** output, long outputPitch, Pointi outpu
   ASSERT(result.weight > 0);
 }
 
-
+/**
+ * TODO java-style documentation -- odkazuju se na to v textu baka
+ *
+ */
 extern "C" __global__
 void fractalRenderMainFloat(pixel_info_t** output, long outputPitch, Pointi outputSize, Rectangle<float> image, uint maxIterations, uint maxSuperSampling, uint flags){
   fractalRenderMain<float>(output, outputPitch, outputSize, image, maxIterations, maxSuperSampling, flags);

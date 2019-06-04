@@ -44,7 +44,7 @@ public class PresenterFX implements Initializable, GUIPresenter {
     @FXML
     private TextField maxIterations;
     @FXML
-    private TextField superSamplingLevel;
+    private TextField maxSuperSampling;
     @FXML
     private Label dimensions;
     @FXML
@@ -104,7 +104,7 @@ public class PresenterFX implements Initializable, GUIPresenter {
                                 center_y.focusedProperty().or(
                                         zoom.focusedProperty().or(
                                                 maxIterations.focusedProperty().or(
-                                                        superSamplingLevel.focusedProperty()
+                                                        maxSuperSampling.focusedProperty()
                                                 )
                                         )
                                 )
@@ -132,11 +132,11 @@ public class PresenterFX implements Initializable, GUIPresenter {
             double y = Double.parseDouble(center_y.getText());
             double zoom = Double.parseDouble(this.zoom.getText());
             int maxIterations = Integer.parseInt(this.maxIterations.getText());
-            int supSamp = Integer.parseInt(superSamplingLevel.getText());
+            int supSamp = Integer.parseInt(maxSuperSampling.getText());
             SwingUtilities.invokeLater(() -> {
                 renderingController.setPlaneSegmentRequested(x, y, zoom);
                 renderingController.setMaxIterationsRequested(maxIterations);
-                renderingController.setSuperSamplingLevelRequested(supSamp);
+                renderingController.setMaxSuperSamplingRequested(supSamp);
                 renderingController.repaint();
             });
         } catch (NumberFormatException e) {
@@ -226,7 +226,7 @@ public class PresenterFX implements Initializable, GUIPresenter {
             center_y.setText(Double.toString(model.getPlaneSegment().getCenterY()));
             zoom.setText(Double.toString(model.getPlaneSegment().getZoom()));
 
-            superSamplingLevel.setText(Integer.toString(model.getSuperSamplingLevel()));
+            maxSuperSampling.setText(Integer.toString(model.getMaxSuperSampling()));
             maxIterations.setText(Integer.toString(model.getMaxIterations()));
 
             precision.setText(model.getFloatingPointPrecision().toString());
