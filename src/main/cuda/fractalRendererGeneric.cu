@@ -18,6 +18,12 @@ void init(){
 
 }
 
+/// Get fractional part of a number.
+template <class Real> __device__ __forceinline__
+Real frac(Real x){
+  return x - trunc(x);
+}
+
 /// Dispersion in this context is "Index of dispersion", aka variance-to-mean ratio. See https://en.wikipedia.org/wiki/Index_of_dispersion for more details
 template <class Real> __device__ __forceinline__
 Real computeDispersion(uint* data, uint dataLength, Real mean){
@@ -117,7 +123,7 @@ uint sampleTheFractal(Pointi pixel, Pointi gridSize, Rectangle<Real> image, uint
     Point<Real> delta = Point<Real>(i / (Real) sampleCount);
     //todo jako druhou deltu zvolit pixelSize / 2.
     
-    constexpr Point<Real> flipYAxis = Point<Real>(1,-1);
+    const Point<Real> flipYAxis = Point<Real>(1,-1);
     const Point<Real> image_left_top = Point<Real>(image.left_bottom.x, image.right_top.y);
 
     /// a point in the complex plane that is to be rendered
@@ -208,45 +214,21 @@ void fractalRenderMain(pixel_info_t** output, long outputPitch, Pointi outputSiz
 
 template <class Real> __device__ __forceinline__
 Point<Real> getWarpingOrigin(Point<Real> p, Point<Real> gridSize, Rectangle<Real> currentImage, Rectangle<Real> oldImage){
-
-      Point<Real> size_current = currentImage.size();
-      Point<Real> size_reused = oldImage.size();
-      Point<Real> coeff = size_current / size_reused;
-
-      Point<Real> deltaReal;    
-      deltaReal.x = currentImage.left_bottom.x - oldImage.left_bottom.x;
-      deltaReal.y = oldImage.right_top.y - currentImage.right_top.y;
-      Point<Real> delta = deltaReal / size_current * gridSize;
-
-      Point<Real> result = (p * coeff) + delta;
-      //return result;
-
-
-      // novy pristup:
-      constexpr Point<Real> flipYAxis = Point<Real>(1,-1);
-      const Point<Real> current_image_left_top = Point<Real>(currentImage.left_bottom.x, currentImage.right_top.y);
-      const Point<Real> old_image_left_top =     Point<Real>(oldImage.left_bottom.x,     oldImage.right_top.y);
-      const Point<Real> currentPixelSize = currentImage.size() / gridSize.cast<Real>();
-      const Point<Real> oldPixelSize =     oldImage.size() /     gridSize.cast<Real>();
-
-
-      //tento aritmeticky vyraz by sel jiste zjednodustit; ale to je mi trochu jedno
-      //  taky by tomu sla pridat numericka stabilita, a to by za to mozna stalo
-      const Point<Real> p_in_complex_plane = current_image_left_top + flipYAxis * p.cast<Real>() * currentPixelSize;
-      const Point<Real> p_in_old_image = ( p_in_complex_plane - old_image_left_top ) / (oldPixelSize * flipYAxis);
-      //return p_in_old_image;
-
-
-
-      //numerically stable new approach:
-      // See documentation for explanation of these transformations.
-      // The basic idea is following:
-      //  1) Transform p to complex plane (via standard linear relationship, used e.g. by the method sampleTheFractal)
-      //  2) Transform the result then back to the grid-coordinate of the old image (via inverse relationship).
-      //  3) This mapping is then algebraically simplified for faster results and better numerical stability.
-      const Ponit<Real> translate = (current_image_left_top - old_image_left_top) / (oldPixelSize * flipYAxis);
-      const Ponit<Real> scale = currentImage.size().cast<Real>() / oldImage.size().cast<Real>();
-      return p * scale + translate;
+  
+  // A numerically stable approach.
+  // See documentation for explanation of these transformations.
+  // The basic idea is following:
+  //  1) Transform p to complex plane (via standard linear relationship, used e.g. by the method sampleTheFractal)
+  //  2) Transform the result then back to the grid-coordinate of the old image (via inverse relationship).
+  //  3) This mapping is then algebraically simplified for faster results and better numerical stability.
+  const Point<Real> flipYAxis = Point<Real>(1,-1);
+  const Point<Real> current_image_left_top = Point<Real>(currentImage.left_bottom.x, currentImage.right_top.y);
+  const Point<Real> old_image_left_top =     Point<Real>(oldImage.left_bottom.x,     oldImage.right_top.y);
+  const Point<Real> oldPixelSize =     oldImage.size() /     gridSize.cast<Real>();
+  
+  const Point<Real> translate = (current_image_left_top - old_image_left_top) / (oldPixelSize * flipYAxis);
+  const Point<Real> scale = currentImage.size().cast<Real>() / oldImage.size().cast<Real>();
+  return p * scale + translate;
 }
 
 __device__ float screenDistance = 60; //in cm; better be set by the user
@@ -279,6 +261,41 @@ uint getAdvisedSampleCount(Pointi pixel, Pointi focus, uint maxSuperSampling){
 }
 
 template <class Real> __device__ 
+pixel_info_t readFromArrayUsingLinearFiltering(pixel_info_t** textureArr, long textureArrPitch, Point<Real> coordinates){
+ 
+    //implementation of linear filtering, as describe by nvidia at https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#linear-filtering
+    //  tex(x,y)=(1−α)(1−β)T[i,j]+α(1−β)T[i+1,j]+(1−α)βT[i,j+1]+αβT[i+1,j+1] for a two-dimensional texture
+    //     where:
+    //       i=floor(xB), α=frac(xB), xB=x-0.5,
+    //       j=floor(yB), β=frac(yB), yB=y-0.5,
+
+    Real xB = coordinates.x - 0.5;
+    Real yB = coordinates.y - 0.5;
+    uint i = floor(xB);
+    uint j = floor(yB);
+    Real alpha = frac(xB);
+    Real beta = frac(yB);
+
+    pixel_info_t T_i_j = * getPtrToPixelInfo(textureArr, textureArrPitch, Point<uint>(i, j));
+    pixel_info_t T_ip_j = * getPtrToPixelInfo(textureArr, textureArrPitch, Point<uint>(i+1, j));
+    pixel_info_t T_i_jp = * getPtrToPixelInfo(textureArr, textureArrPitch, Point<uint>(i, j+1));
+    pixel_info_t T_ip_jp = * getPtrToPixelInfo(textureArr, textureArrPitch, Point<uint>(i+1, j+1));
+
+    float weight_sum = T_i_j.weight + T_ip_j.weight + T_i_jp.weight + T_ip_jp.weight;
+
+    Real r = (1-alpha) * (1-beta) * T_i_j.value +
+            alpha      * (1-beta) * T_ip_j.value + 
+            (1-alpha)  * beta     * T_i_jp.value +
+            alpha      * beta     * T_ip_jp.value;
+
+    pixel_info_t result;
+    result.value = round(r);
+    result.weight = weight_sum / 4 ; //for now, todo update ?
+
+    return result; 
+}
+
+template <class Real> __device__ 
 void fractalRenderAdvanced(pixel_info_t** output, long outputPitch, Pointi outputSize, Rectangle<Real> image, uint maxIterations, uint maxSuperSampling, uint flags, Rectangle<Real> imageReused, pixel_info_t** input, long inputPitch, Pointi focus){
 
   const Pointi idx = getImageIndexes();
@@ -300,14 +317,13 @@ void fractalRenderAdvanced(pixel_info_t** output, long outputPitch, Pointi outpu
   bool reusingSample = false;
   pixel_info_t reused;
   if(flags & USE_SAMPLE_REUSE_FLAG_MASK){
-    const Point<Real> originr = getWarpingOrigin(Point<Real>(idx.x, idx.y),outputSize.cast<Real>(),image, imageReused);
-    const Point<int> origin = Point<int>((int)round(originr.x), (int)round(originr.y)); //it is important to convert to signed int, not uint, because the value may be negative
+    const Point<Real> origin = getWarpingOrigin(Point<Real>(idx.x, idx.y),outputSize.cast<Real>(),image, imageReused);
+
     if(origin.x < 0 || origin.x >= outputSize.x || origin.y < 0 || origin.y >= outputSize.y){
       reusingSample = false;
     }
     else{
-      pixel_info_t* pInput = getPtrToPixelInfo(input, inputPitch, Point<uint>(origin.x, origin.y));
-      reused = * pInput;
+      reused = * getPtrToPixelInfo(input, inputPitch, Point<uint>(round(origin.x), round(origin.y)));
       reusingSample = true;
     }
   }
