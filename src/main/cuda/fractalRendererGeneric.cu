@@ -231,6 +231,8 @@ Point<Real> getWarpingOrigin(Point<Real> p, Point<Real> gridSize, Rectangle<Real
   return p * scale + translate;
 }
 
+__constant__ float PIXEL_REAL_WIDTH_IN_CM = 0.02652; //Can be entered by the user. See http://www.prismo.ch/comparisons/desktop.php for more details.
+
 __device__ float screenDistance = 60; //in cm; better be set by the user
 __device__ __forceinline__
 /// Returns how many samples this pixel should take, based on foveation.
@@ -241,8 +243,7 @@ uint getAdvisedSampleCount(Pointi pixel, Pointi focus, uint maxSuperSampling){
   //per-warp normalisation, i.e. set all pixels from a warp to same value
   pixel = pixel - (pixel % Pointi(WARP_SIZE_X, WARP_SIZE_Y));
 
-  float pixelRealWidthInCm = 0.02652; //todo this value should probably be entered by the user. From http://www.prismo.ch/comparisons/desktop.php 
-  float focusDistance = focus.cast<float>().distanceTo(pixel.cast<float>()) * pixelRealWidthInCm; //distance to focus, translated to cm
+  float focusDistance = focus.cast<float>().distanceTo(pixel.cast<float>()) * PIXEL_REAL_WIDTH_IN_CM; //distance to focus, translated to cm
   /// visual angle for one eye, i.e possible values are from 0 to ~ 110
   float visualAngle = atan (focusDistance / screenDistance) * 180 / PI_F; //from https://en.wikipedia.org/wiki/Visual_angle
   

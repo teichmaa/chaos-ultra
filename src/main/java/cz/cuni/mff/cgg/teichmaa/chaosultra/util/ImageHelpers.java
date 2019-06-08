@@ -8,7 +8,45 @@ import java.nio.file.Files;
 
 public class ImageHelpers {
 
-    public static int[] createColorPalette() {
+    /**
+     * Tries to load palette from filePath. If not possible, creates a default palette.
+     *
+     * @param filePath path of the file to load the palette from
+     * @return Array of integers containing either the default palette or the first row of the image. In RGBA format (Red is the least significant).
+     */
+    public static int[] loadColorPaletteOrDefault(String filePath) {
+        if (null == filePath || filePath.isEmpty())
+            return createDefaultColorPalette();
+        int[] resultOrNull = loadColorPaletteFromFile(filePath);
+        if (resultOrNull == null)
+            return createDefaultColorPalette();
+        else return resultOrNull;
+    }
+
+    /**
+     * @param filePath path of the file to load the palette from
+     * @return null (if IOError) or array of integers containing the first row of the image. In RGBA format (Red is the least significant).
+     */
+    public static int[] loadColorPaletteFromFile(String filePath) {
+        BufferedImage image = null;
+        try {
+            image = ImageIO.read(new File(filePath));
+        } catch (IOException e) {
+            System.err.println("Error while loading palette " + filePath);
+            e.printStackTrace();
+            return null;
+        }
+
+        int w = image.getWidth();
+        int[] result = new int[image.getWidth()];
+        image.getRGB(0, 0, w, 1, result, 0, w);
+        return fromBGRAtoRGBA(result);
+    }
+
+    /**
+     * @return Color palette with colorful linear gradients in RGBA format (Red is the least significant).
+     */
+    public static int[] createDefaultColorPalette() {
         int max = 256;
         int fullColor = 255;
         int[] p = new int[max * 6];
@@ -18,33 +56,58 @@ public class ImageHelpers {
         //  resp. allow user modulo-rotating of color palette or some other changes
 
         for (int i = max * 0; i < max * 1; i++) {
-            p[i] = fromRGB(i,0,Math.min(fullColor, fullColor/2+i)); //blue to magenta gradient
+            p[i] = fromRGBtoRGBA(i, 0, Math.min(fullColor, fullColor / 2 + i)); //blue to magenta gradient
         }
 
         for (int i = max * 1; i < max * 2; i++) {
-            p[i] = fromRGB(fullColor, 0, fullColor-i); //magenta to red gradient
+            p[i] = fromRGBtoRGBA(fullColor, 0, fullColor - i); //magenta to red gradient
         }
 
         for (int i = max * 2; i < max * 3; i++) {
-            p[i] = fromRGB(fullColor, i, 0); //red to yellow gradient
+            p[i] = fromRGBtoRGBA(fullColor, i, 0); //red to yellow gradient
         }
 
         for (int i = max * 3; i < max * 4; i++) {
-            p[i] = fromRGB(fullColor-i,fullColor,0); //yellow to green gradient
+            p[i] = fromRGBtoRGBA(fullColor - i, fullColor, 0); //yellow to green gradient
         }
 
         for (int i = max * 4; i < max * 5; i++) {
-            p[i] = fromRGB(0,fullColor,i); //green to cyan gradient
+            p[i] = fromRGBtoRGBA(0, fullColor, i); //green to cyan gradient
         }
 
         for (int i = max * 5; i < max * 6; i++) {
-            p[i] = fromRGB(0,fullColor-i,fullColor); //cyan to blue gradient
+            p[i] = fromRGBtoRGBA(0, fullColor - i, fullColor); //cyan to blue gradient
         }
 
         return p;
     }
 
-    private static int fromRGB(int r, int g, int b) {
+    /**
+     *
+     * @param input colors in BGRA (little endian), i.e. when read by human: aa rr gg bb
+     * @return colors in RGBA (little endian), i.e. when read by human: aa bb gg rr
+     */
+    private static int[] fromBGRAtoRGBA(int[] input) {
+        int[] output = new int[input.length];
+        for (int i = 0; i < input.length; i++) {
+            int original = input[i];
+            int updated;
+            int alpha = (original >> 24);
+            updated = Integer.reverseBytes(original);
+            updated >>= 8;
+            updated |= ((alpha << 24) & 0xff000000);
+            output[i] = updated;
+        }
+        return output;
+    }
+
+    /**
+     * @param r red
+     * @param g green
+     * @param b blue
+     * @return colors in RGBA (little endian), i.e. when read by human: aa bb gg rr
+     */
+    private static int fromRGBtoRGBA(int r, int g, int b) {
         int a = 255;
         //to RGBA
         int r_shift = 0;
@@ -90,7 +153,15 @@ public class ImageHelpers {
         return result;
     }
 
-    public static void createImage(int[] rgbs, int width, int height, String fileName, String formatName) {
+    /**
+     * Writes rgb data to a file, as image. If the file (or the path to it) does not exist, it is created.
+     * @param rgbs data in RGBA (little endian) (i.e. Red is the least significant), stored row by row
+     * @param width image width
+     * @param height image height
+     * @param fileName file name
+     * @param formatName image format name, e.g. png or jpg
+     */
+    public static void saveImageToFile(int[] rgbs, int width, int height, String fileName, String formatName) {
 
 
         DataBuffer rgbData = new DataBufferInt(rgbs, rgbs.length);
@@ -103,7 +174,6 @@ public class ImageHelpers {
 
         BufferedImage img = new BufferedImage(colorModel, raster, false, null);
 
-        //System.out.println("writing image to " + fileName);
         try {
             File f = new File(fileName);
             Files.createDirectories(f.getParentFile().toPath());

@@ -22,6 +22,9 @@ import static cz.cuni.mff.cgg.teichmaa.chaosultra.rendering.FractalRenderer.SUPE
 
 class GLRenderer implements GLView {
 
+    private static final String DEFAULT_COLOR_PALETTE_LOCATION = "palette.png";
+    private static final String COLOR_PALETTE_PATH_PROPERTY_NAME = "colorPalette";
+
     private GLTexture outputTexture;
     private GLTexture paletteTexture;
     private FractalRenderer fractalRenderer = new FractalRendererNullObjectVerbose();
@@ -59,7 +62,8 @@ class GLRenderer implements GLView {
                     0
             );
 
-            Buffer colorPalette = IntBuffer.wrap(ImageHelpers.createColorPalette());
+            String colorPalettePath = System.getProperty(COLOR_PALETTE_PATH_PROPERTY_NAME, DEFAULT_COLOR_PALETTE_LOCATION);
+            Buffer colorPalette = IntBuffer.wrap(ImageHelpers.loadColorPaletteOrDefault(colorPalettePath));
             paletteTexture = GLTexture.of(
                     GLTextureHandle.of(GLHandles[1]),
                     GL_TEXTURE_2D,
@@ -252,7 +256,7 @@ class GLRenderer implements GLView {
                 gl.glGetTexImage(GL_TEXTURE_2D, 0, GL_BGRA, GL_UNSIGNED_BYTE, b);
             }
             gl.glBindTexture(GL_TEXTURE_2D, 0);
-            ImageHelpers.createImage(data, width_t, height_t, fileName, format);
+            ImageHelpers.saveImageToFile(data, width_t, height_t, fileName, format);
             System.out.println("Image saved to " + fileName);
             doNotRenderRequested = true;
         });

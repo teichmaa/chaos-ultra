@@ -6,6 +6,12 @@ This project is work in progress. No release is available yet. The code may cont
 
 This project originated as a bachelor thesis on [MFF UK](https://mff.cuni.cz/).
 
+## Running the app
+Java parameters 
+ * param colorPalette: use `-DcolorPalette={filePath}` java argument to load the color palette from custom location. Default location is `palette.png`.
+ 
+ * param cudaKernelsDir: use `/DcudaKernelsDir={dirRelPath}` java argument to specify where your compiled cuda kernels are stored. Default is `cudaKernels`. If you don't specify this argument, a warning is given.
+
 ## Author
 
 **Antonín Teichmann** - [teichmaa](https://github.com/teichmaa)
