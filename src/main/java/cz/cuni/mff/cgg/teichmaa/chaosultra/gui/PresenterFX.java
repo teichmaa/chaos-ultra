@@ -200,11 +200,6 @@ public class PresenterFX implements Initializable, GUIPresenter {
     }
 
     @FXML
-    private void debugButton2Clicked(ActionEvent actionEvent) {
-        SwingUtilities.invokeLater(renderingController::debugRightBottomPixel);
-    }
-
-    @FXML
     private void debugButton1Clicked(ActionEvent actionEvent) {
         SwingUtilities.invokeLater(renderingController::debugFractal);
     }

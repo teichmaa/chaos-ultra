@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import static com.jogamp.opengl.GL.*;
-import static cz.cuni.mff.cgg.teichmaa.chaosultra.rendering.FractalRenderer.SUPER_SAMPLING_MAX_LEVEL;
+import static cz.cuni.mff.cgg.teichmaa.chaosultra.rendering.FractalRenderer.MAX_SUPER_SAMPLING;
 
 class GLRenderer implements GLView {
 
@@ -175,7 +175,7 @@ class GLRenderer implements GLView {
                 setParamsToBeRenderedIn(desiredFrameRenderTime);
             //pridat sem currentMode.getHighQualityIteration()
             //   a do RenderingMode::step dat highQIteration++
-            if (model.getMaxSuperSampling() == SUPER_SAMPLING_MAX_LEVEL)
+            if (model.getMaxSuperSampling() >= MAX_SUPER_SAMPLING)
                 stateModel.resetState();
         }
 
@@ -194,7 +194,9 @@ class GLRenderer implements GLView {
 
         //int mean = Math.round(lastFramesRenderTime.get(currentMode.getCurrent()).getMeanValue());
         int newSS = Math.round(model.getMaxSuperSampling() * ms / (float) Math.max(1, lastFrameRenderTime));
-        newSS = Math.max(1, Math.min(newSS, SUPER_SAMPLING_MAX_LEVEL));
+
+
+        newSS = Math.max(1, Math.min(newSS, MAX_SUPER_SAMPLING));
         model.setMaxSuperSampling(newSS);
     }
 
@@ -290,11 +292,6 @@ class GLRenderer implements GLView {
             fractalRenderer.initializeRendering(GLParams.of(outputTexture, paletteTexture));
             controller.showDefaultView();
         });
-    }
-
-    @Override
-    public void debugRightBottomPixel() {
-        fractalRenderer.debugRightBottomPixel();
     }
 
     @Override

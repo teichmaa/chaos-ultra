@@ -12,7 +12,7 @@ import java.io.Closeable;
  * Each instance may represent a different fractal.
  */
 public interface FractalRenderer extends Closeable {
-    int SUPER_SAMPLING_MAX_LEVEL = 256;
+    int MAX_SUPER_SAMPLING = 64;
 
     /**
      * Initializes rendering and set the renderer to readyToRender state.
@@ -64,8 +64,6 @@ public interface FractalRenderer extends Closeable {
      */
     @Override
     void close();
-
-    void debugRightBottomPixel();
 
     void setFractalCustomParams(String text);
 

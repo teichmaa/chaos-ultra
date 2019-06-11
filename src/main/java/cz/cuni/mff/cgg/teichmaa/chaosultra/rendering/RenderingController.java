@@ -12,7 +12,7 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 import java.util.Optional;
 
-import static cz.cuni.mff.cgg.teichmaa.chaosultra.rendering.FractalRenderer.SUPER_SAMPLING_MAX_LEVEL;
+import static cz.cuni.mff.cgg.teichmaa.chaosultra.rendering.FractalRenderer.MAX_SUPER_SAMPLING;
 
 public class RenderingController extends MouseAdapter {
 
@@ -190,7 +190,7 @@ public class RenderingController extends MouseAdapter {
      */
     public void setMaxSuperSamplingRequested(int supSampLvl) {
         assert SwingUtilities.isEventDispatchThread();
-        int newValue = Math.max(1, Math.min(supSampLvl, SUPER_SAMPLING_MAX_LEVEL));
+        int newValue = Math.max(1, Math.min(supSampLvl, MAX_SUPER_SAMPLING));
         if(newValue != supSampLvl){
             System.out.println("Warning: super sampling level clamped to " + newValue + ", higher is not supported");
         }
@@ -223,11 +223,6 @@ public class RenderingController extends MouseAdapter {
         model.setSampleReuseCacheDirty(true);
         repaint();
     }
-
-    public void debugRightBottomPixel() {
-        glView.debugRightBottomPixel();
-    }
-
 
     public void debugFractal() {
         glView.launchDebugKernel();

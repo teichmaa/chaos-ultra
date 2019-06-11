@@ -58,11 +58,6 @@ public class FractalRendererNullObjectVerbose implements FractalRenderer {
     }
 
     @Override
-    public void debugRightBottomPixel() {
-        printMethodName();
-    }
-
-    @Override
     public void setFractalCustomParams(String text) {
         printMethodName();
     }

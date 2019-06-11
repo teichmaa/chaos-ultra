@@ -26,7 +26,7 @@ public class ModuleNewtonIterations extends ModuleNewtonGeneric {
     @Override
     protected void supplyDefaultValues(DefaultFractalModel model) {
         super.supplyDefaultValues(model);
-        String params = "{\"" + COLOR_MAGNIFIER_PARAM_NAME + "\": 10,"
+        String params = "{\"" + COLOR_MAGNIFIER_PARAM_NAME + "\": 11,"
                 + model.getFractalCustomParams().substring(1);
 
         model.setFractalCustomParams(params);

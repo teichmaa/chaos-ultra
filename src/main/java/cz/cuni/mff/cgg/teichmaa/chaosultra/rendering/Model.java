@@ -12,7 +12,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-import static cz.cuni.mff.cgg.teichmaa.chaosultra.rendering.FractalRenderer.SUPER_SAMPLING_MAX_LEVEL;
+import static cz.cuni.mff.cgg.teichmaa.chaosultra.rendering.FractalRenderer.MAX_SUPER_SAMPLING;
 
 /**
  * Represents all the rendering parameters that are used by current version of the Chaos Ultra project.
@@ -154,7 +154,7 @@ class Model implements RenderingModel, GUIModel, DefaultFractalModel {
     /** Always clamps the value to be at least 1 and at most SUPER_SAMPLING_MAX_LEVEL
      */
     public void setMaxSuperSampling(int maxSuperSampling) {
-        this.maxSuperSampling = Math.max(1, Math.min(maxSuperSampling, SUPER_SAMPLING_MAX_LEVEL));
+        this.maxSuperSampling = Math.max(1, Math.min(maxSuperSampling, MAX_SUPER_SAMPLING));
     }
 
     @Override
