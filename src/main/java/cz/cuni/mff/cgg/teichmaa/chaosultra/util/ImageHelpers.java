@@ -5,8 +5,34 @@ import java.awt.image.*;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 
 public class ImageHelpers {
+
+    public static void main(String[] args) {
+        createCustomPalette();
+    }
+
+    /**
+     * Simple util for creation of gradient palettes
+     */
+    public static void createCustomPalette() {
+        int w = 256 * 2;
+        int[] result = new int[w];
+
+        for (int i = 0; i < w / 2; i++) {
+            int r = i;
+            int g = 0;
+            int b = 0;
+            result[i] = fromRGBtoRGBA(r, g, b);
+            result[w - i - 1] = fromRGBtoRGBA(r, g, b);
+        }
+
+        String fileName = "defaultPalette" + ".png";
+        saveImageToFile(result, result.length, 1, fileName, "png");
+
+        System.out.println("Saved " + fileName);
+    }
 
     /**
      * Tries to load palette from filePath. If not possible, creates a default palette.
@@ -16,6 +42,8 @@ public class ImageHelpers {
      */
     public static int[] loadColorPaletteOrDefault(String filePath) {
         if (null == filePath || filePath.isEmpty())
+            return createDefaultColorPalette();
+        if (!Files.exists(Paths.get(filePath)))
             return createDefaultColorPalette();
         int[] resultOrNull = loadColorPaletteFromFile(filePath);
         if (resultOrNull == null)
@@ -158,7 +186,7 @@ public class ImageHelpers {
      * @param rgbs data in RGBA (little endian) (i.e. Red is the least significant), stored row by row
      * @param width image width
      * @param height image height
-     * @param fileName file name
+     * @param fileName file name, including extension
      * @param formatName image format name, e.g. png or jpg
      */
     public static void saveImageToFile(int[] rgbs, int width, int height, String fileName, String formatName) {
@@ -167,16 +195,17 @@ public class ImageHelpers {
         DataBuffer rgbData = new DataBufferInt(rgbs, rgbs.length);
 
         WritableRaster raster = Raster.createPackedRaster(rgbData, width, height, width,
-                new int[]{0xff0000, 0xff00, 0xff},
+                new int[]{0xff, 0xff00, 0xff0000},
                 null);
 
-        ColorModel colorModel = new DirectColorModel(24, 0xff0000, 0xff00, 0xff);
+        ColorModel colorModel = new DirectColorModel(24, 0xff, 0xff00, 0xff0000);
 
         BufferedImage img = new BufferedImage(colorModel, raster, false, null);
 
         try {
             File f = new File(fileName);
-            Files.createDirectories(f.getParentFile().toPath());
+            if (f.getParentFile() != null)
+                Files.createDirectories(f.getParentFile().toPath());
             ImageIO.write(img, formatName, f);
         } catch (IOException e) {
             e.printStackTrace();

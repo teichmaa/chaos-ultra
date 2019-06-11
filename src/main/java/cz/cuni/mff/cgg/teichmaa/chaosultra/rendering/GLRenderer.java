@@ -253,7 +253,7 @@ class GLRenderer implements GLView {
             gl.glBindTexture(GL_TEXTURE_2D, outputTexture.getHandle().getValue());
             {
                 //documentation: https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glGetTexImage.xhtml
-                gl.glGetTexImage(GL_TEXTURE_2D, 0, GL_BGRA, GL_UNSIGNED_BYTE, b);
+                gl.glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, b);
             }
             gl.glBindTexture(GL_TEXTURE_2D, 0);
             ImageHelpers.saveImageToFile(data, width_t, height_t, fileName, format);
