@@ -51,7 +51,7 @@ unsigned int convergenceRoot(complex<Real> x){
 }
 
 template <class Real> __device__
-unsigned int iterate(unsigned int maxIterations, Point<Real> z){
+float iterate(unsigned int maxIterations, Point<Real> z){
 
     complex<Real> x(z.x,z.y);
 
@@ -68,8 +68,9 @@ unsigned int iterate(unsigned int maxIterations, Point<Real> z){
 
 
 __device__ __forceinline__
-unsigned int colorize(cudaSurfaceObject_t colorPalette, unsigned int paletteLength, unsigned int iterationResult){
-    unsigned int paletteIdx = paletteLength - (iterationResult * colorMagnifier % paletteLength) - 1;
+unsigned int colorize(cudaSurfaceObject_t colorPalette, unsigned int paletteLength, float iterationResult){
+    unsigned int iterationResult_i = round(iterationResult);
+    unsigned int paletteIdx = paletteLength - (iterationResult_i * colorMagnifier % paletteLength) - 1;
     ASSERT(paletteIdx < paletteLength);
     unsigned int resultColor;
     surf2Dread(&resultColor, colorPalette, paletteIdx * sizeof(unsigned int), 0);

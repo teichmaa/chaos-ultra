@@ -109,8 +109,7 @@
                         <VBox>
                             <Label>Debugging functions:</Label>
                             <FlowPane maxWidth="200">
-                                <Button text="dbg1: fractal" onAction="#debugButton1Clicked"/>
-                                <Button text="dbg2: right btm pixel" onAction="#debugButton2Clicked"/>
+                                <Button text="Invoke debug method" onAction="#debugButton1Clicked"/>
                                 <Button text="reload" onAction="#reloadFractal" />
                             </FlowPane>
                         </VBox>

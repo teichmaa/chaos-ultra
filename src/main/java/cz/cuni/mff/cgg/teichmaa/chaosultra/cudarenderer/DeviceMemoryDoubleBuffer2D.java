@@ -20,6 +20,14 @@ class DeviceMemoryDoubleBuffer2D implements Closeable {
     private CUdeviceptr array2;
     private long array1Pitch;
     private long array2Pitch;
+    private final int elementSize;
+
+    /**
+     * @param elementSize how many 4-byte elements to allocate per one cell
+     */
+    public DeviceMemoryDoubleBuffer2D(int elementSize) {
+        this.elementSize = elementSize;
+    }
 
     /**
      * Allocates two new 2D buffers in device memory. Also frees old memory, if needed.
@@ -34,12 +42,12 @@ class DeviceMemoryDoubleBuffer2D implements Closeable {
 
     private void reallocatePrimary2DBuffer(int w, int h){
         array1 = new CUdeviceptr();
-        array1Pitch = allocateDevice2DBuffer(w, h, 2, array1);
+        array1Pitch = allocateDevice2DBuffer(w, h, array1);
         setPrimary2DBufferDirty(true);
     }
     private void reallocateSecondary2DBuffer(int w, int h){
         array2 = new CUdeviceptr();
-        array2Pitch = allocateDevice2DBuffer(w, h, 2, array2);
+        array2Pitch = allocateDevice2DBuffer(w, h, array2);
     }
 
     void memoryFree(){
@@ -103,10 +111,9 @@ class DeviceMemoryDoubleBuffer2D implements Closeable {
      * @param width
      * @param height
      * @param target output parameter, will contain pointer to allocated memory
-     * @param elementSize how many 4-byte elements to allocate per one cell
      * @return pitch (actual row length (in bytes) as aligned by CUDA. pitch >= width * sizeof element.)
      */
-    private long allocateDevice2DBuffer(int width, int height, int elementSize, CUdeviceptr target) {
+    private long allocateDevice2DBuffer(int width, int height, CUdeviceptr target) {
 
         /**
          * Pitch = actual row length (in bytes) as aligned by CUDA. pitch >= width * sizeof element.

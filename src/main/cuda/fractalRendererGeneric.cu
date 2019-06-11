@@ -9,7 +9,7 @@ using Pointf = Point<float>;
 using Pointi = Point<uint>;
 
 constexpr float PI_F = 3.14159265358979f;
-constexpr uint MAX_SUPER_SAMPLING = 256;
+constexpr uint MAX_SUPER_SAMPLING = 64;
 
 __constant__ bool VISUALIZE_SAMPLE_COUNT = false;
 
@@ -85,13 +85,13 @@ __device__ const Point<uint> getImageIndexes(){
  */
 __device__ __forceinline__
 pixel_info_t* getPtrToPixelInfo(pixel_info_t** array2D,const long pitch,const Point<uint> pixel){
-  return (((pixel_info_t*)((char*)array2D + pixel.y * pitch)) + pixel.x);
+  return ((pixel_info_t*) ((char*)array2D + pixel.y * pitch)) + pixel.x;
 }
 
 /// sampleCount will be trimmed to be lesser or equal to sampleCount100Percent. 
 /// samples will be colorized in linear grayscale from black (0) to white (sampleCount100Percent)
 __device__ __forceinline__
-uint colorizeSampleCount(uint sampleCount, uint sampleCount100Percent = 25){
+uint colorizeSampleCount(uint sampleCount, uint sampleCount100Percent = 64){
   sampleCount = min(sampleCount, sampleCount100Percent);
   float sampleCountRel = sampleCount / (float) sampleCount100Percent;
   color_t result;
@@ -116,7 +116,7 @@ uint sampleTheFractal(Pointi pixel, Pointi gridSize, Rectangle<Real> image, uint
   
   uint result;
   uint escapeTimeSum = 0;
-  ASSERT (sampleCount <= MAX_SUPER_SAMPLING);
+ ASSERT (sampleCount <= MAX_SUPER_SAMPLING);
   for(uint i = 0; i < sampleCount; i++){
 
     //todo tady bych radeji neco jako deltas[sampleCount]; createDeltas(& deltas) nebo tak. Zkratka abych nesamploval takhle primitivne po diagonale, ale lip. Random sampling na to samozrejme je nejlepsi, ale to asi fakt ma overhead? Nevim, jestli mam cas to merit.
@@ -206,16 +206,21 @@ void fractalRenderMain(pixel_info_t** output, long outputPitch, Pointi outputSiz
   ASSERT(pOutput->weight > 0);
 }
 
+
+
+
+
+
+
 /// for given point <code>p</code> in the current image and given warping information, find cooridnates of the same point (=representing the same point in the fractal's complex plane) in the image being warped
 /// @param p: the point whose warping origin is being returned
 /// @param gridSize: width and height (in pixels) of the grid we render on.
 /// @param currentImage: rectangle representing the part of the complex plane that is being rendered
 /// @param oldImage: rectangle representing the part of the complex plane that is being reused
-
 template <class Real> __device__ __forceinline__
-Point<Real> getWarpingOrigin(Point<Real> p, Point<Real> gridSize, Rectangle<Real> currentImage, Rectangle<Real> oldImage){
-  
-  // A numerically stable approach.
+Point<Real> getWarpingOriginOfSampleReuse(Point<Real> p, Point<Real> gridSize, Rectangle<Real> currentImage, Rectangle<Real> oldImage){
+
+  // A numerically stable transformation.
   // See documentation for explanation of these transformations.
   // The basic idea is following:
   //  1) Transform p to complex plane (via standard linear relationship, used e.g. by the method sampleTheFractal)
@@ -231,19 +236,18 @@ Point<Real> getWarpingOrigin(Point<Real> p, Point<Real> gridSize, Rectangle<Real
   return p * scale + translate;
 }
 
-__constant__ float PIXEL_REAL_WIDTH_IN_CM = 0.02652; //Can be entered by the user. See http://www.prismo.ch/comparisons/desktop.php for more details.
-
 __device__ float screenDistance = 60; //in cm; better be set by the user
 __device__ __forceinline__
 /// Returns how many samples this pixel should take, based on foveation.
 /// Value is between 0 and maxSuperSampling.
 /// Value in the focus will always be maxSuperSampling, values in the non-peripheral view will always be non-zero.
 /// Returned value is the same for all pixels within a warp (the highest is taken).
-uint getAdvisedSampleCount(Pointi pixel, Pointi focus, uint maxSuperSampling){
+uint getFoveationAdvisedSampleCount(Pointi pixel, Pointi focus, uint maxSuperSampling){
   //per-warp normalisation, i.e. set all pixels from a warp to same value
   pixel = pixel - (pixel % Pointi(WARP_SIZE_X, WARP_SIZE_Y));
 
-  float focusDistance = focus.cast<float>().distanceTo(pixel.cast<float>()) * PIXEL_REAL_WIDTH_IN_CM; //distance to focus, translated to cm
+  float pixelRealWidthInCm = 0.02652; //todo this value should probably be entered by the user. From http://www.prismo.ch/comparisons/desktop.php 
+  float focusDistance = focus.cast<float>().distanceTo(pixel.cast<float>()) * pixelRealWidthInCm; //distance to focus, translated to cm
   /// visual angle for one eye, i.e possible values are from 0 to ~ 110
   float visualAngle = atan (focusDistance / screenDistance) * 180 / PI_F; //from https://en.wikipedia.org/wiki/Visual_angle
   
@@ -274,8 +278,8 @@ pixel_info_t readFromArrayUsingLinearFiltering(pixel_info_t** textureArr, long t
     Real yB = coordinates.y - 0.5;
     uint i = floor(xB);
     uint j = floor(yB);
-    Real alpha = frac(xB);
-    Real beta = frac(yB);
+    Real alpha = xB - i;
+    Real beta = yB - j;
 
     pixel_info_t T_i_j = * getPtrToPixelInfo(textureArr, textureArrPitch, Point<uint>(i, j));
     pixel_info_t T_ip_j = * getPtrToPixelInfo(textureArr, textureArrPitch, Point<uint>(i+1, j));
@@ -291,7 +295,7 @@ pixel_info_t readFromArrayUsingLinearFiltering(pixel_info_t** textureArr, long t
 
     pixel_info_t result;
     result.value = round(r);
-    result.weight = weight_sum / 4 ; //for now, todo update ?
+    result.weight = weight_sum / 4;
 
     return result; 
 }
@@ -301,65 +305,54 @@ void fractalRenderAdvanced(pixel_info_t** output, long outputPitch, Pointi outpu
 
   const Pointi idx = getImageIndexes();
   if(idx.x >= outputSize.x || idx.y >= outputSize.y) return;
-  if(idx.x == 0 && idx.y == 0){
-    // printf("fractalRenderAdvanced:\n");
-    // printf("\t maxIterations:%d\n",maxIterations);
-    // printf("\t focus:%d,%d\n",focus.x, focus.y);
-    // printf("\t fov:%d\n",(flags & USE_FOVEATION_FLAG_MASK));
-    // printf("\t reuse:%d\n",flags & USE_SAMPLE_REUSE_FLAG_MASK);
-    // printf("\t ad SS:%d\n",flags & USE_ADAPTIVE_SS_FLAG_MASK);
-    // printf("\t zooming:%d\n",flags & IS_ZOOMING_FLAG_MASK);
-    // printf("\n");
-  }
   ASSERT(idx.x < outputSize.x);
   ASSERT(idx.y < outputSize.y);
 
-  //sample reuse:
-  bool reusingSample = false;
-  pixel_info_t reused;
-  if(flags & USE_SAMPLE_REUSE_FLAG_MASK){
-    const Point<Real> origin = getWarpingOrigin(Point<Real>(idx.x, idx.y),outputSize.cast<Real>(),image, imageReused);
 
-    if(origin.x < 0 || origin.x >= outputSize.x || origin.y < 0 || origin.y >= outputSize.y){
-      reusingSample = false;
+  //sample reuse - if not zooming:
+  bool reusingSamples = false;
+  pixel_info_t reused;
+  if(flags & USE_SAMPLE_REUSE_FLAG_MASK && ! (flags & IS_ZOOMING_FLAG_MASK)){
+    const Point<Real> origin = getWarpingOriginOfSampleReuse(Point<Real>(idx.x, idx.y),outputSize.cast<Real>(),image, imageReused);
+    const Point<int> origin_int = Point<int>(round(origin.x), round(origin.y));
+
+    if(origin_int.x < 0 || origin_int.x >= outputSize.x || origin_int.y < 0 || origin_int.y >= outputSize.y){
+      reusingSamples = false;
     }
     else{
-      reused = * getPtrToPixelInfo(input, inputPitch, Point<uint>(round(origin.x), round(origin.y)));
-      reusingSample = true;
+      reused = * getPtrToPixelInfo(input, inputPitch, Point<uint>(origin_int.x, origin_int.y));
+      reusingSamples = true;
     }
   }
-  
-  //sample generation:
-  uint sampleCount = maxSuperSampling;
-  if (flags & USE_FOVEATION_FLAG_MASK)
-    sampleCount = getAdvisedSampleCount(idx, focus, maxSuperSampling);
-  if((!reusingSample || reused.weight == 0) && sampleCount == 0)  sampleCount = 1; //at least one sample has to be taken somewhere
-      //indeed, it may happen that reusedWeight == 0, because reusedWeight decreases in time (see reusedSampleDegradateCoeff)
-  uint renderResult = sampleTheFractal(idx, outputSize, image, maxIterations, sampleCount, flags & USE_ADAPTIVE_SS_FLAG_MASK);
-  ASSERT(reusingSample || sampleCount > 0);
 
-  //combine reused and generated samples:
+
+  //foveation - only if zooming:
+  uint sampleCount = maxSuperSampling;
+  if (flags & USE_FOVEATION_FLAG_MASK && flags & IS_ZOOMING_FLAG_MASK){
+    sampleCount = getFoveationAdvisedSampleCount(idx, focus, maxSuperSampling);
+  }
+  //at least one sample has to be taken somewhere
+  else if(sampleCount == 0  && !reusingSamples ){
+    sampleCount = 1; 
+  }
+
+  
   pixel_info_t result;
-  if(reusingSample){
-    if(sampleCount == 0){
-      result = reused;   
-    }else{
-      const float reusedSampleDegradateCoeff = 1 / (float) 255; // must be <=1
-      if(flags & IS_ZOOMING_FLAG_MASK){
-        reused.weight *= reusedSampleDegradateCoeff;
-      }
-      result.weight = reused.weight + sampleCount;    
-      result.value = (reused.value * reused.weight + renderResult * sampleCount) / (result.weight);
-    }
+  if(reusingSamples){
+    result = reused;   
+    result.isReused = true; //todo this is debug only
   }else{
-    result.value = renderResult;
-    result.weight = sampleCount;
+    ASSERT(sampleCount >= 1);
+    result.value = sampleTheFractal(idx, outputSize, image, maxIterations, sampleCount, flags & USE_ADAPTIVE_SS_FLAG_MASK);
+    result.weight = sampleCount; //sampleCount is an in-out parameter
   }
 
   pixel_info_t* pOutput = getPtrToPixelInfo(output, outputPitch, idx);
-  * pOutput = pixel_info_t(result.value, result.weight);
+  * pOutput = result;
   ASSERT(result.weight > 0);
 }
+
+
 
 /**
  * TODO java-style documentation -- odkazuju se na to v textu baka
@@ -395,18 +388,21 @@ void compose(pixel_info_t** inputMain, long inputMainPitch, pixel_info_t** input
     const Point<uint> idx(idx_x, idx_y);
     if(idx_x >= width || idx_y >= height) return;
 
-    pixel_info_t* pResult;
-    pResult = getPtrToPixelInfo(inputMain, inputMainPitch, idx);
-    uint result = pResult->value;
+    pixel_info_t result = * getPtrToPixelInfo(inputMain, inputMainPitch, idx);
 
     uint resultColor;
     if(VISUALIZE_SAMPLE_COUNT){ 
-      resultColor = colorizeSampleCount(pResult->weight, maxSuperSampling);
-    } else{
-      resultColor = colorize(colorPalette, paletteLength, result);
+      resultColor = colorizeSampleCount(result.weight, maxSuperSampling);
+      if(result.isReused){ //todo debug only
+        resultColor = ColorsRGBA::BLACK;
+      }
+    }
+    else{
+      resultColor = colorize(colorPalette, paletteLength, result.value);
     }
     surf2Dwrite(resultColor, surfaceOutput, idx_x * sizeof(uint), idx_y);
 }
+
 
 extern "C" __global__
 void fractalRenderUnderSampled(pixel_info_t** output, long outputPitch, uint width, uint height, float left_bottom_x, float left_bottom_y, float right_top_x, float right_top_y, uint maxIterations, uint underSamplingLevel)
@@ -428,7 +424,6 @@ void fractalRenderUnderSampled(pixel_info_t** output, long outputPitch, uint wid
 
   for(uint x = 0; x < underSamplingLevel; x++){
     for(uint y = 0; y < underSamplingLevel; y++){
-      //surf2Dwrite(resultColor, surfaceOutput, (idx_x + x) * sizeof(unsigned uint), (idx_y+y));
       pixel_info_t* pOutput = getPtrToPixelInfo(output, outputPitch, idx);
       * pOutput = pixel_info_t(escapeTime, 1 / (float) underSamplingLevel);
     }

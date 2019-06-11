@@ -35,6 +35,7 @@ public class CudaFractalRenderer implements FractalRenderer {
     private static final int BLOCK_DIM_X = 32;
     private static final int BLOCK_DIM_Y = 32;
     private static final int DEFAULT_UNDER_SAMPLING_LEVEL = 4;
+    private static final int SIZEOF_PIXEL_INFO_T = 4;
     /**
      * Name of the "visualise sample count" cuda constant in the cuda module
      */
@@ -51,7 +52,7 @@ public class CudaFractalRenderer implements FractalRenderer {
     private KernelAdvancedDouble kernelAdvancedDouble;
     private KernelCompose kernelCompose;
 
-    private DeviceMemoryDoubleBuffer2D memory = new DeviceMemoryDoubleBuffer2D();
+    private DeviceMemoryDoubleBuffer2D memory = new DeviceMemoryDoubleBuffer2D(SIZEOF_PIXEL_INFO_T);
     private FractalRenderingModule module;
     private cudaStream_t defaultStream = new cudaStream_t();
 
@@ -395,20 +396,6 @@ public class CudaFractalRenderer implements FractalRenderer {
         c.accept(kernelAdvancedFloat);
         c.accept(kernelAdvancedDouble);
     }
-
-    @Override
-    public void debugRightBottomPixel() {
-        int w = getWidth();
-        int h = getHeight();
-        memory.resetBufferOrder();
-        //launchReuseSamplesKernel();
-        memory.resetBufferOrder();
-        IntBuffer b = IntBuffer.allocate(w * h);
-        copy2DFromDevToHost(b, w, h, memory.getPrimary2DBufferPitch(), memory.getPrimary2DBuffer());
-        System.out.println("b[w,h]:\t" + b.get(w * h - 1));
-        int breakpoit = 0;
-    }
-
 
     private void updateFloatPrecision(RenderingModel model) {
         model.setFloatingPointPrecision(kernelMainFloat.isSegmentBoundsAtFloatLimit() ? FloatPrecision.doublePrecision : FloatPrecision.singlePrecision);

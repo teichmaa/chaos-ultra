@@ -42,7 +42,7 @@ unsigned int convergenceRoot(complex<Real> x){
 
 
 template <class Real> __device__
-unsigned int iterate(unsigned int maxIterations, Point<Real> z){
+float iterate(unsigned int maxIterations, Point<Real> z){
 
     complex<Real> x(z.x,z.y);
 
@@ -65,8 +65,9 @@ unsigned int iterate(unsigned int maxIterations, Point<Real> z){
 
 
 __device__ __forceinline__
-unsigned int colorize(cudaSurfaceObject_t colorPalette, unsigned int paletteLength, unsigned int iterationResult){
-    switch(iterationResult){
+unsigned int colorize(cudaSurfaceObject_t colorPalette, unsigned int paletteLength, float iterationResult){
+    unsigned int iterationResult_i = round(iterationResult);
+    switch(iterationResult_i){
         case 1:
             return ColorsRGBA::RED;
         case 2:

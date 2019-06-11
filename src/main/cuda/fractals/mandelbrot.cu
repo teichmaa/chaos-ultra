@@ -9,7 +9,7 @@
 //    y ... for imag part (corresponding to geometric y-axis)
 
 template <class Real> __device__ 
-unsigned int iterate(unsigned int maxIterations, Point<Real> c){
+float iterate(unsigned int maxIterations, Point<Real> c){
   Point<Real> z(0,0);
   Real zx_new;
   unsigned int i = 0;
@@ -23,8 +23,9 @@ unsigned int iterate(unsigned int maxIterations, Point<Real> c){
 }
 
 __device__ __forceinline__
-unsigned int colorize(cudaSurfaceObject_t colorPalette, unsigned int paletteLength, unsigned int iterationResult){
-  unsigned int paletteIdx = paletteLength - (iterationResult % paletteLength) - 1;
+unsigned int colorize(cudaSurfaceObject_t colorPalette, unsigned int paletteLength, float iterationResult){
+  unsigned int iterationResult_i = round(iterationResult);
+  unsigned int paletteIdx = paletteLength - (iterationResult_i % paletteLength) - 1;
   ASSERT(paletteIdx < paletteLength);
   unsigned int resultColor;
   surf2Dread(&resultColor, colorPalette, paletteIdx * sizeof(unsigned int), 0);
