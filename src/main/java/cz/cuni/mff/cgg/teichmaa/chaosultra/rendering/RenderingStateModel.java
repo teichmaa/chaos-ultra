@@ -17,4 +17,8 @@ public interface RenderingStateModel {
     boolean isZooming();
 
     void resetState();
+
+    boolean isDifferentThanLast();
+
+    RenderingModeFSM.RenderingMode getCurrent();
 }

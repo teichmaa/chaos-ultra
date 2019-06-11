@@ -271,7 +271,7 @@ class Model implements RenderingModel, GUIModel, DefaultFractalModel {
         this.errorLoggedCallback = errorLoggedCallback;
     }
 
-    public void setRenderingValuesToDefault() {
+    public void resetRenderingValuesToDefault() {
         setPlaneSegmentFromCenter(0, 0, 4);
         setMaxIterations(200);
         setMaxSuperSampling(2);

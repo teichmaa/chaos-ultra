@@ -150,8 +150,9 @@ public class RenderingController extends MouseAdapter {
     public void showDefaultView() {
         animator.stop();
         currentMode.resetState();
+        currentMode.startProgressiveRendering();
 
-        model.setRenderingValuesToDefault();
+        model.resetRenderingValuesToDefault();
         glView.showDefaultView();
 
         onModelUpdated();
@@ -165,11 +166,13 @@ public class RenderingController extends MouseAdapter {
             cudaInitError.ifPresent(guiPresenter::showBlockingErrorAlertAsync);
         }
         model.getNewlyLoggedErrors().clear();
+        if (currentMode.isWaiting())
+            currentMode.startProgressiveRendering();
+
     }
 
     public void setPlaneSegmentRequested(double centerX, double centerY, double zoom) {
         assert SwingUtilities.isEventDispatchThread();
-        //todo change automatic quality state?
         setPlaneSegment(centerX, centerY, zoom);
         onModelUpdated();
     }
@@ -180,7 +183,6 @@ public class RenderingController extends MouseAdapter {
 
     public void setMaxIterationsRequested(int maxIterations) {
         assert SwingUtilities.isEventDispatchThread();
-        //todo does this affect automatic quality?
         model.setMaxIterations(maxIterations);
         onModelUpdated();
     }
@@ -216,11 +218,10 @@ public class RenderingController extends MouseAdapter {
         if(fractalName.equals(model.getFractalName()))
             return;
         model.setFractalName(fractalName);
-        animator.stop();
-        currentMode.resetState();
         showDefaultView();
         glView.onFractalChanged(fractalName, false);
         model.setSampleReuseCacheDirty(true);
+        showDefaultView();
         repaint();
     }
 
@@ -252,6 +253,7 @@ public class RenderingController extends MouseAdapter {
     }
 
     public void startProgressiveRenderingAsync() {
+        currentMode.resetState();
         currentMode.startProgressiveRendering();
         repaint();
     }

@@ -83,7 +83,7 @@ class GLRenderer implements GLView {
             controller.showDefaultView();
         } catch (Exception e) {
             model.logError(e.getMessage());
-            if(JavaHelpers.isDebugMode()) throw e;
+            if (JavaHelpers.isDebugMode()) throw e;
         }
     }
 
@@ -124,10 +124,6 @@ class GLRenderer implements GLView {
 
             long startTime = System.currentTimeMillis();
 
-            //todo tohle cele by asi ocenilo lepsi navrh. Inspiruj se u her a u Update smycky atd
-            //  ve finale by kernel launch asi mohl nebyt blocking
-            //      trivialni napad: double buffering, GL vzdy vykresli tu druhou, nez cuda zrovna pocita
-
             if (stateModel.isZooming()) {
                 controller.zoomAt(model.getLastMousePosition(), stateModel.getZoomingDirection());
             }
@@ -137,67 +133,13 @@ class GLRenderer implements GLView {
             long endTime = System.currentTimeMillis();
             lastFrameRenderTime = (int) (endTime - startTime);
             //lastFramesRenderTime.get(currentMode.getCurrent()).add((int) (endTime - startTime));
-//            System.out.println("" + lastFrameRenderTime + " ms (frame total render time)");
+            System.out.println("\t\t\t\tfinished in \t\t" + lastFrameRenderTime + " ms");
+
             controller.onRenderingDone();
         } catch (Exception e) {
             model.logError(e.getMessage());
-            if(JavaHelpers.isDebugMode()) throw e;
+            if (JavaHelpers.isDebugMode()) throw e;
         }
-    }
-
-    private static final int shortestFrameRenderTime = 15;
-    private static final int maxFrameRenderTime = 1000;
-    private static final int lastFramesRenderTimeBufferLength = 2;
-    //private Map<RenderingModeFSM.RenderingMode, CyclicBuffer> lastFramesRenderTime = new HashMap<>();
-    private int lastFrameRenderTime = shortestFrameRenderTime;
-
-    private void determineRenderingModeQuality() {
-        assert SwingUtilities.isEventDispatchThread();
-        if (!model.isUseAutomaticQuality()) return;
-        if (stateModel.isWaiting() && stateModel.wasProgressiveRendering()) {
-            model.setMaxSuperSampling(10); //todo lol proc zrovna deset, kde se to vzalo?
-            //aha, uz to chapu, tohle je pro to, aby se mi to po HQ nesekalo a vratilo se to zpatky na neco rychleho (?? default??)
-            return;
-        }
-
-        //System.out.println("currentMode = " + currentMode);
-        if (model.isZooming()) {
-            setParamsToBeRenderedIn(shortestFrameRenderTime);
-        } else if (stateModel.isMoving()) {
-            setParamsToBeRenderedIn(shortestFrameRenderTime);
-        } else if (stateModel.isWaiting()) {
-            setParamsToBeRenderedIn(shortestFrameRenderTime * 2);
-        } else if (stateModel.isProgressiveRendering()) {
-            int desiredFrameRenderTime = shortestFrameRenderTime * 2 << stateModel.getProgressiveRenderingLevel(); //exponentially increasing the desired render time
-            if (desiredFrameRenderTime > maxFrameRenderTime)
-                stateModel.resetState(); //if this is the maximal quality that we want to achieve, stop progressive rendering
-            else
-                setParamsToBeRenderedIn(desiredFrameRenderTime);
-            //pridat sem currentMode.getHighQualityIteration()
-            //   a do RenderingMode::step dat highQIteration++
-            if (model.getMaxSuperSampling() >= MAX_SUPER_SAMPLING)
-                stateModel.resetState();
-        }
-
-    }
-
-    private void setParamsToBeRenderedIn(int ms) {
-        //debug:
-//        System.out.print(currentMode + ": ");
-//        CyclicBuffer b = lastFramesRenderTime.get(currentMode.getCurrent());
-//        for (int i = 0; i < lastFramesRenderTimeBufferLength; i++) {
-//            System.out.print(b.get(i) + "\t");
-//        }
-//        System.out.println();
-
-        //TODO tahle funkce potrebuje jeste hodne dotahnout
-
-        //int mean = Math.round(lastFramesRenderTime.get(currentMode.getCurrent()).getMeanValue());
-        int newSS = Math.round(model.getMaxSuperSampling() * ms / (float) Math.max(1, lastFrameRenderTime));
-
-
-        newSS = Math.max(1, Math.min(newSS, MAX_SUPER_SAMPLING));
-        model.setMaxSuperSampling(newSS);
     }
 
     private void render(final GL2 gl) {
@@ -205,13 +147,68 @@ class GLRenderer implements GLView {
 
         model.setZooming(stateModel.isZooming());
 
-        if (stateModel.wasProgressiveRendering()) {
+        if (stateModel.isWaiting()) {
+            return;
+        } else if (stateModel.isProgressiveRendering()) {
             fractalRenderer.renderQuality(model);
+            System.out.println("\t\trender Quality, with SS \t\t\t" + model.getMaxSuperSampling());
         } else {
             fractalRenderer.renderFast(model);
+            System.out.println("\t\trender Fast, with SS \t\t\t\t" + model.getMaxSuperSampling());
         }
 
         GLHelpers.drawRectangle(gl, outputTexture);
+    }
+
+    /**
+     * time in ms
+     */
+    private static final int shortestFrameRenderTime = 15;
+    /**
+     * time in ms
+     */
+    private static final int maxFrameRenderTime = 1000;
+    private int lastFrameRenderTime = shortestFrameRenderTime;
+
+    private void determineRenderingModeQuality() {
+        assert SwingUtilities.isEventDispatchThread();
+        if (!model.isUseAutomaticQuality()) return;
+
+        System.out.println("currentMode: " + stateModel);
+
+        if (stateModel.isDifferentThanLast()) {
+            System.out.println("Automatic quality: RESET SS");
+            model.setMaxSuperSampling(1);
+            return;
+        }
+
+        if (stateModel.isZooming()) {
+            setParamsToBeRenderedIn(shortestFrameRenderTime);
+        } else if (stateModel.isMoving()) {
+            setParamsToBeRenderedIn(shortestFrameRenderTime);
+        } else if (stateModel.isProgressiveRendering()) {
+            int desiredFrameRenderTime = shortestFrameRenderTime * 2 << stateModel.getProgressiveRenderingLevel(); //exponentially increasing the desired render time
+            desiredFrameRenderTime = Math.max(lastFrameRenderTime * 2, desiredFrameRenderTime); //for cases when the last time, the actual frameRenderTime was much higher than desiredFrameRenderTime
+
+            if (desiredFrameRenderTime > maxFrameRenderTime ||
+                    model.getMaxSuperSampling() >= MAX_SUPER_SAMPLING
+            ) {
+                //if this is the maximal quality that we want to or can achieve, stop progressive rendering and do not render anymore
+                if ((!stateModel.isProgressiveRendering() || stateModel.getProgressiveRenderingLevel() != 0)) { //level==0 happens upon parameter change -- don't stop in this case
+                    stateModel.resetState();
+                }
+            } else {
+                setParamsToBeRenderedIn(desiredFrameRenderTime);
+            }
+        }
+    }
+
+    private void setParamsToBeRenderedIn(int ms) {
+        int newSS = Math.round(model.getMaxSuperSampling() * ms / (float) Math.max(1, lastFrameRenderTime));
+
+        newSS = Math.max(1, Math.min(newSS, MAX_SUPER_SAMPLING));
+        model.setMaxSuperSampling(newSS);
+        System.out.println("\t set params to be rendered in\t" + ms + " ms:\t" + newSS + " SS");
     }
 
     @Override
@@ -240,7 +237,7 @@ class GLRenderer implements GLView {
             controller.startProgressiveRenderingAsync();
         } catch (Exception e) {
             model.logError(e.getMessage());
-            if(JavaHelpers.isDebugMode()) throw e;
+            if (JavaHelpers.isDebugMode()) throw e;
         }
     }
 
@@ -270,9 +267,9 @@ class GLRenderer implements GLView {
         try {
             fractalRenderer.setFractalCustomParams(model.getFractalCustomParams());
             model.setSampleReuseCacheDirty(true);
-        } catch (Exception e){
+        } catch (Exception e) {
             model.logError(e.getMessage());
-            if(JavaHelpers.isDebugMode()) throw e;
+            if (JavaHelpers.isDebugMode()) throw e;
         }
     }
 
@@ -292,6 +289,7 @@ class GLRenderer implements GLView {
             fractalRenderer.initializeRendering(GLParams.of(outputTexture, paletteTexture));
             controller.showDefaultView();
         });
+        repaint();
     }
 
     @Override

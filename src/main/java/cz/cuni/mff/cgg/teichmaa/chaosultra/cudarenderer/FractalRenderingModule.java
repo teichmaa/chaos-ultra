@@ -270,6 +270,6 @@ public abstract class FractalRenderingModule implements Closeable {
      * @param model model to set values to
      */
     protected void supplyDefaultValues(DefaultFractalModel model){
-        /* nothing */
+        model.setFractalCustomParams("");
     }
 }

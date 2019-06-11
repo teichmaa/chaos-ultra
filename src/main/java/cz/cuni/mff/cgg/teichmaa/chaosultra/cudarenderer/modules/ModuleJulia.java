@@ -1,19 +1,8 @@
 package cz.cuni.mff.cgg.teichmaa.chaosultra.cudarenderer.modules;
 
-import cz.cuni.mff.cgg.teichmaa.chaosultra.cudarenderer.CuSizedDeviceptr;
-import cz.cuni.mff.cgg.teichmaa.chaosultra.cudarenderer.CudaInitializationException;
 import cz.cuni.mff.cgg.teichmaa.chaosultra.cudarenderer.FractalRenderingModule;
 import cz.cuni.mff.cgg.teichmaa.chaosultra.rendering.model.DefaultFractalModel;
-import cz.cuni.mff.cgg.teichmaa.chaosultra.util.PointDouble;
 import cz.cuni.mff.cgg.teichmaa.chaosultra.util.PointDoubleImmutable;
-import cz.cuni.mff.cgg.teichmaa.chaosultra.util.PointDoubleReadable;
-import jcuda.Pointer;
-import jcuda.Sizeof;
-import jcuda.driver.CUdeviceptr;
-import jcuda.runtime.cudaMemcpyKind;
-
-import static jcuda.driver.JCudaDriver.cuModuleGetGlobal;
-import static jcuda.runtime.JCuda.cudaMemcpy;
 
 public class ModuleJulia extends FractalRenderingModule {
 
@@ -52,5 +41,8 @@ public class ModuleJulia extends FractalRenderingModule {
         super.supplyDefaultValues(model);
         model.setMaxIterations(400);
         model.setFractalCustomParams("-0.4;0.6");
+        //other possible nice value is for example c = −0.8 + 0.156i or c = 0.285 + 0.01i
+        //model.setFractalCustomParams("-0.8;0.156");
+        //model.setFractalCustomParams("0.285;0.01");
     }
 }

@@ -42,17 +42,20 @@ class RenderingModeFSM implements RenderingStateModel {
     }
 
     public void step() {
-        RenderingMode newValue = current;
+        RenderingMode newValue;
         if ((current == Waiting && (last == ZoomingAuto || last == Moving))
                 || current == ZoomingOnce
-                ) {
+        ) {
             newValue = ProgressiveRendering;
-            PRLvl = 0;
-        } else if (current == ProgressiveRendering && PRLvl >= MAX_PROGRESSIVE_RENDERING_LEVEL)
+            PRLvl = -1; //will be increased at the end of the method
+        } else if (current == ProgressiveRendering && PRLvl >= MAX_PROGRESSIVE_RENDERING_LEVEL) {
             newValue = Waiting;
-        //default: do nothing
+        } else {
+            newValue = current; //default: do not change the state
+        }
         last = current;
         current = newValue;
+
         if (current == ProgressiveRendering) {
             PRLvl = Math.min(MAX_PROGRESSIVE_RENDERING_LEVEL, PRLvl + 1);
         }
@@ -129,6 +132,7 @@ class RenderingModeFSM implements RenderingStateModel {
     public boolean isProgressiveRendering() {
         return current == ProgressiveRendering;
     }
+
     public boolean wasProgressiveRendering() {
         return last == ProgressiveRendering;
     }
@@ -137,8 +141,12 @@ class RenderingModeFSM implements RenderingStateModel {
         return current == Waiting;
     }
 
-    RenderingMode getCurrent() {
+    public RenderingMode getCurrent() {
         return current;
     }
 
+    @Override
+    public boolean isDifferentThanLast() {
+        return current != last;
+    }
 }

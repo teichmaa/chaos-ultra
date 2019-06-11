@@ -10,7 +10,7 @@
 
                 <VBox styleClass="topBox">
                     <Label>choose fractal:</Label>
-                    <ChoiceBox fx:id="fractalChoiceBox" maxWidth="Infinity" />
+                    <ChoiceBox fx:id="fractalChoiceBox" maxWidth="Infinity" value="mandelbrot"/>
                     <VBox>
                         <Label>Fractal custom parameters:</Label>
                         <HBox>
@@ -94,23 +94,41 @@
                             <Button text="save as image" onAction="#saveImageClicked"/>
                             <Button text="reset to default" onAction="#defaultViewClicked"/>
                         </FlowPane>
-                        <VBox>
-                            <Label>Mandelbrot premade views:</Label>
-                            <FlowPane maxWidth="200">
 
-                                <Button text="MbrotExample1" onAction="#example1Clicked"/>
-                                <Button text="MbrotExample2" onAction="#example2Clicked"/>
-                                <Button text="MbrotExample3" onAction="#example3Clicked"/>
-                                <Button text="MbrotExample4" onAction="#example4Clicked"/>
-                                <Button text="MbrotExample5" onAction="#example5Clicked"/>
-                            </FlowPane>
-                        </VBox>
+                        <TitledPane text="Mandelbrot premade views:" expanded="false" fx:id="mandelbrotPremadeViews">
+                            <VBox>
+                                <FlowPane maxWidth="200">
+                                    <Button text="M ex 1" onAction="#exampleM1Clicked"/>
+                                    <Button text="M ex 2" onAction="#exampleM2Clicked"/>
+                                    <Button text="M ex 3" onAction="#exampleM3Clicked"/>
+                                    <Button text="M ex 4" onAction="#exampleM4Clicked"/>
+                                    <Button text="M ex 5" onAction="#exampleM5Clicked"/>
+                                </FlowPane>
+                            </VBox>
+                        </TitledPane>
+                        <TitledPane text="Julia premade views:" expanded="false" fx:id="juliaPremadeViews">
+                            <VBox>
+                                <FlowPane maxWidth="200">
+                                    <Button text="Jul ex 1" onAction="#exampleJ1Clicked"/>
+                                    <Button text="Jul ex 2" onAction="#exampleJ2Clicked"/>
+                                </FlowPane>
+                            </VBox>
+                        </TitledPane>
+                        <TitledPane text="Newton premade views:" expanded="false" fx:id="newtonPremadeViews">
+                            <VBox>
+                                <FlowPane maxWidth="200">
+                                    <Button text="Newt ex 1" onAction="#exampleN1Clicked"/>
+                                    <Button text="Newt ex 2" onAction="#exampleN2Clicked"/>
+                                    <Button text="Newt ex 3" onAction="#exampleN3Clicked"/>
+                                </FlowPane>
+                            </VBox>
+                        </TitledPane>
 
                         <VBox>
                             <Label>Debugging functions:</Label>
                             <FlowPane maxWidth="200">
                                 <Button text="Invoke debug method" onAction="#debugButton1Clicked"/>
-                                <Button text="reload" onAction="#reloadFractal" />
+                                <Button text="reload" onAction="#reloadFractal"/>
                             </FlowPane>
                         </VBox>
                     </VBox>

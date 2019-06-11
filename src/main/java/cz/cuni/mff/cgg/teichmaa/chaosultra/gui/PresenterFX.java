@@ -22,7 +22,12 @@ import java.util.ResourceBundle;
 public class PresenterFX implements Initializable, GUIPresenter {
 
     private static final char UNICODE_TIMES_CHAR = '\u00D7';
-
+    @FXML
+    private TitledPane newtonPremadeViews;
+    @FXML
+    private TitledPane juliaPremadeViews;
+    @FXML
+    private TitledPane mandelbrotPremadeViews;
     @FXML
     private TextArea errorsTextArea;
     @FXML
@@ -110,6 +115,14 @@ public class PresenterFX implements Initializable, GUIPresenter {
                                 )
                         )
                 ));
+
+        mandelbrotPremadeViews.visibleProperty().bind(fractalChoiceBox.getSelectionModel().selectedItemProperty().isEqualTo("mandelbrot"));
+        juliaPremadeViews.visibleProperty().bind(fractalChoiceBox.getSelectionModel().selectedItemProperty().isEqualTo("julia"));
+        newtonPremadeViews.visibleProperty().bind(fractalChoiceBox.getSelectionModel().selectedItemProperty().isEqualTo("newton generic"));
+
+        mandelbrotPremadeViews.managedProperty().bindBidirectional(mandelbrotPremadeViews.visibleProperty());
+        juliaPremadeViews.managedProperty().bindBidirectional(juliaPremadeViews.visibleProperty());
+        newtonPremadeViews.managedProperty().bindBidirectional(newtonPremadeViews.visibleProperty());
     }
 
     void setRenderingController(RenderingController renderingController) {
@@ -133,11 +146,14 @@ public class PresenterFX implements Initializable, GUIPresenter {
             double zoom = Double.parseDouble(this.zoom.getText());
             int maxIterations = Integer.parseInt(this.maxIterations.getText());
             int supSamp = Integer.parseInt(maxSuperSampling.getText());
+            String params = fractalCustomParams.getText();
             SwingUtilities.invokeLater(() -> {
                 renderingController.setPlaneSegmentRequested(x, y, zoom);
                 renderingController.setMaxIterationsRequested(maxIterations);
                 renderingController.setMaxSuperSamplingRequested(supSamp);
                 renderingController.repaint();
+                renderingController.startProgressiveRenderingAsync();
+                renderingController.setFractalCustomParams(params);
             });
         } catch (NumberFormatException e) {
             showBlockingErrorAlertAsync("Number in a text field could not be parsed.");
@@ -149,47 +165,6 @@ public class PresenterFX implements Initializable, GUIPresenter {
         SwingUtilities.invokeLater(() ->
                 renderingController.showDefaultView()
         );
-    }
-
-    @FXML
-    private void example1Clicked(ActionEvent actionEvent) {
-        center_x.setText("-0.748");
-        center_y.setText("0.1");
-        zoom.setText("0.0014");
-        render();
-    }
-
-    @FXML
-    private void example2Clicked(ActionEvent actionEvent) {
-        center_x.setText("-0.235125");
-        center_y.setText("0.827215");
-        zoom.setText("4.0E-5");
-        render();
-    }
-
-    @FXML
-    private void example3Clicked(ActionEvent actionEvent) {
-        center_x.setText("-0.925");
-        center_y.setText("0.266");
-        zoom.setText("0.032");
-        render();
-    }
-
-    @FXML
-    private void example4Clicked(ActionEvent actionEvent) {
-        center_x.setText("-0.57675236");
-        center_y.setText("0.4625193");
-        zoom.setText("0.029995363");
-        render();
-    }
-
-    @FXML
-    private void example5Clicked(ActionEvent actionEvent) {
-        center_x.setText("-0.551042868375875");
-        center_y.setText("0.62714332109057");
-        zoom.setText("8.00592947491907E-09");
-        maxIterations.setText("3000");
-        render();
     }
 
     @FXML
@@ -253,5 +228,107 @@ public class PresenterFX implements Initializable, GUIPresenter {
 
     public void reloadFractal(ActionEvent actionEvent) {
         renderingController.reloadFractal();
+    }
+
+
+    @FXML
+    private void exampleM1Clicked(ActionEvent actionEvent) {
+        fractalCustomParams.setText("");
+        center_x.setText("-0.748");
+        center_y.setText("0.1");
+        zoom.setText("0.0014");
+        maxIterations.setText("800");
+        render();
+    }
+
+    @FXML
+    private void exampleM2Clicked(ActionEvent actionEvent) {
+        fractalCustomParams.setText("");
+        center_x.setText("-0.235125");
+        center_y.setText("0.827215");
+        zoom.setText("4.0E-5");
+        maxIterations.setText("800");
+        render();
+    }
+
+    @FXML
+    private void exampleM3Clicked(ActionEvent actionEvent) {
+        fractalCustomParams.setText("");
+        center_x.setText("-0.925");
+        center_y.setText("0.266");
+        zoom.setText("0.032");
+        maxIterations.setText("800");
+        render();
+    }
+
+    @FXML
+    private void exampleM4Clicked(ActionEvent actionEvent) {
+        fractalCustomParams.setText("");
+        center_x.setText("-0.57675236");
+        center_y.setText("0.4625193");
+        zoom.setText("0.029995363");
+        maxIterations.setText("800");
+        render();
+    }
+
+    @FXML
+    private void exampleM5Clicked(ActionEvent actionEvent) {
+        fractalCustomParams.setText("");
+        center_x.setText("-0.551042868375875");
+        center_y.setText("0.62714332109057");
+        zoom.setText("8.00592947491907E-09");
+        maxIterations.setText("3000");
+        render();
+    }
+
+    @FXML
+    private void exampleJ1Clicked(ActionEvent actionEvent) {
+        fractalCustomParams.setText("-0.8;0.156");
+        center_x.setText("0.17327727502964813");
+        center_y.setText("-0.05681548320560654");
+        zoom.setText("1.2159888554168219E-4");
+        maxIterations.setText("900");
+        render();
+    }
+
+    @FXML
+    private void exampleJ2Clicked(ActionEvent actionEvent) {
+        fractalCustomParams.setText("0.285;0.01");
+        center_x.setText("0.40858839568203");
+        center_y.setText("0.252753161255817");
+        zoom.setText("0.9441601175134446");
+        maxIterations.setText("900");
+        render();
+    }
+
+    @FXML
+    private void exampleN1Clicked(ActionEvent actionEvent) {
+        fractalCustomParams.setText("");
+        center_x.setText("1.8252568181102808E-4");
+        center_y.setText("-1.0538321727858829E-4");
+        zoom.setText("6.94260652234243E-7");
+        maxIterations.setText("100");
+        render();
+    }
+
+    @FXML
+    private void exampleN2Clicked(ActionEvent actionEvent) {
+        fractalCustomParams.setText("");
+        center_x.setText("-1.146837853716188E15");
+        center_y.setText("-3.440513561148496E15");
+        zoom.setText("5.6306039140521104E16");
+        maxIterations.setText("100");
+        render();
+    }
+
+    @FXML
+    private void exampleN3Clicked(ActionEvent actionEvent) {
+        fractalCustomParams.setText("{ \"coefficients\" : [1, 0, -2, 2], \"roots\" : [ [-1.7692923542386314,0], [0.884646177119315707620204,0.589742805022205501647280] , [0.884646177119315707,-0.589742805022205501] ] }");
+        fractalCustomParamsOKBtn.fire();
+        center_x.setText("0");
+        center_y.setText("0");
+        zoom.setText("4");
+        maxIterations.setText("100");
+        render();
     }
 }
