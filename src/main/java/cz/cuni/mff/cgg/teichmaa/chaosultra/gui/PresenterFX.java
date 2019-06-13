@@ -302,6 +302,17 @@ public class PresenterFX implements Initializable, GUIPresenter {
     }
 
     @FXML
+    private void exampleJ3Clicked(ActionEvent actionEvent) {
+        fractalCustomParams.setText("-1.77578 ;0");
+        center_x.setText("0");
+        center_y.setText("0");
+        zoom.setText("0.68");
+        maxIterations.setText("900");
+        render();
+
+    }
+
+    @FXML
     private void exampleN1Clicked(ActionEvent actionEvent) {
         fractalCustomParams.setText("");
         center_x.setText("1.8252568181102808E-4");

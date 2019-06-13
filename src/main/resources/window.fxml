@@ -111,6 +111,7 @@
                                 <FlowPane maxWidth="200">
                                     <Button text="Jul ex 1" onAction="#exampleJ1Clicked"/>
                                     <Button text="Jul ex 2" onAction="#exampleJ2Clicked"/>
+                                    <Button text="Jul ex 3" onAction="#exampleJ3Clicked"/>
                                 </FlowPane>
                             </VBox>
                         </TitledPane>

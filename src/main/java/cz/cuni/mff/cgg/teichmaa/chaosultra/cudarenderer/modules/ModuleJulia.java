@@ -41,8 +41,9 @@ public class ModuleJulia extends FractalRenderingModule {
         super.supplyDefaultValues(model);
         model.setMaxIterations(400);
         model.setFractalCustomParams("-0.4;0.6");
-        //other possible nice value is for example c = −0.8 + 0.156i or c = 0.285 + 0.01i
+        //other possible nice values:
         //model.setFractalCustomParams("-0.8;0.156");
         //model.setFractalCustomParams("0.285;0.01");
+        //model.setFractalCustomParams("-1.77578;0");
     }
 }

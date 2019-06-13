@@ -219,21 +219,13 @@ void fractalRenderMain(pixel_info_t** output, long outputPitch, Pointi outputSiz
 /// @param oldImage: rectangle representing the part of the complex plane that is being reused
 template <class Real> __device__ __forceinline__
 Point<Real> getWarpingOriginOfSampleReuse(Point<Real> p, Point<Real> gridSize, Rectangle<Real> currentImage, Rectangle<Real> oldImage){
-
-  // A numerically stable transformation.
-  // See documentation for explanation of these transformations.
-  // The basic idea is following:
-  //  1) Transform p to complex plane (via standard linear relationship, used e.g. by the method sampleTheFractal)
-  //  2) Transform the result then back to the grid-coordinate of the old image (via inverse relationship).
-  //  3) This mapping is then algebraically simplified for faster results and better numerical stability.
-  const Point<Real> flipYAxis = Point<Real>(1,-1);
-  const Point<Real> current_image_left_top = Point<Real>(currentImage.left_bottom.x, currentImage.right_top.y);
-  const Point<Real> old_image_left_top =     Point<Real>(oldImage.left_bottom.x,     oldImage.right_top.y);
-  const Point<Real> oldPixelSize =     oldImage.size() /     gridSize.cast<Real>();
   
-  const Point<Real> translate = (current_image_left_top - old_image_left_top) / (oldPixelSize * flipYAxis);
-  const Point<Real> scale = currentImage.size().cast<Real>() / oldImage.size().cast<Real>();
-  return p * scale + translate;
+  p.y = gridSize.y - p.y;
+  Point<Real> pixel_in_plane = p / gridSize * currentImage.size() +  currentImage.left_bottom;
+  Point<Real> relative_in_old = (pixel_in_plane - oldImage.left_bottom) / oldImage.size();
+  Point<Real> old_pixel = relative_in_old * gridSize;
+  old_pixel.y = gridSize.y - old_pixel.y;
+  return old_pixel;
 }
 
 __device__ float screenDistance = 60; //in cm; better be set by the user
@@ -268,14 +260,10 @@ uint getFoveationAdvisedSampleCount(Pointi pixel, Pointi focus, uint maxSuperSam
 template <class Real> __device__ 
 pixel_info_t readFromArrayUsingLinearFiltering(pixel_info_t** textureArr, long textureArrPitch, Point<Real> coordinates){
  
-    //implementation of linear filtering, as describe by nvidia at https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#linear-filtering
-    //  tex(x,y)=(1−α)(1−β)T[i,j]+α(1−β)T[i+1,j]+(1−α)βT[i,j+1]+αβT[i+1,j+1] for a two-dimensional texture
-    //     where:
-    //       i=floor(xB), α=frac(xB), xB=x-0.5,
-    //       j=floor(yB), β=frac(yB), yB=y-0.5,
+    //implementation of bi linear filtering, see for example https://en.wikipedia.org/wiki/Bilinear_filtering
 
-    Real xB = coordinates.x - 0.5;
-    Real yB = coordinates.y - 0.5;
+    Real xB = coordinates.x;
+    Real yB = coordinates.y;
     uint i = floor(xB);
     uint j = floor(yB);
     Real alpha = xB - i;
@@ -288,14 +276,21 @@ pixel_info_t readFromArrayUsingLinearFiltering(pixel_info_t** textureArr, long t
 
     float weight_sum = T_i_j.weight + T_ip_j.weight + T_i_jp.weight + T_ip_jp.weight;
 
-    Real r = (1-alpha) * (1-beta) * T_i_j.value +
-            alpha      * (1-beta) * T_ip_j.value + 
-            (1-alpha)  * beta     * T_i_jp.value +
-            alpha      * beta     * T_ip_jp.value;
+    ASSERT(weight_sum != 0);
+    float T_i_j_weighted = T_i_j.value * T_i_j.weight / weight_sum;
+    float T_ip_j_weighted  = T_ip_j.value * T_ip_j.weight / weight_sum;
+    float T_i_jp_weighted  = T_i_jp.value * T_i_jp.weight / weight_sum;
+    float T_ip_jp_weighted = T_ip_jp.value * T_ip_jp.weight / weight_sum;
+
+
+    Real r = (T_i_j_weighted   * (1-alpha)  + T_ip_j_weighted * alpha) * (1-beta) + 
+            (T_i_jp_weighted * (1-alpha)  + T_ip_jp_weighted * alpha) * beta;
+    float w = (T_i_j.weight   * (1-alpha)  + T_ip_j.weight * alpha) * (1-beta) + 
+        (T_i_jp.weight * (1-alpha)  + T_ip_jp.weight * alpha) * beta;
 
     pixel_info_t result;
-    result.value = round(r);
-    result.weight = weight_sum / 4;
+    result.value = r;
+    result.weight = w;
 
     return result; 
 }
@@ -309,38 +304,45 @@ void fractalRenderAdvanced(pixel_info_t** output, long outputPitch, Pointi outpu
   ASSERT(idx.y < outputSize.y);
 
 
+
   //sample reuse - if not zooming:
   bool reusingSamples = false;
   pixel_info_t reused;
-  if(flags & USE_SAMPLE_REUSE_FLAG_MASK && ! (flags & IS_ZOOMING_FLAG_MASK)){
+  if(flags & USE_SAMPLE_REUSE_FLAG_MASK /* && ! (flags & IS_ZOOMING_FLAG_MASK) */ ){
     const Point<Real> origin = getWarpingOriginOfSampleReuse(Point<Real>(idx.x, idx.y),outputSize.cast<Real>(),image, imageReused);
     const Point<int> origin_int = Point<int>(round(origin.x), round(origin.y));
 
-    if(origin_int.x < 0 || origin_int.x >= outputSize.x || origin_int.y < 0 || origin_int.y >= outputSize.y){
+    if(origin_int.x < 2 || origin_int.x >= outputSize.x - 2 || origin_int.y < 2 || origin_int.y >= outputSize.y - 2
+      || (abs((int)origin_int.x - (int)focus.x) < 20 && abs((int)origin_int.y - (int)focus.y) < 20)) {
       reusingSamples = false;
     }
     else{
-      reused = * getPtrToPixelInfo(input, inputPitch, Point<uint>(origin_int.x, origin_int.y));
+      
+      reused = readFromArrayUsingLinearFiltering(input, inputPitch, origin);
       reusingSamples = true;
     }
   }
 
 
-  //foveation - only if zooming:
-  uint sampleCount = maxSuperSampling;
-  if (flags & USE_FOVEATION_FLAG_MASK && flags & IS_ZOOMING_FLAG_MASK){
-    sampleCount = getFoveationAdvisedSampleCount(idx, focus, maxSuperSampling);
-  }
-  //at least one sample has to be taken somewhere
-  else if(sampleCount == 0  && !reusingSamples ){
-    sampleCount = 1; 
-  }
+  // //foveation - only if zooming:
+  // uint sampleCount = maxSuperSampling;
+  // if (flags & USE_FOVEATION_FLAG_MASK && flags & IS_ZOOMING_FLAG_MASK){
+  //   sampleCount = getFoveationAdvisedSampleCount(idx, focus, maxSuperSampling);
+  // }
+  // //at least one sample has to be taken somewhere
+  // else if(sampleCount == 0  && !reusingSamples ){
+  //   sampleCount = 1; 
+  // }
 
   
+
+  uint sampleCount = maxSuperSampling; 
   pixel_info_t result;
   if(reusingSamples){
     result = reused;   
     result.isReused = true; //todo this is debug only
+    if(result.weight < 1)
+      result.value = 256* 4;
   }else{
     ASSERT(sampleCount >= 1);
     result.value = sampleTheFractal(idx, outputSize, image, maxIterations, sampleCount, flags & USE_ADAPTIVE_SS_FLAG_MASK);
