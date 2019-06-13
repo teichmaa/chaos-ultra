@@ -9,6 +9,7 @@ import cz.cuni.mff.cgg.teichmaa.chaosultra.rendering.model.GLTexture;
 import cz.cuni.mff.cgg.teichmaa.chaosultra.rendering.model.GLTextureHandle;
 import cz.cuni.mff.cgg.teichmaa.chaosultra.util.ImageHelpers;
 import cz.cuni.mff.cgg.teichmaa.chaosultra.util.JavaHelpers;
+import cz.cuni.mff.cgg.teichmaa.chaosultra.util.SimpleLogger;
 
 import javax.swing.*;
 import java.nio.Buffer;
@@ -35,6 +36,7 @@ class GLRenderer implements GLView {
     private final RenderingStateModel stateModel;
     private final RenderingController controller;
     private final GLCanvas target;
+    private final SimpleLogger logger = new SimpleLogger(true, System.out);
 
     public GLRenderer(RenderingController controller, Model model, RenderingStateModel stateModel, GLCanvas target) {
         this.controller = controller;
@@ -133,7 +135,7 @@ class GLRenderer implements GLView {
             long endTime = System.currentTimeMillis();
             lastFrameRenderTime = (int) (endTime - startTime);
             //lastFramesRenderTime.get(currentMode.getCurrent()).add((int) (endTime - startTime));
-            System.out.println("\t\t\t\tfinished in \t\t" + lastFrameRenderTime + " ms");
+            logger.logRenderingInfo("\t\t\t\tfinished in \t\t" + lastFrameRenderTime + " ms");
 
             controller.onRenderingDone();
         } catch (Exception e) {
@@ -151,10 +153,10 @@ class GLRenderer implements GLView {
             return;
         } else if (stateModel.isProgressiveRendering()) {
             fractalRenderer.renderQuality(model);
-            System.out.println("\t\trender Quality, with SS \t\t\t" + model.getMaxSuperSampling());
+            logger.logRenderingInfo("\t\trender Quality, with SS \t\t\t" + model.getMaxSuperSampling());
         } else {
             fractalRenderer.renderFast(model);
-            System.out.println("\t\trender Fast, with SS \t\t\t\t" + model.getMaxSuperSampling());
+            logger.logRenderingInfo("\t\trender Fast, with SS \t\t\t\t" + model.getMaxSuperSampling());
         }
 
         GLHelpers.drawRectangle(gl, outputTexture);
@@ -174,10 +176,10 @@ class GLRenderer implements GLView {
         assert SwingUtilities.isEventDispatchThread();
         if (!model.isUseAutomaticQuality()) return;
 
-        System.out.println("currentMode: " + stateModel);
+        logger.logRenderingInfo("currentMode: " + stateModel);
 
         if (stateModel.isDifferentThanLast()) {
-            System.out.println("Automatic quality: RESET SS");
+            logger.logRenderingInfo("Automatic quality: RESET SS");
             model.setMaxSuperSampling(1);
             return;
         }
@@ -208,7 +210,7 @@ class GLRenderer implements GLView {
 
         newSS = Math.max(1, Math.min(newSS, MAX_SUPER_SAMPLING));
         model.setMaxSuperSampling(newSS);
-        System.out.println("\t set params to be rendered in\t" + ms + " ms:\t" + newSS + " SS");
+        logger.logRenderingInfo("\t set params to be rendered in\t" + ms + " ms:\t" + newSS + " SS");
     }
 
     @Override
@@ -256,7 +258,7 @@ class GLRenderer implements GLView {
             }
             gl.glBindTexture(GL_TEXTURE_2D, 0);
             ImageHelpers.saveImageToFile(data, width_t, height_t, fileName, format);
-            System.out.println("Image saved to " + fileName);
+            logger.logRenderingInfo("Image saved to " + fileName);
             doNotRenderRequested = true;
         });
         repaint();
