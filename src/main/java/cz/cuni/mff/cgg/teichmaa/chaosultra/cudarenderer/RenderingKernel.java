@@ -1,6 +1,7 @@
 package cz.cuni.mff.cgg.teichmaa.chaosultra.cudarenderer;
 
 import cz.cuni.mff.cgg.teichmaa.chaosultra.rendering.model.RenderingModel;
+import cz.cuni.mff.cgg.teichmaa.chaosultra.util.SimpleLogger;
 import jcuda.Pointer;
 import jcuda.driver.CUdeviceptr;
 import jcuda.driver.CUmodule;
@@ -116,7 +117,7 @@ public abstract class RenderingKernel extends CudaKernel {
         this.right_top_x = right_top_x;
         this.right_top_y = right_top_y;
         if(isSegmentBoundsAtDoubleLimit()){
-            System.out.println("warning: double limit");
+            SimpleLogger.get().warning("double limit");
         }
     }
 

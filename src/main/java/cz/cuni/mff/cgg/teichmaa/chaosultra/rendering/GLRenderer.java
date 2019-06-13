@@ -148,6 +148,8 @@ class GLRenderer implements GLView {
         determineRenderingModeQuality();
 
         model.setZooming(stateModel.isZooming());
+        if (stateModel.isZooming())
+            model.setZoomingIn(stateModel.getZoomingDirection());
 
         if (stateModel.isWaiting()) {
             return;
@@ -180,7 +182,7 @@ class GLRenderer implements GLView {
 
         if (stateModel.isDifferentThanLast()) {
             logger.logRenderingInfo("Automatic quality: RESET SS");
-            model.setMaxSuperSampling(1);
+            model.setMaxSuperSampling(2);
             return;
         }
 
@@ -206,9 +208,9 @@ class GLRenderer implements GLView {
     }
 
     private void setParamsToBeRenderedIn(int ms) {
-        int newSS = Math.round(model.getMaxSuperSampling() * ms / (float) Math.max(1, lastFrameRenderTime));
+        float newSS = model.getMaxSuperSampling() * ms / (float) lastFrameRenderTime;
 
-        newSS = Math.max(1, Math.min(newSS, MAX_SUPER_SAMPLING));
+        newSS = Math.min(newSS, MAX_SUPER_SAMPLING);
         model.setMaxSuperSampling(newSS);
         logger.logRenderingInfo("\t set params to be rendered in\t" + ms + " ms:\t" + newSS + " SS");
     }

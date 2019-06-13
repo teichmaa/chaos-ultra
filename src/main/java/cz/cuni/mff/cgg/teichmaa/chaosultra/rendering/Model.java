@@ -36,9 +36,10 @@ class Model implements RenderingModel, GUIModel, DefaultFractalModel {
     private boolean useFoveatedRendering;
     private PointInt mouseFocus = new PointInt();
     private boolean zooming;
+    private boolean zoomingIn;
     private boolean useSampleReuse;
     private boolean sampleReuseCacheDirty;
-    private int maxSuperSampling;
+    private float maxSuperSampling;
     private boolean useAdaptiveSuperSampling;
     private boolean visualiseSampleCount;
     private boolean automaticQuality;
@@ -122,6 +123,15 @@ class Model implements RenderingModel, GUIModel, DefaultFractalModel {
     }
 
     @Override
+    public boolean isZoomingIn() {
+        return zoomingIn;
+    }
+
+    public void setZoomingIn(boolean zoomingIn) {
+        this.zoomingIn = zoomingIn;
+    }
+
+    @Override
     public int getMaxIterations() {
         return maxIterations;
     }
@@ -146,14 +156,14 @@ class Model implements RenderingModel, GUIModel, DefaultFractalModel {
     }
 
     @Override
-    public int getMaxSuperSampling() {
+    public float getMaxSuperSampling() {
         return maxSuperSampling;
     }
 
     @Override
     /** Always clamps the value to be at least 1 and at most SUPER_SAMPLING_MAX_LEVEL
      */
-    public void setMaxSuperSampling(int maxSuperSampling) {
+    public void setMaxSuperSampling(float maxSuperSampling) {
         this.maxSuperSampling = Math.max(1, Math.min(maxSuperSampling, MAX_SUPER_SAMPLING));
     }
 

@@ -14,9 +14,10 @@ abstract class KernelAdvanced extends KernelMain {
     private final short PARAM_IDX_IMAGE_REUSED;
     private final short PARAM_IDX_FOCUS;
 
-    private final static int USE_FOVEATION_FLAG_IDX = 2;
-    private final static int USE_SAMPLE_REUSE_FLAG_IDX = 3;
-    private final static int IS_ZOOMING_FLAG_IDX = 4;
+    private static final int USE_FOVEATION_FLAG_IDX = 2;
+    private static final int USE_SAMPLE_REUSE_FLAG_IDX = 3;
+    private static final int IS_ZOOMING_FLAG_IDX = 4;
+    private static final int ZOOMING_IN_FLAG_IDX = 5;
 
 
     public KernelAdvanced(String name, CUmodule ownerModule) {
@@ -33,6 +34,7 @@ abstract class KernelAdvanced extends KernelMain {
         super.setParamsFromModel(model);
         setFocus(model.getMouseFocus().getX(), model.getMouseFocus().getY());
         setIsZooming(model.isZooming());
+        setZoomingIn(model.isZoomingIn());
         setUseFoveation(model.isUseFoveatedRendering());
         setUseSampleReuse(model.isUseSampleReuse());
     }
@@ -65,6 +67,11 @@ abstract class KernelAdvanced extends KernelMain {
 
     public void setIsZooming(boolean zooming){
         flags.setBit(IS_ZOOMING_FLAG_IDX, zooming);
+        params[PARAM_IDX_FLAGS] = CudaHelpers.pointerTo(flags.getValue());
+    }
+
+    public void setZoomingIn(boolean zoomingIn) {
+        flags.setBit(ZOOMING_IN_FLAG_IDX, zoomingIn);
         params[PARAM_IDX_FLAGS] = CudaHelpers.pointerTo(flags.getValue());
     }
 

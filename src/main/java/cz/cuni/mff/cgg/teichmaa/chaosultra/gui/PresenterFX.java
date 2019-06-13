@@ -145,7 +145,7 @@ public class PresenterFX implements Initializable, GUIPresenter {
             double y = Double.parseDouble(center_y.getText());
             double zoom = Double.parseDouble(this.zoom.getText());
             int maxIterations = Integer.parseInt(this.maxIterations.getText());
-            int supSamp = Integer.parseInt(maxSuperSampling.getText());
+            float supSamp = Float.parseFloat(maxSuperSampling.getText());
             String params = fractalCustomParams.getText();
             SwingUtilities.invokeLater(() -> {
                 renderingController.setPlaneSegmentRequested(x, y, zoom);
@@ -196,7 +196,7 @@ public class PresenterFX implements Initializable, GUIPresenter {
             center_y.setText(Double.toString(model.getPlaneSegment().getCenterY()));
             zoom.setText(Double.toString(model.getPlaneSegment().getZoom()));
 
-            maxSuperSampling.setText(Integer.toString(model.getMaxSuperSampling()));
+            maxSuperSampling.setText(Float.toString(model.getMaxSuperSampling()));
             maxIterations.setText(Integer.toString(model.getMaxIterations()));
 
             precision.setText(model.getFloatingPointPrecision().toString());

@@ -11,7 +11,7 @@ public interface GUIModel {
 
     FloatPrecision getFloatingPointPrecision();
 
-    int getMaxSuperSampling();
+    float getMaxSuperSampling();
 
     int getMaxIterations();
 

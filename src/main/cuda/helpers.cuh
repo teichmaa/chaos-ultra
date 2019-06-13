@@ -82,6 +82,21 @@ template <class T> struct Rectangle {
   __device__ Point<T> const size(){ return right_top - left_bottom;}
 };
 
+struct fov_result_t{
+  float advisedSampleCount;
+  bool isInsideFocusArea;
+
+  __device__ fov_result_t(float advisedSampleCount, bool isInsideFocusArea)
+    : advisedSampleCount(advisedSampleCount), isInsideFocusArea(isInsideFocusArea)
+  {
+  }
+  __device__ fov_result_t(const fov_result_t & b){
+    advisedSampleCount = b.advisedSampleCount;
+    isInsideFocusArea = b.isInsideFocusArea;
+  }
+  __device__ fov_result_t() : advisedSampleCount(0), isInsideFocusArea(false) {}
+};
+
 struct pixel_info_t{
     /// The value of the fractal
     float value;

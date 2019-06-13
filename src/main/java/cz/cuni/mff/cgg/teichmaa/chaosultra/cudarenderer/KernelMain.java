@@ -31,7 +31,7 @@ abstract class KernelMain extends RenderingKernel {
         setMaxSuperSampling(model.getMaxSuperSampling());
     }
 
-    private int maxSuperSampling;
+    private float maxSuperSampling;
     private boolean useAdaptiveSuperSampling;
     protected BitField flags = new BitField();
 
@@ -54,12 +54,12 @@ abstract class KernelMain extends RenderingKernel {
         params[PARAM_IDX_FLAGS] = CudaHelpers.pointerTo(flags.getValue());
     }
 
-    void setMaxSuperSampling(int maxSuperSampling) {
+    void setMaxSuperSampling(float maxSuperSampling) {
         this.maxSuperSampling = maxSuperSampling;
         params[PARAM_IDX_MAX_SUPER_SAMPLING] = CudaHelpers.pointerTo(maxSuperSampling);
     }
 
-    int getMaxSuperSampling() {
+    float getMaxSuperSampling() {
         return maxSuperSampling;
     }
 

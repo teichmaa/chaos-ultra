@@ -15,5 +15,4 @@ public interface FoveatedRenderingModel {
 
     void setZooming(boolean isZooming);
 
-    boolean isZooming();
 }

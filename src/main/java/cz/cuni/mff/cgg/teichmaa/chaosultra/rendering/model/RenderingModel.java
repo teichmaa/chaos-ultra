@@ -9,4 +9,12 @@ public interface RenderingModel extends FoveatedRenderingModel, IterationLimitMo
 
     RenderingModel copy();
 
+    boolean isZooming();
+
+    /**
+     * If isZooming, whether zooming in or out. If !isZooming, the value is undefined.
+     *
+     * @return true for zoom in, false for zoom out, undefined value if not zooming.
+     */
+    boolean isZoomingIn();
 }

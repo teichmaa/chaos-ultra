@@ -190,9 +190,9 @@ public class RenderingController extends MouseAdapter {
     /**
      * @param supSampLvl will be clamped to be >=1 and <= SUPER_SAMPLING_MAX_LEVEL
      */
-    public void setMaxSuperSamplingRequested(int supSampLvl) {
+    public void setMaxSuperSamplingRequested(float supSampLvl) {
         assert SwingUtilities.isEventDispatchThread();
-        int newValue = Math.max(1, Math.min(supSampLvl, MAX_SUPER_SAMPLING));
+        float newValue = Math.max(1, Math.min(supSampLvl, MAX_SUPER_SAMPLING));
         if(newValue != supSampLvl){
             System.out.println("Warning: super sampling level clamped to " + newValue + ", higher is not supported");
         }

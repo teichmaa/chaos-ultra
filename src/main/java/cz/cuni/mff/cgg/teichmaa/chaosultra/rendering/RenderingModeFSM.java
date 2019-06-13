@@ -33,6 +33,9 @@ class RenderingModeFSM implements RenderingStateModel {
     private int PRLvl = 0;
 
     private boolean zoomingAndMoving = false;
+    /**
+     * true for inside, false for outside
+     */
     private boolean zoomingDirection = false;
 
     public void resetState() {

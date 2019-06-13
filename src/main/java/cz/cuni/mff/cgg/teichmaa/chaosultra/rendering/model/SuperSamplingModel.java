@@ -2,9 +2,9 @@ package cz.cuni.mff.cgg.teichmaa.chaosultra.rendering.model;
 
 
 public interface SuperSamplingModel {
-    int getMaxSuperSampling();
+    float getMaxSuperSampling();
 
-    void setMaxSuperSampling(int maxSuperSampling);
+    void setMaxSuperSampling(float maxSuperSampling);
 
     boolean isUseAdaptiveSuperSampling();
 

@@ -48,22 +48,31 @@ public class SimpleLogger {
     private SimpleDateFormat timeFormat = new SimpleDateFormat("dd.MM.YY HH:mm:ss");
 
     public void debug(String message) {
-        if (enabled)
-            output.println(timestamp() + debug + message);
+        if (!enabled)
+            return;
+        output.println(timestamp() + debug + message);
+        output.flush();
     }
 
     public void logRenderingInfo(String message) {
-        if (enabled)
-            output.println(timestamp() + renderingInfo + message);
+        if (!enabled)
+            return;
+        output.println(timestamp() + renderingInfo + message);
+        output.flush();
     }
 
     public void error(String message) {
-        if (enabled)
-            output.println(timestamp() + error + message);
+        if (!enabled)
+            return;
+        output.println(timestamp() + error + message);
+        output.flush();
+        output.flush();
     }
 
     public void warning(String message) {
-        if (enabled)
-            output.println(timestamp() + warning + message);
+        if (!enabled)
+            return;
+        output.println(timestamp() + warning + message);
+        output.flush();
     }
 }

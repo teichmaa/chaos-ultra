@@ -2,6 +2,9 @@ package cz.cuni.mff.cgg.teichmaa.chaosultra.rendering;
 
 public interface RenderingStateModel {
 
+    /**
+     * @return true for zooming in, false for zooming out
+     */
     boolean getZoomingDirection() ;
 
     boolean isProgressiveRendering() ;
