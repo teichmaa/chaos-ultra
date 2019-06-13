@@ -329,17 +329,14 @@ void fractalRenderAdvanced(pixel_info_t** output, long outputPitch, Pointi outpu
     if(origin_int.x < 2 || origin_int.x >= outputSize.x - 2 || origin_int.y < 2 || origin_int.y >= outputSize.y - 2) {
       //if reusing would be out of bounds (i.e. no data to reuse)
       reusingSamples = false;
-    }
-    else if((flags & ZOOMING_IN_FLAG_MASK) && fovResult.isInsideFocusArea){
-      //if zooming in and around the zooming center, there is little data to reuse
-      reusingSamples = false;
-    }
-    else{
+    }else{
       reused = readFromArrayUsingLinearFiltering(input, inputPitch, origin);
       reusingSamples = true;
     }
   }
 
+
+  
 
   float sampleCount = fovResult.advisedSampleCount; 
   pixel_info_t result;
@@ -348,6 +345,13 @@ void fractalRenderAdvanced(pixel_info_t** output, long outputPitch, Pointi outpu
     result.isReused = true; //todo this is debug only
     // if(result.weight < 1)
       // result.value = 256* 0;
+    if((flags & ZOOMING_IN_FLAG_MASK) && fovResult.isInsideFocusArea){
+      //if around the zooming center during zooming in, the reuse data is innacurate -- we sample some more
+      float samples = sampleTheFractal(idx, outputSize, image, maxIterations, sampleCount, flags & USE_ADAPTIVE_SS_FLAG_MASK);
+      reused.weight *= 0.75;
+      result.weight = reused.weight + sampleCount;
+      result.value = (reused.value * reused.weight + samples * sampleCount) / result.weight;  
+    }
   }else{
     if(sampleCount < 1){
       sampleCount = 1; //at least one sample has to be taken somewhere
