@@ -16,6 +16,6 @@ public class ModuleNewtonWired extends FractalRenderingModule {
     @Override
     protected void supplyDefaultValues(DefaultFractalModel model) {
         super.supplyDefaultValues(model);
-        model.setMaxIterations(100);
+        model.setMaxIterations(200);
     }
 }

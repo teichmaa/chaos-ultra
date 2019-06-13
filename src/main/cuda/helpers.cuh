@@ -103,22 +103,22 @@ struct pixel_info_t{
     /// How important the value is. Initially, it equals the number of samples takes, but may decrease over time
     float weight;
     bool isReused;
-    int debugValue;
+    float weightOfNewSamples;
     __device__ pixel_info_t(unsigned int value, float weight)
-      : value(value), weight(weight), isReused(false), debugValue(0)
+      : value(value), weight(weight), isReused(false), weightOfNewSamples(0)
     {
     }
     __device__ pixel_info_t(unsigned int value, unsigned int weight)
-      : value(value), weight((float) weight), isReused(false), debugValue(0)
+      : value(value), weight((float) weight), isReused(false), weightOfNewSamples(0)
     {
     }
     __device__ pixel_info_t(const pixel_info_t & b){
       value = b.value;
       weight = b.weight;
       isReused = b.isReused;
-      debugValue = b.debugValue;
+      weightOfNewSamples = b.weightOfNewSamples;
     }
-    __device__ pixel_info_t() : value(0), weight(0), isReused(false), debugValue(0) {}
+    __device__ pixel_info_t() : value(0), weight(0), isReused(false), weightOfNewSamples(0) {}
 };
 
 struct rgba{

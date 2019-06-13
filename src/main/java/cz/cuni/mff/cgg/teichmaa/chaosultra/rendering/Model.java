@@ -161,10 +161,10 @@ class Model implements RenderingModel, GUIModel, DefaultFractalModel {
     }
 
     @Override
-    /** Always clamps the value to be at least 1 and at most SUPER_SAMPLING_MAX_LEVEL
+    /** Always clamps the value to be at most SUPER_SAMPLING_MAX_LEVEL
      */
     public void setMaxSuperSampling(float maxSuperSampling) {
-        this.maxSuperSampling = Math.max(1, Math.min(maxSuperSampling, MAX_SUPER_SAMPLING));
+        this.maxSuperSampling = Math.min(maxSuperSampling, MAX_SUPER_SAMPLING);
     }
 
     @Override

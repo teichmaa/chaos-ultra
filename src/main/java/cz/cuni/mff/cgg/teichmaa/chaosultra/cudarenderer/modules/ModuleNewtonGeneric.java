@@ -1,6 +1,7 @@
 package cz.cuni.mff.cgg.teichmaa.chaosultra.cudarenderer.modules;
 
-import com.google.gson.*;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import cz.cuni.mff.cgg.teichmaa.chaosultra.cudarenderer.FractalRenderingModule;
 import cz.cuni.mff.cgg.teichmaa.chaosultra.rendering.model.DefaultFractalModel;
 import cz.cuni.mff.cgg.teichmaa.chaosultra.util.JsonHelpers;
@@ -8,7 +9,6 @@ import cz.cuni.mff.cgg.teichmaa.chaosultra.util.PointDouble;
 
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 public class ModuleNewtonGeneric extends FractalRenderingModule {
 
@@ -67,7 +67,7 @@ public class ModuleNewtonGeneric extends FractalRenderingModule {
     @Override
     protected void supplyDefaultValues(DefaultFractalModel model) {
         super.supplyDefaultValues(model);
-        model.setMaxIterations(100);
+        model.setMaxIterations(200);
         model.setFractalCustomParams("{ \"coefficients\" : [1, 0, 0, -1], \"roots\" : [ [1,0], [-0.5,0.86602540378] , [-0.5,-0.86602540378] ] }");
         //other nice value, is, for example:
         // model.setFractalCustomParams("{ \"coefficients\" : [1, 0, -2, 2], \"roots\" : [ [-1.7692923542386314,0], [0.884646177119315707620204,0.589742805022205501647280] , [0.884646177119315707,-0.589742805022205501] ] }");

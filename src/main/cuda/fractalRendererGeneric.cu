@@ -275,14 +275,11 @@ pixel_info_t readFromArrayUsingLinearFiltering(pixel_info_t** textureArr, long t
     pixel_info_t T_i_jp = * getPtrToPixelInfo(textureArr, textureArrPitch, Point<uint>(i, j+1));
     pixel_info_t T_ip_jp = * getPtrToPixelInfo(textureArr, textureArrPitch, Point<uint>(i+1, j+1));
 
-    //float weight_sum = T_i_j.weight + T_ip_j.weight + T_i_jp.weight + T_ip_jp.weight;
-
-    //ASSERT(weight_sum != 0);
-    float T_i_j_weighted = T_i_j.value ;//* T_i_j.weight / weight_sum;
-    float T_ip_j_weighted  = T_ip_j.value ;//* T_ip_j.weight / weight_sum;
-    float T_i_jp_weighted  = T_i_jp.value ;//* T_i_jp.weight / weight_sum;
-    float T_ip_jp_weighted = T_ip_jp.value ;//* T_ip_jp.weight / weight_sum;
-
+    //weighting not implemented
+    float T_i_j_weighted = T_i_j.value ;
+    float T_ip_j_weighted  = T_ip_j.value ;
+    float T_i_jp_weighted  = T_i_jp.value ;
+    float T_ip_jp_weighted = T_ip_jp.value ;
 
     Real r = (T_i_j_weighted   * (1-alpha)  + T_ip_j_weighted * alpha) * (1-beta) + 
             (T_i_jp_weighted * (1-alpha)  + T_ip_jp_weighted * alpha) * beta;
@@ -310,14 +307,6 @@ void fractalRenderAdvanced(pixel_info_t** output, long outputPitch, Pointi outpu
   if (flags & USE_FOVEATION_FLAG_MASK && flags & IS_ZOOMING_FLAG_MASK && maxSuperSampling >= 1){
     fovResult = getFoveationAdvisedSampleCount(idx, focus, maxSuperSampling);
   }
-  // if(idx.x == focus.x && idx.y == focus.y){
-  //  printf("%i\t%f\n",insideFocusArea, maxSuperSampling);
-  // }
-   
-  // //at least one sample has to be taken somewhere
-  // else if(advisedSampleCount == 0  && !reusingSamples ){
-  //   advisedSampleCount = 1; 
-  // }
 
   //sample reuse
   bool reusingSamples = false;
@@ -331,24 +320,28 @@ void fractalRenderAdvanced(pixel_info_t** output, long outputPitch, Pointi outpu
       reusingSamples = false;
     }else{
       reused = readFromArrayUsingLinearFiltering(input, inputPitch, origin);
-      reusingSamples = true;
+      if(reused.weight < 0.1)
+        reusingSamples = false;
+      else
+        reusingSamples = true;
     }
   }
-
-
   
 
   float sampleCount = fovResult.advisedSampleCount; 
   pixel_info_t result;
   if(reusingSamples){
     result = reused;   
-    result.isReused = true; //todo this is debug only
+    result.isReused = true; 
+    result.weightOfNewSamples = 0;
+    //todo this is debug only
     // if(result.weight < 1)
       // result.value = 256* 0;
     if((flags & ZOOMING_IN_FLAG_MASK) && fovResult.isInsideFocusArea){
       //if around the zooming center during zooming in, the reuse data is innacurate -- we sample some more
       float samples = sampleTheFractal(idx, outputSize, image, maxIterations, sampleCount, flags & USE_ADAPTIVE_SS_FLAG_MASK);
       reused.weight *= 0.75;
+      result.weightOfNewSamples = sampleCount;
       result.weight = reused.weight + sampleCount;
       result.value = (reused.value * reused.weight + samples * sampleCount) / result.weight;  
     }
@@ -362,7 +355,7 @@ void fractalRenderAdvanced(pixel_info_t** output, long outputPitch, Pointi outpu
 
   pixel_info_t* pOutput = getPtrToPixelInfo(output, outputPitch, idx);
   * pOutput = result;
-  //ASSERT(result.weight > 0);
+  ASSERT(result.weight > 0);
 }
 
 
@@ -406,9 +399,9 @@ void compose(pixel_info_t** inputMain, long inputMainPitch, pixel_info_t** input
     uint resultColor;
     if(VISUALIZE_SAMPLE_COUNT){ 
       resultColor = colorizeSampleCount(result.weight, maxSuperSampling);
-      if(result.isReused){ //todo debug only
-        resultColor = ColorsRGBA::BLACK;
-      }
+      if(result.isReused){ 
+        resultColor = colorizeSampleCount(result.weightOfNewSamples, maxSuperSampling);
+      } //TODO toto jeste dotahnout teda
     }
     else{
       resultColor = colorize(colorPalette, paletteLength, result.value);
