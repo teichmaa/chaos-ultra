@@ -38,7 +38,7 @@ public class RenderingController extends MouseAdapter {
         animator = new Animator(target);
         animator.setRunAsFastAsPossible(true);
         animator.stop();
-        repaintOnceLater.setRepeats(false);
+        startProgressiveRenderingLater.setRepeats(false);
 
 //        for(RenderingModeFSM.RenderingMode mode : RenderingModeFSM.RenderingMode.values()){
 //            lastFramesRenderTime.put(mode, new CyclicBuffer(lastFramesRenderTimeBufferLength, shortestFrameRenderTime));
@@ -100,8 +100,10 @@ public class RenderingController extends MouseAdapter {
         }
     }
 
-    private Timer repaintOnceLater = new Timer(100, __ ->
-            repaint());
+    private Timer startProgressiveRenderingLater = new Timer(100, __ -> {
+        currentMode.startProgressiveRendering();
+        repaint();
+    });
 
     @Override
     public void mouseReleased(MouseEvent e) {
@@ -111,11 +113,11 @@ public class RenderingController extends MouseAdapter {
         animator.stop();
         if (SwingUtilities.isLeftMouseButton(e) && currentMode.isMoving()) {
             currentMode.stopMoving();
-            repaintOnceLater.start();
+            startProgressiveRenderingLater.start();
         }
         if ((SwingUtilities.isRightMouseButton(e) || SwingUtilities.isMiddleMouseButton(e)) && currentMode.isZooming()) {
             currentMode.stopZooming();
-            repaintOnceLater.start();
+            startProgressiveRenderingLater.start();
         }
     }
 
@@ -231,8 +233,8 @@ public class RenderingController extends MouseAdapter {
 
     public void setVisualiseSampleCount(boolean value) {
         model.setVisualiseSampleCount(value);
+        startProgressiveRenderingAsync();
         repaint();
-        currentMode.startProgressiveRendering();
     }
 
     public void setUseAdaptiveSuperSampling(boolean value) {
@@ -245,7 +247,6 @@ public class RenderingController extends MouseAdapter {
 
     public void setUseFoveatedRendering(boolean value) {
         model.setUseFoveatedRendering(value);
-        startProgressiveRenderingAsync();
     }
 
     public void setUseSampleReuse(boolean value) {
@@ -260,7 +261,7 @@ public class RenderingController extends MouseAdapter {
 
     void onRenderingDone() {
         currentMode.step();
-        if (currentMode.isProgressiveRendering())
+        if (currentMode.isProgressiveRendering() && model.isUseAutomaticQuality())
             repaint();
         onModelUpdated();
     }

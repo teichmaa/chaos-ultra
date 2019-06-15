@@ -31,7 +31,7 @@ class GLRenderer implements GLView {
     private FractalRenderer fractalRenderer = new FractalRendererNullObjectVerbose();
     private FractalRendererProvider fractalRendererProvider;
     private final List<Consumer<GL2>> doBeforeDisplay = new ArrayList<>();
-    private boolean doNotRenderRequested = false;
+    private boolean doNotRenderCudaRequested = false;
     private final Model model;
     private final RenderingStateModel stateModel;
     private final RenderingController controller;
@@ -119,49 +119,59 @@ class GLRenderer implements GLView {
             } finally {
                 doBeforeDisplay.clear(); //do not repeat the functions if there has been an exception
             }
-            if (doNotRenderRequested) {
-                doNotRenderRequested = false;
-                return;
-            }
-
             long startTime = System.currentTimeMillis();
 
             if (stateModel.isZooming()) {
                 controller.zoomAt(model.getLastMousePosition(), stateModel.getZoomingDirection());
             }
 
-            render(drawable.getGL().getGL2());
+            if (doNotRenderCudaRequested) {
+                doNotRenderCudaRequested = false; //reset the request state
+                logger.debug("display() called with do not render requested");
+            } else if (stateModel.isWaiting()) {
+                /* nothing */
+                logger.debug("display() called with stateModel.isWaiting(). Nothing done.");
+            } else {
+                boolean renderOK = cudaRender(drawable.getGL().getGL2());
+                if (renderOK) {
+                    long endTime = System.currentTimeMillis();
+                    lastFrameRenderTime = (int) (endTime - startTime);
+                    //lastFramesRenderTime.get(currentMode.getCurrent()).add((int) (endTime - startTime));
+                    logger.logRenderingInfo("\t\t\t\tfinished in \t\t" + lastFrameRenderTime + " ms");
+                    controller.onRenderingDone();
+                } else {
+                    logger.debug("rendering finished with not OK. (Probably end of progressive rendering)");
+                }
+            }
+            GLHelpers.drawRectangle(gl, outputTexture);
 
-            long endTime = System.currentTimeMillis();
-            lastFrameRenderTime = (int) (endTime - startTime);
-            //lastFramesRenderTime.get(currentMode.getCurrent()).add((int) (endTime - startTime));
-            logger.logRenderingInfo("\t\t\t\tfinished in \t\t" + lastFrameRenderTime + " ms");
-
-            controller.onRenderingDone();
         } catch (Exception e) {
             model.logError(e.getMessage());
             if (JavaHelpers.isDebugMode()) throw e;
         }
     }
 
-    private void render(final GL2 gl) {
-        determineRenderingModeQuality();
+    /**
+     * @return true if OK, false if rendering should be canceled for some reason
+     */
+    private boolean cudaRender(final GL2 gl) {
+        boolean qualityOK = determineRenderingModeQuality();
+        if (!qualityOK)
+            return false;
 
         model.setZooming(stateModel.isZooming());
         if (stateModel.isZooming())
             model.setZoomingIn(stateModel.getZoomingDirection());
 
-        if (stateModel.isWaiting()) {
-            return;
-        } else if (stateModel.isProgressiveRendering()) {
+        if (stateModel.isProgressiveRendering()) {
             fractalRenderer.renderQuality(model);
             logger.logRenderingInfo("\t\trender Quality, with SS \t\t\t" + model.getMaxSuperSampling());
+            return true;
         } else {
             fractalRenderer.renderFast(model);
             logger.logRenderingInfo("\t\trender Fast, with SS \t\t\t\t" + model.getMaxSuperSampling());
+            return true;
         }
-
-        GLHelpers.drawRectangle(gl, outputTexture);
     }
 
     /**
@@ -174,17 +184,23 @@ class GLRenderer implements GLView {
     private static final int maxFrameRenderTime = 1000;
     private int lastFrameRenderTime = shortestFrameRenderTime;
 
-    private void determineRenderingModeQuality() {
+    /**
+     * @return true if OK, false if rendering should be canceled (quality to high)
+     */
+    private boolean determineRenderingModeQuality() {
         assert SwingUtilities.isEventDispatchThread();
-        if (!model.isUseAutomaticQuality()) return;
+        if (!model.isUseAutomaticQuality()) {
+            return true;
+        }
 
         logger.logRenderingInfo("currentMode: " + stateModel);
 
         if (stateModel.isDifferentThanLast()) {
             logger.logRenderingInfo("Automatic quality: RESET SS");
             model.setMaxSuperSampling(1);
-            return;
+            return true;
         }
+        float prevSuperSampling = model.getMaxSuperSampling();
 
         if (stateModel.isZooming()) {
             setParamsToBeRenderedIn(shortestFrameRenderTime);
@@ -200,11 +216,14 @@ class GLRenderer implements GLView {
                 //if this is the maximal quality that we want to or can achieve, stop progressive rendering and do not render anymore
                 if ((!stateModel.isProgressiveRendering() || stateModel.getProgressiveRenderingLevel() != 0)) { //level==0 happens upon parameter change -- don't stop in this case
                     stateModel.resetState();
+                    model.setMaxSuperSampling(prevSuperSampling);
+                    return false;
                 }
             } else {
                 setParamsToBeRenderedIn(desiredFrameRenderTime);
             }
         }
+        return true;
     }
 
     private void setParamsToBeRenderedIn(int ms) {
@@ -261,7 +280,7 @@ class GLRenderer implements GLView {
             gl.glBindTexture(GL_TEXTURE_2D, 0);
             ImageHelpers.saveImageToFile(data, width_t, height_t, fileName, format);
             logger.logRenderingInfo("Image saved to " + fileName);
-            doNotRenderRequested = true;
+            doNotRenderCudaRequested = true;
         });
         repaint();
     }

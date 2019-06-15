@@ -25,10 +25,10 @@ Real frac(Real x){
 }
 
 /// Dispersion in this context is "Index of dispersion", aka variance-to-mean ratio. See https://en.wikipedia.org/wiki/Index_of_dispersion for more details
-template <class Real> __device__ __forceinline__
-Real computeDispersion(uint* data, uint dataLength, Real mean){
+__device__
+float computeDispersion(float* data, uint dataLength, float mean){
   uint n = dataLength;
-  Real variance = 0;
+  float variance = 0;
   for(uint i = 0; i < dataLength; i++){
     //using numerically stable Two-Pass algorithm, https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Two-pass_algorithm
     variance += (data[i]-mean)*(data[i]-mean);
@@ -103,7 +103,7 @@ uint sampleTheFractal(Pointi pixel, Pointi gridSize, Rectangle<Real> image, uint
   uint sampleCount = min(MAX_SUPER_SAMPLING, (uint) round(sampleCountF));
 
   const uint adaptiveTreshold = 10;
-  uint samples[adaptiveTreshold];
+  float samples[adaptiveTreshold];
 
   //We are in a complex plane from (left_bottom) to (right_top), so we scale the pixels to it
   Point<Real> pixelSize = image.size() / gridSize.cast<Real>();
@@ -114,8 +114,25 @@ uint sampleTheFractal(Pointi pixel, Pointi gridSize, Rectangle<Real> image, uint
   for(uint i = 0; i < sampleCount; i++){
 
     //todo tady bych radeji neco jako deltas[sampleCount]; createDeltas(& deltas) nebo tak. Zkratka abych nesamploval takhle primitivne po diagonale, ale lip. Random sampling na to samozrejme je nejlepsi, ale to asi fakt ma overhead? Nevim, jestli mam cas to merit.
-    Point<Real> delta = Point<Real>(i / (Real) sampleCount); //TODO TODO TODO PLS PLS PLS
+    Point<Real> delta; //  = Point<Real>(i / (Real) sampleCount); //TODO TODO TODO PLS PLS PLS
     //todo jako druhou deltu zvolit pixelSize / 2.
+
+    /// first {@code skipFirst} samples are taken diferently
+    uint skipFirst = 2;
+    if(i <= skipFirst){
+      delta = Point<Real>(i / (Real) (skipFirst+1));
+    } else {
+      float samplesPerRowF = sqrt(sampleCountF-skipFirst);
+      uint samplesPerRowI = round(samplesPerRowF);
+      float dx = ((i-skipFirst) % samplesPerRowI) / samplesPerRowF;
+      float dy = ((i-skipFirst) / samplesPerRowI) / samplesPerRowF;
+      // if(dx > 1 || dy > 1){
+      //   printf("dx: %f\tdy: %f\tSS: %f\tsqrt: %f\n", dx, dy, sampleCountF, samplesPerRowF);
+      // }
+      ASSERT(dy <= 1);
+      ASSERT(dx <= 1);
+      delta = Point<Real>(dx, dy);
+    }
     
     const Point<Real> flipYAxis = Point<Real>(1,-1);
     const Point<Real> image_left_top = Point<Real>(image.left_bottom.x, image.right_top.y);
@@ -133,16 +150,16 @@ uint sampleTheFractal(Pointi pixel, Pointi gridSize, Rectangle<Real> image, uint
     //todo refactor
     if(adaptiveSS && ( i > 0 && i < adaptiveTreshold) || (i == sampleCount / 2) ){ //decide whether to continue with supersampling or not
 
-      Real mean = escapeTimeSum / (i+1);
-      Real dispersion = computeDispersion(samples, i, mean);       //todo toto do else vetve
+      float mean = escapeTimeSum / (i+1);
+      float dispersion = computeDispersion(samples, i, mean);       //todo toto do else vetve
 
-      constexpr float epsilon = 0.01;
+      constexpr float treshold = 0.01;
 
-      if(i == 1 && __ALL(samples[0] == samples[1])){
+      if(i == 1 && __ALL(abs(samples[0] - samples[1]) < FLT_EPSILON )){
         sampleCount = i+1; //terminating this cycle and storing info about actual number of samples taken
         //result = 255 * 0;  // blue  //this is for hypothesis testing only
       } 
-      else if(__ALL(dispersion < epsilon)){ // uniform distribution
+      else if(__ALL(dispersion < treshold)){ // uniform distribution
         sampleCount = i+1; //terminating this cycle and storing info about actual number of samples taken
         //result = 255 * 6;  //dark blue  //this is for hypothesis testing only
       }
@@ -355,9 +372,6 @@ void fractalRenderAdvanced(pixel_info_t** output, long outputPitch, Pointi outpu
     result.value = sampleTheFractal(idx, outputSize, image, maxIterations, sampleCount, flags & USE_ADAPTIVE_SS_FLAG_MASK);
     result.weight = sampleCount; //sampleCount is an in-out parameter
   }
-  if(focus == idx){
-    printf("focus: samples:%f, reusing:%i\n", sampleCount, reusingSamples);
-  }
 
   pixel_info_t* pOutput = getPtrToPixelInfo(output, outputPitch, idx);
   * pOutput = result;
@@ -407,7 +421,7 @@ void compose(pixel_info_t** inputMain, long inputMainPitch, pixel_info_t** input
       resultColor = colorizeSampleCount(result.weight, maxSuperSampling);
       if(result.isReused){ 
         resultColor = colorizeSampleCount(result.weightOfNewSamples, maxSuperSampling);
-      } //TODO toto jeste dotahnout teda
+      }
     }
     else{
       resultColor = colorize(colorPalette, paletteLength, result.value);

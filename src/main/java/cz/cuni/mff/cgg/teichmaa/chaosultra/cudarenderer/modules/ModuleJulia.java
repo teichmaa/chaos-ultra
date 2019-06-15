@@ -45,5 +45,6 @@ public class ModuleJulia extends FractalRenderingModule {
         //model.setFractalCustomParams("-0.8;0.156");
         //model.setFractalCustomParams("0.285;0.01");
         //model.setFractalCustomParams("-1.77578;0");
+        //model.setFractalCustomParams("-1.77578;0.0035");
     }
 }
