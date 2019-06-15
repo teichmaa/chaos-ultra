@@ -100,7 +100,7 @@ uint sampleTheFractal(Pointi pixel, Pointi gridSize, Rectangle<Real> image, uint
     sampleCountF = 0;
     return 0;
   }
-  uint sampleCount = round(sampleCountF);
+  uint sampleCount = min(MAX_SUPER_SAMPLING, (uint) round(sampleCountF));
 
   const uint adaptiveTreshold = 10;
   uint samples[adaptiveTreshold];
@@ -110,7 +110,7 @@ uint sampleTheFractal(Pointi pixel, Pointi gridSize, Rectangle<Real> image, uint
   
   uint result;
   uint escapeTimeSum = 0;
- ASSERT (sampleCount <= MAX_SUPER_SAMPLING);
+  ASSERT (sampleCount <= MAX_SUPER_SAMPLING);
   for(uint i = 0; i < sampleCount; i++){
 
     //todo tady bych radeji neco jako deltas[sampleCount]; createDeltas(& deltas) nebo tak. Zkratka abych nesamploval takhle primitivne po diagonale, ale lip. Random sampling na to samozrejme je nejlepsi, ale to asi fakt ma overhead? Nevim, jestli mam cas to merit.
@@ -193,6 +193,7 @@ void fractalRenderMain(pixel_info_t** output, long outputPitch, Pointi outputSiz
     // printf("\n");
   }
   
+  ASSERT(maxSuperSampling >= 1);
   //the value of maxSuperSampling will be changed by the calee
   uint result = sampleTheFractal(idx, outputSize, image, maxIterations, maxSuperSampling, flags & USE_ADAPTIVE_SS_FLAG_MASK);
 
@@ -224,37 +225,39 @@ Point<float> getWarpingOriginOfSampleReuse(Point<uint> p, Point<uint> gridSize, 
   return old_pixel;
 }
 
-__device__ float screenDistance = 60; //in cm; better be set by the user
+__device__ float screenDistance = 60; //in cm; can be set by the user
+__device__ float pixelRealWidthInCm = 0.02652; //in cm; can be set by the user; see http://www.prismo.ch/comparisons/desktop.php 
 __device__ __forceinline__
 /// Returns how many samples this pixel should take, based on foveation.
-/// Value is between 0 and maxSuperSampling.
-/// Value in the focus will always be maxSuperSampling, values in the non-peripheral view will always be non-zero.
+/// Value is between 0 and maxSuperSampling, resp 0 or 1 for maxSuperSampling < 1.
+/// Value in the focus will always be maxSuperSampling for maxSuperSampling >=1.
+/// When maxSuperSampling < 1, then focus radius is lowered and pixels within still get result 1.
 /// Returned value is the same for all pixels within a warp (the highest is taken).
-fov_result_t getFoveationAdvisedSampleCount(Pointi pixel, Pointi focus, float maxSuperSampling){
+fov_result_t getFoveationAdvisedSampleCount(const Pointi pixel, const Pointi focus, const float maxSuperSampling){
+  ASSERT(maxSuperSampling > 0);
+
   //per-warp normalisation, i.e. set all pixels from a warp to same value
-  pixel = pixel - (pixel % Pointi(WARP_SIZE_X, WARP_SIZE_Y));
+  const Pointi pixelN = pixel - (pixel % Pointi(WARP_SIZE_X, WARP_SIZE_Y));
 
   fov_result_t result;
 
-  float pixelRealWidthInCm = 0.02652; //todo this value should probably be entered by the user. From http://www.prismo.ch/comparisons/desktop.php 
-  float focusDistance = focus.cast<float>().distanceTo(pixel.cast<float>()) * pixelRealWidthInCm; //distance to focus, translated to cm
+  float focusDistance = focus.cast<float>().distanceTo(pixelN.cast<float>()) * pixelRealWidthInCm; //distance to focus, translated to cm
   /// visual angle for one eye, i.e possible values are from 0 to ~ 110
   float visualAngle = atan (focusDistance / screenDistance) * 180 / PI_F; //from https://en.wikipedia.org/wiki/Visual_angle
-  
-  //used model for (visualAngle -> relativeQuality): in (0,fovealViewLimit): a constant function that yields 1, in (fovealViewLimit, peripheralViewLimit): descenidng linear function from 1 to 0
   ASSERT(visualAngle >= 0); //arctan is positive for positive input and distance is always non-negative
-  const float fovealViewLimit = 5.5; //in degrees, value from https://en.wikipedia.org/wiki/Peripheral_vision
-  ///todo, this number is based on a paper. Based on my experience, it could be even smaller
-  const float peripheralViewTreshold = 60;  //in degrees, value from https://en.wikipedia.org/wiki/Peripheral_vision
+  float fovealViewLimit = 5.5;// * min(1.0, maxSuperSampling); //in degrees
+  if(maxSuperSampling < 1)
+    fovealViewLimit *= maxSuperSampling;
+  //fovealViewLimit ;
+  const float peripheralViewTreshold = 60;  //in degrees
+  //used model for (visualAngle -> relativeQuality): in (0,fovealViewLimit): a constant function that yields 1, in (fovealViewLimit, peripheralViewLimit): descenidng linear function from 1 to 0
   float relativeQuality = (1/(fovealViewLimit-peripheralViewTreshold))*visualAngle+(-peripheralViewTreshold/(fovealViewLimit-peripheralViewTreshold)); 
-  if(visualAngle <= fovealViewLimit){
-    relativeQuality = 1;
-    result.isInsideFocusArea = true;
-  } 
 
   result.advisedSampleCount = maxSuperSampling * relativeQuality;
-  // if(visualAngle <= peripheralViewTreshold)
-  //   result = max(1.0, result); //always return at least 1 for pixels within the field of view
+  if(visualAngle <= fovealViewLimit){
+    result.advisedSampleCount = max(1.0, result.advisedSampleCount); //always return at least 1 for pixels within the field of view
+    result.isInsideFocusArea = true;
+  } 
   return result;
 }
 
@@ -302,9 +305,9 @@ void fractalRenderAdvanced(pixel_info_t** output, long outputPitch, Pointi outpu
   ASSERT(idx.y < outputSize.y);
 
 
-  //foveation - only if zooming:
+  //foveation - only if zooming in:
   fov_result_t fovResult(maxSuperSampling, false);
-  if (flags & USE_FOVEATION_FLAG_MASK && flags & IS_ZOOMING_FLAG_MASK && maxSuperSampling >= 1){
+  if (flags & USE_FOVEATION_FLAG_MASK && flags & IS_ZOOMING_FLAG_MASK && flags & ZOOMING_IN_FLAG_MASK){
     fovResult = getFoveationAdvisedSampleCount(idx, focus, maxSuperSampling);
   }
 
@@ -351,6 +354,9 @@ void fractalRenderAdvanced(pixel_info_t** output, long outputPitch, Pointi outpu
     }
     result.value = sampleTheFractal(idx, outputSize, image, maxIterations, sampleCount, flags & USE_ADAPTIVE_SS_FLAG_MASK);
     result.weight = sampleCount; //sampleCount is an in-out parameter
+  }
+  if(focus == idx){
+    printf("focus: samples:%f, reusing:%i\n", sampleCount, reusingSamples);
   }
 
   pixel_info_t* pOutput = getPtrToPixelInfo(output, outputPitch, idx);

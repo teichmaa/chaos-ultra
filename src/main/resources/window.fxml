@@ -112,6 +112,7 @@
                                     <Button text="Jul ex 1" onAction="#exampleJ1Clicked"/>
                                     <Button text="Jul ex 2" onAction="#exampleJ2Clicked"/>
                                     <Button text="Jul ex 3" onAction="#exampleJ3Clicked"/>
+                                    <Button text="Jul ex 4" onAction="#exampleJ4Clicked"/>
                                 </FlowPane>
                             </VBox>
                         </TitledPane>

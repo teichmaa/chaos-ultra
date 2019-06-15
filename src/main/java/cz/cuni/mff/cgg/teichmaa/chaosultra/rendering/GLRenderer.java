@@ -182,7 +182,7 @@ class GLRenderer implements GLView {
 
         if (stateModel.isDifferentThanLast()) {
             logger.logRenderingInfo("Automatic quality: RESET SS");
-            model.setMaxSuperSampling(2);
+            model.setMaxSuperSampling(1);
             return;
         }
 

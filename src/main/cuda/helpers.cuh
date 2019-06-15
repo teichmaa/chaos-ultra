@@ -56,6 +56,12 @@ template <class T> struct Point {
   __device__ const Point<T> operator% (const Point<T>& b) const{
     return Point<T>(x%b.x, y%b.y);
   }
+  __device__ bool operator== (const Point<T>& b) const{
+    return x==b.x && y==b.y;
+  }
+  __device__ bool operator!= (const Point<T>& b) const{
+    return x!=b.x || y!=b.y;
+  }
   __device__ T manhattanDistanceTo (const Point<T>& b) const{
     return abs(x-b.x)+abs(y-b.y);
   }
