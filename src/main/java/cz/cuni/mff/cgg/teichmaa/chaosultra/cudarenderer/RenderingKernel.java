@@ -124,16 +124,16 @@ public abstract class RenderingKernel extends CudaKernel {
     boolean isSegmentBoundsAtFloatLimit() {
         double maxAllowedDxError = Math.ulp((float)left_bottom_x);
         double maxAllowedDyError = Math.ulp((float)left_bottom_y);
-        double pixelWidth = Math.abs(right_top_x - left_bottom_x) / width;
-        double pixelHeight = Math.abs(right_top_y - left_bottom_y) / height;
+        double pixelWidth = Math.abs(right_top_x - left_bottom_x) / (double) width;
+        double pixelHeight = Math.abs(right_top_y - left_bottom_y) / (double) height;
         return (pixelWidth < maxAllowedDxError) ||( pixelHeight < maxAllowedDyError);
     }
 
     boolean isSegmentBoundsAtDoubleLimit() {
         double maxAllowedDxError = Math.ulp(left_bottom_x);
         double maxAllowedDyError = Math.ulp(left_bottom_y);
-        double pixelWidth = Math.abs(right_top_x - left_bottom_x) / width;
-        double pixelHeight = Math.abs(right_top_y - left_bottom_y) / height;
+        double pixelWidth = Math.abs(right_top_x - left_bottom_x) / (double) width;
+        double pixelHeight = Math.abs(right_top_y - left_bottom_y) / (double) height;
         return (pixelWidth < maxAllowedDxError) ||( pixelHeight < maxAllowedDyError);
     }
 

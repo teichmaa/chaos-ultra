@@ -6,6 +6,7 @@ import cz.cuni.mff.cgg.teichmaa.chaosultra.rendering.FractalRendererState;
 import cz.cuni.mff.cgg.teichmaa.chaosultra.rendering.model.*;
 import cz.cuni.mff.cgg.teichmaa.chaosultra.util.FloatPrecision;
 import cz.cuni.mff.cgg.teichmaa.chaosultra.util.JavaHelpers;
+import cz.cuni.mff.cgg.teichmaa.chaosultra.util.SimpleLogger;
 import jcuda.CudaException;
 import jcuda.NativePointerObject;
 import jcuda.Pointer;
@@ -167,17 +168,7 @@ public class CudaFractalRenderer implements FractalRenderer {
         }
 
         updateFloatPrecision(model);
-        KernelAdvanced k;
-        switch (model.getFloatingPointPrecision()){
-            case doublePrecision:
-                k = kernelAdvancedDouble;
-                break;
-            case singlePrecision:
-                k = kernelAdvancedFloat;
-                break;
-            default:
-                throw new IllegalStateException("Precision not supported: " + model.getFloatingPointPrecision());
-        }
+        KernelAdvanced k = getFloatOrDoubleKernel(model.getFloatingPointPrecision(), kernelAdvancedFloat, kernelAdvancedDouble);
 
         k.setOriginSegment(lastRendering.getPlaneSegment());
         k.setParamsFromModel(model);
@@ -199,17 +190,7 @@ public class CudaFractalRenderer implements FractalRenderer {
         setModuleConstants(model);
 
         updateFloatPrecision(model);
-        KernelMain kernelMain;
-        switch (model.getFloatingPointPrecision()){
-            case doublePrecision:
-                kernelMain = kernelMainDouble;
-                break;
-            case singlePrecision:
-                kernelMain = kernelMainFloat;
-                break;
-            default:
-                throw new IllegalStateException("Precision not supported: " + model.getFloatingPointPrecision());
-        }
+        KernelMain kernelMain = getFloatOrDoubleKernel(model.getFloatingPointPrecision(), kernelMainFloat, kernelMainDouble);
 
         memory.resetBufferOrder();
         kernelMain.setParamsFromModel(model);
@@ -222,6 +203,25 @@ public class CudaFractalRenderer implements FractalRenderer {
         lastRendering = model.copy();
         memory.setPrimary2DBufferDirty(false);
         model.setSampleReuseCacheDirty(false);
+    }
+
+    private <T extends RenderingKernel> T getFloatOrDoubleKernel(FloatPrecision precision, T kernelFloat, T kernelDouble) {
+        T k;
+        switch (precision) {
+            case doublePrecision:
+                k = kernelDouble;
+                break;
+            case singlePrecision:
+                k = kernelFloat;
+                break;
+            case tooBig:
+                k = kernelDouble;
+                SimpleLogger.get().logRenderingInfo("CudaFractalRenderer: tooBig precision with render()");
+                break;
+            default:
+                throw new IllegalStateException("Precision not supported: " + precision);
+        }
+        return k;
     }
 
     private void setModuleConstants(RenderingModel model) {
@@ -398,7 +398,15 @@ public class CudaFractalRenderer implements FractalRenderer {
     }
 
     private void updateFloatPrecision(RenderingModel model) {
-        model.setFloatingPointPrecision(kernelMainFloat.isSegmentBoundsAtFloatLimit() ? FloatPrecision.doublePrecision : FloatPrecision.singlePrecision);
+        kernelMainDouble.setParamsFromModel(model);
+        FloatPrecision precison = FloatPrecision.singlePrecision;
+        if (kernelMainDouble.isSegmentBoundsAtFloatLimit()) {
+            precison = FloatPrecision.doublePrecision;
+        }
+        if (kernelMainDouble.isSegmentBoundsAtDoubleLimit()) {
+            precison = FloatPrecision.tooBig;
+        }
+        model.setFloatingPointPrecision(precison);
     }
 
     @Override

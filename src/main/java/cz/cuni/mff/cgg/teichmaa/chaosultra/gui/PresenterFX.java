@@ -1,6 +1,7 @@
 package cz.cuni.mff.cgg.teichmaa.chaosultra.gui;
 
 import cz.cuni.mff.cgg.teichmaa.chaosultra.rendering.RenderingController;
+import cz.cuni.mff.cgg.teichmaa.chaosultra.util.FloatPrecision;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
@@ -186,6 +187,8 @@ public class PresenterFX implements Initializable, GUIPresenter {
 
     public static Boolean once = true;
 
+    private boolean showingPrecisionAlert = false;
+
     public void onModelUpdated(GUIModel model) {
         Platform.runLater(() -> {
             if (fractalChoiceBox.getItems().isEmpty()){
@@ -212,6 +215,13 @@ public class PresenterFX implements Initializable, GUIPresenter {
             useAutomaticQuality.setSelected(model.isUseAutomaticQuality());
             useAdaptiveSS.setSelected(model.isUseAdaptiveSuperSampling());
             useFoveatedRendering.setSelected(model.isUseFoveatedRendering());
+
+            if (model.getFloatingPointPrecision() == FloatPrecision.tooBig && !showingPrecisionAlert) {
+                showingPrecisionAlert = true;
+                Alert a = new Alert(Alert.AlertType.WARNING, "Requested floating point precision too big. Zooming in no more possible.\nZoom out or restart the view.");
+                a.setOnHidden(__ -> showingPrecisionAlert = false);
+                a.show();
+            }
         });
     }
 
