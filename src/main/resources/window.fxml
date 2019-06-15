@@ -20,7 +20,36 @@
                         </HBox>
                     </VBox>
                 </VBox>
-
+                <TitledPane text="Mandelbrot premade views:" expanded="false" fx:id="mandelbrotPremadeViews">
+                    <VBox>
+                        <FlowPane maxWidth="200">
+                            <Button text="M ex 1" onAction="#exampleM1Clicked"/>
+                            <Button text="M ex 2" onAction="#exampleM2Clicked"/>
+                            <Button text="M ex 3" onAction="#exampleM3Clicked"/>
+                            <Button text="M ex 4" onAction="#exampleM4Clicked"/>
+                            <Button text="M ex 5" onAction="#exampleM5Clicked"/>
+                        </FlowPane>
+                    </VBox>
+                </TitledPane>
+                <TitledPane text="Julia premade views:" expanded="false" fx:id="juliaPremadeViews">
+                    <VBox>
+                        <FlowPane maxWidth="200">
+                            <Button text="Jul ex 1" onAction="#exampleJ1Clicked"/>
+                            <Button text="Jul ex 2" onAction="#exampleJ2Clicked"/>
+                            <Button text="Jul ex 3" onAction="#exampleJ3Clicked"/>
+                            <Button text="Jul ex 4" onAction="#exampleJ4Clicked"/>
+                        </FlowPane>
+                    </VBox>
+                </TitledPane>
+                <TitledPane text="Newton premade views:" expanded="false" fx:id="newtonPremadeViews">
+                    <VBox>
+                        <FlowPane maxWidth="200">
+                            <Button text="Newt ex 1" onAction="#exampleN1Clicked"/>
+                            <Button text="Newt ex 2" onAction="#exampleN2Clicked"/>
+                            <Button text="Newt ex 3" onAction="#exampleN3Clicked"/>
+                        </FlowPane>
+                    </VBox>
+                </TitledPane>
                 <TitledPane text="general parameters" expanded="false" fx:id="generalParametersPane">
                     <VBox>
                         <HBox>
@@ -65,6 +94,11 @@
                 <TitledPane text="heuristics" expanded="true">
                     <VBox>
                         <HBox>
+                            <Label styleClass="slimLabel">visualise sample count:</Label>
+                            <CheckBox fx:id="visualiseSampleCount" selected="true"/>
+                        </HBox>
+                        <Separator/>
+                        <HBox>
                             <Label styleClass="slimLabel">adaptive SS:</Label>
                             <CheckBox fx:id="useAdaptiveSS" selected="false"/>
                         </HBox>
@@ -80,11 +114,6 @@
                             <Label styleClass="slimLabel">automatic quality:</Label>
                             <CheckBox fx:id="useAutomaticQuality" selected="true"/>
                         </HBox>
-                        <Separator/>
-                        <HBox>
-                            <Label styleClass="slimLabel">visualise sample count:</Label>
-                            <CheckBox fx:id="visualiseSampleCount" selected="true"/>
-                        </HBox>
                     </VBox>
                 </TitledPane>
 
@@ -94,38 +123,6 @@
                             <Button text="save as image" onAction="#saveImageClicked"/>
                             <Button text="reset to default" onAction="#defaultViewClicked"/>
                         </FlowPane>
-
-                        <TitledPane text="Mandelbrot premade views:" expanded="false" fx:id="mandelbrotPremadeViews">
-                            <VBox>
-                                <FlowPane maxWidth="200">
-                                    <Button text="M ex 1" onAction="#exampleM1Clicked"/>
-                                    <Button text="M ex 2" onAction="#exampleM2Clicked"/>
-                                    <Button text="M ex 3" onAction="#exampleM3Clicked"/>
-                                    <Button text="M ex 4" onAction="#exampleM4Clicked"/>
-                                    <Button text="M ex 5" onAction="#exampleM5Clicked"/>
-                                </FlowPane>
-                            </VBox>
-                        </TitledPane>
-                        <TitledPane text="Julia premade views:" expanded="false" fx:id="juliaPremadeViews">
-                            <VBox>
-                                <FlowPane maxWidth="200">
-                                    <Button text="Jul ex 1" onAction="#exampleJ1Clicked"/>
-                                    <Button text="Jul ex 2" onAction="#exampleJ2Clicked"/>
-                                    <Button text="Jul ex 3" onAction="#exampleJ3Clicked"/>
-                                    <Button text="Jul ex 4" onAction="#exampleJ4Clicked"/>
-                                </FlowPane>
-                            </VBox>
-                        </TitledPane>
-                        <TitledPane text="Newton premade views:" expanded="false" fx:id="newtonPremadeViews">
-                            <VBox>
-                                <FlowPane maxWidth="200">
-                                    <Button text="Newt ex 1" onAction="#exampleN1Clicked"/>
-                                    <Button text="Newt ex 2" onAction="#exampleN2Clicked"/>
-                                    <Button text="Newt ex 3" onAction="#exampleN3Clicked"/>
-                                </FlowPane>
-                            </VBox>
-                        </TitledPane>
-
                         <VBox>
                             <Label>Debugging functions:</Label>
                             <FlowPane maxWidth="200">
