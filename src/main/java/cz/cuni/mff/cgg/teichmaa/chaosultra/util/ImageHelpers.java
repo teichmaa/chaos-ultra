@@ -21,9 +21,9 @@ public class ImageHelpers {
         int[] result = new int[w];
 
         for (int i = 0; i < w / 2; i++) {
-            int r = i;
-            int g = 0;
-            int b = 0;
+            int r = i / 10;
+            int g = i;
+            int b = i / 10;
             result[i] = fromRGBtoRGBA(r, g, b);
             result[w - i - 1] = fromRGBtoRGBA(r, g, b);
         }

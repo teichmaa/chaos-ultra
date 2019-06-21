@@ -49,7 +49,7 @@ class SceneBuilder {
         root.add(getGLCanvas(PresenterFX.getSingleton()));
         root.add(fxPanel, BorderLayout.EAST);
         root.setMinimumSize(new Dimension(500, 350));
-        root.setSize(900,800);
+        root.setSize(1280 + 291, 720 + 39);
         root.setVisible(true);
     }
 

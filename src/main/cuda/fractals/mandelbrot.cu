@@ -19,6 +19,8 @@ float iterate(unsigned int maxIterations, Point<Real> c){
       z.x = zx_new;
       ++i;
   }
+  if(i == maxIterations)
+    return 0;
   return i;
 }
 

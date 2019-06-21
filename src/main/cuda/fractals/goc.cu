@@ -34,6 +34,8 @@ unsigned int colorize(cudaSurfaceObject_t colorPalette, unsigned int paletteLeng
   ASSERT(paletteIdx < paletteLength);
   unsigned int resultColor;
   surf2Dread(&resultColor, colorPalette, paletteIdx * sizeof(unsigned int), 0);
+  if(iterationResult < 35)
+      resultColor &= 0xff00ffff;
   return resultColor;
 }
 

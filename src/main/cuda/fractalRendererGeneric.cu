@@ -242,9 +242,18 @@ Point<float> getWarpingOriginOfSampleReuse(Point<uint> p, Point<uint> gridSize, 
   return old_pixel;
 }
 
+/// Apply the linear mapping given by (r,s) -> (a,b) on the x value
+/// I.e. mapping p -> q, a -> b and any intermediate value lineary 
+template <class Real> __device__ 
+Real linearMapping(float x, float r, float s, float a, float b){
+  Real k = (b-a)/(s-r);
+  Real q = (s*a-b*r)/(s-r);
+  return k*x+q;
+}
+
 __device__ float screenDistance = 60; //in cm; can be set by the user
 __device__ float pixelRealWidthInCm = 0.02652; //in cm; can be set by the user; see http://www.prismo.ch/comparisons/desktop.php 
-__device__ __forceinline__
+__device__
 /// Returns how many samples this pixel should take, based on foveation.
 /// Value is between 0 and maxSuperSampling, resp 0 or 1 for maxSuperSampling < 1.
 /// Value in the focus will always be maxSuperSampling for maxSuperSampling >=1.
@@ -255,6 +264,9 @@ fov_result_t getFoveationAdvisedSampleCount(const Pointi pixel, const Pointi foc
 
   //per-warp normalisation, i.e. set all pixels from a warp to same value
   const Pointi pixelN = pixel - (pixel % Pointi(WARP_SIZE_X, WARP_SIZE_Y));
+  
+  const float fovealViewTreshold = maxSuperSampling >= 1 ? 5.5 : 5.5 * maxSuperSampling; //in degrees
+  const float peripheralViewTreshold = 60;  //in degrees
 
   fov_result_t result;
 
@@ -262,17 +274,18 @@ fov_result_t getFoveationAdvisedSampleCount(const Pointi pixel, const Pointi foc
   /// visual angle for one eye, i.e possible values are from 0 to ~ 110
   float visualAngle = atan (focusDistance / screenDistance) * 180 / PI_F; //from https://en.wikipedia.org/wiki/Visual_angle
   ASSERT(visualAngle >= 0); //arctan is positive for positive input and distance is always non-negative
-  float fovealViewLimit = 5.5;// * min(1.0, maxSuperSampling); //in degrees
-  if(maxSuperSampling < 1)
-    fovealViewLimit *= maxSuperSampling;
-  //fovealViewLimit ;
-  const float peripheralViewTreshold = 60;  //in degrees
-  //used model for (visualAngle -> relativeQuality): in (0,fovealViewLimit): a constant function that yields 1, in (fovealViewLimit, peripheralViewLimit): descenidng linear function from 1 to 0
-  float relativeQuality = (1/(fovealViewLimit-peripheralViewTreshold))*visualAngle+(-peripheralViewTreshold/(fovealViewLimit-peripheralViewTreshold)); 
 
+  // //limited radius - this technique is not used in current release of chaos-ultra; it still needs some testing
+  // const float consideredRadius = max(fovealViewTreshold,min(peripheralViewTreshold,linearMapping<float>(maxSuperSampling, 4, MAX_SUPER_SAMPLING, fovealViewTreshold, peripheralViewTreshold)));
+  // if(visualAngle > consideredRadius)
+  //   return fov_result_t(0,false); //for pixels after consideredRadious, no samples are desired
+
+  //used model for (visualAngle -> relativeQuality): in (0,fovealViewTreshold): a constant function that yields 1, in (fovealViewTreshold, peripheralViewTreshold): descenidng linear function from 1 to 0
+  float relativeQuality = min(1.0, linearMapping<float>(visualAngle, fovealViewTreshold, peripheralViewTreshold, 1, 0));
+ 
   result.advisedSampleCount = maxSuperSampling * relativeQuality;
-  if(visualAngle <= fovealViewLimit){
-    result.advisedSampleCount = max(1.0, result.advisedSampleCount); //always return at least 1 for pixels within the field of view
+  if(visualAngle <= fovealViewTreshold){
+    result.advisedSampleCount = max(1.0, result.advisedSampleCount); //always return at least 1 for pixels within the foveal field of view
     result.isInsideFocusArea = true;
   } 
   return result;
@@ -281,8 +294,6 @@ fov_result_t getFoveationAdvisedSampleCount(const Pointi pixel, const Pointi foc
 template <class Real> __device__ 
 pixel_info_t readFromArrayUsingLinearFiltering(pixel_info_t** textureArr, long textureArrPitch, Point<Real> coordinates){
  
-    //implementation of bi linear filtering, see for example https://en.wikipedia.org/wiki/Bilinear_filtering
-
     Real xB = coordinates.x; //note that in canonical implementation, here is coordinates.x - 0.5. With our coordinate-system, we omit this.
     Real yB = coordinates.y; //ditto for y
     uint i = floor(xB);
@@ -295,16 +306,28 @@ pixel_info_t readFromArrayUsingLinearFiltering(pixel_info_t** textureArr, long t
     pixel_info_t T_i_jp = * getPtrToPixelInfo(textureArr, textureArrPitch, Point<uint>(i, j+1));
     pixel_info_t T_ip_jp = * getPtrToPixelInfo(textureArr, textureArrPitch, Point<uint>(i+1, j+1));
 
-    //weighting not implemented
     float T_i_j_weighted = T_i_j.value ;
     float T_ip_j_weighted  = T_ip_j.value ;
     float T_i_jp_weighted  = T_i_jp.value ;
     float T_ip_jp_weighted = T_ip_jp.value ;
 
-    Real r = (T_i_j_weighted   * (1-alpha)  + T_ip_j_weighted * alpha) * (1-beta) + 
-            (T_i_jp_weighted * (1-alpha)  + T_ip_jp_weighted * alpha) * beta;
-    float w = (T_i_j.weight   * (1-alpha)  + T_ip_j.weight * alpha) * (1-beta) + 
-        (T_i_jp.weight * (1-alpha)  + T_ip_jp.weight * alpha) * beta;
+    //linear filtering:
+    Real r = (1-alpha) * (1-beta) * T_i_j_weighted+
+             alpha      * (1-beta) * T_ip_j_weighted+ 
+             (1-alpha)  * beta     * T_i_jp_weighted +
+             alpha      * beta     * T_ip_jp_weighted;
+    float w = (1-alpha) * (1-beta) * T_i_j.weight +
+              alpha      * (1-beta) * T_ip_j.weight + 
+              (1-alpha)  * beta     * T_i_jp.weight +
+              alpha      * beta     * T_ip_jp.weight;
+
+    //or bilinear filtering:
+    // Real r = (T_i_j_weighted   * (1-alpha)  + T_ip_j_weighted * alpha) * (1-beta) + 
+    //         (T_i_jp_weighted * (1-alpha)  + T_ip_jp_weighted * alpha) * beta;
+    // float w = (T_i_j.weight   * (1-alpha)  + T_ip_j.weight * alpha) * (1-beta) + 
+    //     (T_i_jp.weight * (1-alpha)  + T_ip_jp.weight * alpha) * beta;
+
+
 
     pixel_info_t result;
     result.value = r;
@@ -354,10 +377,8 @@ void fractalRenderAdvanced(pixel_info_t** output, long outputPitch, Pointi outpu
     result = reused;   
     result.isReused = true; 
     result.weightOfNewSamples = 0;
-    //todo this is debug only
-    // if(result.weight < 1)
-      // result.value = 256* 0;
-    if((flags & ZOOMING_IN_FLAG_MASK) && fovResult.isInsideFocusArea){
+
+    if((flags & ZOOMING_IN_FLAG_MASK) && (fovResult.isInsideFocusArea /*|| maxSuperSampling > 1 */)){
       //if around the zooming center during zooming in, the reuse data is innacurate -- we sample some more
       float samples = sampleTheFractal(idx, outputSize, image, maxIterations, sampleCount, flags & USE_ADAPTIVE_SS_FLAG_MASK);
       reused.weight *= 0.75;
@@ -418,9 +439,9 @@ void compose(pixel_info_t** inputMain, long inputMainPitch, pixel_info_t** input
 
     uint resultColor;
     if(VISUALIZE_SAMPLE_COUNT){ 
-      resultColor = colorizeSampleCount(result.weight, maxSuperSampling);
+      resultColor = colorizeSampleCount(result.weight, max(1.0,maxSuperSampling));
       if(result.isReused){ 
-        resultColor = colorizeSampleCount(result.weightOfNewSamples, maxSuperSampling);
+        resultColor = colorizeSampleCount(result.weightOfNewSamples, max(1.0,maxSuperSampling));
       }
     }
     else{

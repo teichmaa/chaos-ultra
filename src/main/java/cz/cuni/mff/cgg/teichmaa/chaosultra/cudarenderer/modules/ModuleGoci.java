@@ -24,5 +24,6 @@ public class ModuleGoci extends FractalRenderingModule {
     protected void supplyDefaultValues(DefaultFractalModel model) {
         super.supplyDefaultValues(model);
         model.setMaxIterations(900);
+        model.setPlaneSegmentFromCenter(1.1, -0.2, 0.20000000000000004);
     }
 }

@@ -20,7 +20,7 @@
                         </HBox>
                     </VBox>
                 </VBox>
-                <TitledPane text="Mandelbrot premade views:" expanded="false" fx:id="mandelbrotPremadeViews">
+                <TitledPane text="Mandelbrot premade views:" expanded="true" fx:id="mandelbrotPremadeViews">
                     <VBox>
                         <FlowPane maxWidth="200">
                             <Button text="M ex 1" onAction="#exampleM1Clicked"/>
@@ -31,7 +31,7 @@
                         </FlowPane>
                     </VBox>
                 </TitledPane>
-                <TitledPane text="Julia premade views:" expanded="false" fx:id="juliaPremadeViews">
+                <TitledPane text="Julia premade views:" expanded="true" fx:id="juliaPremadeViews">
                     <VBox>
                         <FlowPane maxWidth="200">
                             <Button text="Jul ex 1" onAction="#exampleJ1Clicked"/>
@@ -41,7 +41,7 @@
                         </FlowPane>
                     </VBox>
                 </TitledPane>
-                <TitledPane text="Newton premade views:" expanded="false" fx:id="newtonPremadeViews">
+                <TitledPane text="Newton premade views:" expanded="true" fx:id="newtonPremadeViews">
                     <VBox>
                         <FlowPane maxWidth="200">
                             <Button text="Newt ex 1" onAction="#exampleN1Clicked"/>
@@ -91,7 +91,7 @@
                     </VBox>
                 </TitledPane>
 
-                <TitledPane text="heuristics" expanded="true">
+                <TitledPane text="research settings" expanded="false">
                     <VBox>
                         <HBox>
                             <Label styleClass="slimLabel">visualise sample count:</Label>
@@ -117,7 +117,7 @@
                     </VBox>
                 </TitledPane>
 
-                <TitledPane text="additional functionality" expanded="true">
+                <TitledPane text="additional functionality" expanded="false">
                     <VBox>
                         <FlowPane maxWidth="200">
                             <Button text="save as image" onAction="#saveImageClicked"/>

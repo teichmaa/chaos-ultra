@@ -20,7 +20,7 @@ public class ModuleMandelbrot extends FractalRenderingModule {
     protected void supplyDefaultValues(DefaultFractalModel model) {
         super.supplyDefaultValues(model);
         model.setPlaneSegmentFromCenter(-0.5, 0, 2);
-        model.setMaxIterations(800);
+        model.setMaxIterations(1600);
         model.setMaxSuperSampling(5);
     }
 }

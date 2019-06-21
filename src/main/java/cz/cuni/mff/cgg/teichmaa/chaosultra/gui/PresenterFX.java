@@ -247,7 +247,7 @@ public class PresenterFX implements Initializable, GUIPresenter {
         center_x.setText("-0.748");
         center_y.setText("0.1");
         zoom.setText("0.0014");
-        maxIterations.setText("800");
+        maxIterations.setText("1600");
         render();
     }
 
@@ -257,7 +257,7 @@ public class PresenterFX implements Initializable, GUIPresenter {
         center_x.setText("-0.235125");
         center_y.setText("0.827215");
         zoom.setText("4.0E-5");
-        maxIterations.setText("800");
+        maxIterations.setText("1600");
         render();
     }
 
@@ -267,7 +267,7 @@ public class PresenterFX implements Initializable, GUIPresenter {
         center_x.setText("-0.925");
         center_y.setText("0.266");
         zoom.setText("0.032");
-        maxIterations.setText("800");
+        maxIterations.setText("1600");
         render();
     }
 
@@ -277,7 +277,7 @@ public class PresenterFX implements Initializable, GUIPresenter {
         center_x.setText("-0.57675236");
         center_y.setText("0.4625193");
         zoom.setText("0.029995363");
-        maxIterations.setText("800");
+        maxIterations.setText("1600");
         render();
     }
 
