@@ -8,9 +8,9 @@ This project originated as a bachelor thesis on [MFF UK](https://mff.cuni.cz/).
 
 ## Running the app
 Java parameters 
- * param colorPalette: use `-DcolorPalette={filePath}` java argument to load the color palette from custom location. Default location is `palette.png`.
+ * param colorPalette: use `-DcolorPalette={filePath}` java argument to load a color palette from custom location. Default location is `palette.png`. If you don't specify the parameter, palette is searched in the default location. If no palette is found, a software-default palette is used.
  
- * param cudaKernelsDir: use `/DcudaKernelsDir={dirRelPath}` java argument to specify where your compiled cuda kernels are stored. Default is `cudaKernels`. If you don't specify this argument, a warning is given.
+ * param cudaKernelsDir: use `-DcudaKernelsDir={dirRelPath}` java argument to specify where your compiled cuda modules (.ptx files) are stored. Default is `cudaKernels`. If you don't specify this argument, the default value is used and a warning is given.
 
 ## Author
 
