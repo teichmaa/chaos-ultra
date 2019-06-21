@@ -16,7 +16,7 @@ import java.io.IOException;
 
 class SceneBuilder {
 
-    public static final String APP_TITLE = "Chaos ultra";
+    public static final String APP_TITLE = "chaos-ultra";
 
     public void start() {
         Platform.runLater(this::initialiseFxPanel);

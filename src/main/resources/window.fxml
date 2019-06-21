@@ -91,28 +91,29 @@
                     </VBox>
                 </TitledPane>
 
-                <TitledPane text="research settings" expanded="false">
+                <TitledPane text="research options" expanded="false">
                     <VBox>
                         <HBox>
-                            <Label styleClass="slimLabel">visualise sample count:</Label>
+                            <Label styleClass="slimLabel">visualize sample count:</Label>
                             <CheckBox fx:id="visualiseSampleCount" selected="true"/>
                         </HBox>
                         <Separator/>
                         <HBox>
-                            <Label styleClass="slimLabel">adaptive SS:</Label>
+                            <Label styleClass="slimLabel">automatic quality:</Label>
+                            <CheckBox fx:id="useAutomaticQuality" selected="true"/>
+                        </HBox>
+                        <Separator/>
+                        <HBox>
+                            <Label styleClass="slimLabel">adaptive supersampling:</Label>
                             <CheckBox fx:id="useAdaptiveSS" selected="false"/>
                         </HBox>
                         <HBox>
-                            <Label styleClass="slimLabel">foveation:</Label>
+                            <Label styleClass="slimLabel">foveated rendering:</Label>
                             <CheckBox fx:id="useFoveatedRendering" selected="true"/>
                         </HBox>
                         <HBox>
                             <Label styleClass="slimLabel">sample reuse:</Label>
                             <CheckBox fx:id="useSampleReuse" selected="true"/>
-                        </HBox>
-                        <HBox>
-                            <Label styleClass="slimLabel">automatic quality:</Label>
-                            <CheckBox fx:id="useAutomaticQuality" selected="true"/>
                         </HBox>
                     </VBox>
                 </TitledPane>

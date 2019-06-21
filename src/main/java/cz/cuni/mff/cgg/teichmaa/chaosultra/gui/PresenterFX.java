@@ -294,9 +294,9 @@ public class PresenterFX implements Initializable, GUIPresenter {
     @FXML
     private void exampleJ1Clicked(ActionEvent actionEvent) {
         fractalCustomParams.setText("-0.8;0.156");
-        center_x.setText("0.17327727502964813");
-        center_y.setText("-0.05681548320560654");
-        zoom.setText("1.2159888554168219E-4");
+        center_x.setText("0.8327291525311472");
+        center_y.setText("-0.10212349314316674");
+        zoom.setText("0.017509763680325807");
         maxIterations.setText("900");
         render();
     }
@@ -334,7 +334,7 @@ public class PresenterFX implements Initializable, GUIPresenter {
 
     @FXML
     private void exampleN1Clicked(ActionEvent actionEvent) {
-        fractalCustomParams.setText("");
+        fractalCustomParams.setText("{ \"coefficients\" : [1, 0, 0, -1], \"roots\" : [ [1,0], [-0.5,0.86602540378] , [-0.5,-0.86602540378] ] }");
         center_x.setText("1.8252568181102808E-4");
         center_y.setText("-1.0538321727858829E-4");
         zoom.setText("6.94260652234243E-7");
@@ -344,11 +344,11 @@ public class PresenterFX implements Initializable, GUIPresenter {
 
     @FXML
     private void exampleN2Clicked(ActionEvent actionEvent) {
-        fractalCustomParams.setText("");
-        center_x.setText("-1.146837853716188E15");
-        center_y.setText("-3.440513561148496E15");
-        zoom.setText("5.6306039140521104E16");
-        maxIterations.setText("100");
+        fractalCustomParams.setText("{ \"coefficients\" : [1, 0, 0, -1], \"roots\" : [ [1,0], [-0.5,0.86602540378] , [-0.5,-0.86602540378] ] }");
+        center_x.setText("-5.870895355820215E10");
+        center_y.setText("5.1730603044729065E10");
+        zoom.setText("1.0065015261107542E12");
+        maxIterations.setText("70");
         render();
     }
 

@@ -7,12 +7,20 @@ import cz.cuni.mff.cgg.teichmaa.chaosultra.util.JavaHelpers;
 
 public class FractalRendererNullObjectVerbose implements FractalRenderer {
 
-    public static boolean verbose = true;
+    public boolean verbose = true;
 
     private void printMethodName() {
         if (!verbose) return;
         System.out.println("FractalRendererNullObjectVerbose." + JavaHelpers.getCallingMethodName(1));
 
+    }
+
+    public FractalRendererNullObjectVerbose(boolean verbose) {
+        this.verbose = verbose;
+    }
+
+    public FractalRendererNullObjectVerbose() {
+        /* empty */
     }
 
     @Override

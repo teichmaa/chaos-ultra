@@ -87,6 +87,30 @@ unsigned int colorize(cudaSurfaceObject_t colorPalette, unsigned int paletteLeng
     }
 }
 
+// EXAMPLE - colorizing the fractal based on the provided palette
+// __device__ __forceinline__
+// unsigned int colorize(cudaSurfaceObject_t colorPalette, unsigned int paletteLength, float iterationResult){
+//     unsigned int iterationResult_i = round(iterationResult);
+//     unsigned int paletteIdx = 0;
+//     switch(iterationResult_i){
+//         case 1:
+//             paletteIdx = min(paletteLength - 1, paletteLength / 4);
+//             break;
+//         case 2:
+//             paletteIdx = min(paletteLength - 1, paletteLength * 2 / 4);
+//             break;
+//         case 3:
+//             paletteIdx = min(paletteLength - 1, paletteLength * 3 / 4);
+//             break;
+//         default:
+//             break;
+//     }
+//     ASSERT(paletteIdx < paletteLength);
+//     unsigned int resultColor;
+//     surf2Dread(&resultColor, colorPalette, paletteIdx * sizeof(unsigned int), 0);
+//     return resultColor;
+// }
+
 
 __device__ void debugFractal(){
     /* empty */
