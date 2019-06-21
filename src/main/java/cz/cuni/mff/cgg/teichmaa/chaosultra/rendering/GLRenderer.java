@@ -25,10 +25,11 @@ class GLRenderer implements GLView {
 
     private static final String DEFAULT_COLOR_PALETTE_LOCATION = "palette.png";
     private static final String COLOR_PALETTE_PATH_PROPERTY_NAME = "colorPalette";
+    public static final String RENDERING_LOGGING_PROPERTY_NAME = "renderingLogging";
 
     private GLTexture outputTexture;
     private GLTexture paletteTexture;
-    private FractalRenderer fractalRenderer = new FractalRendererNullObjectVerbose();
+    private FractalRenderer fractalRenderer = new FractalRendererNullObjectVerbose(false);
     private FractalRendererProvider fractalRendererProvider;
     private final List<Consumer<GL2>> doBeforeDisplay = new ArrayList<>();
     private boolean doNotRenderCudaRequested = false;
@@ -36,7 +37,7 @@ class GLRenderer implements GLView {
     private final RenderingStateModel stateModel;
     private final RenderingController controller;
     private final GLCanvas target;
-    private final SimpleLogger logger = new SimpleLogger(true, System.out);
+    private final SimpleLogger logger = new SimpleLogger();
 
     public GLRenderer(RenderingController controller, Model model, RenderingStateModel stateModel, GLCanvas target) {
         this.controller = controller;
@@ -45,6 +46,9 @@ class GLRenderer implements GLView {
         this.stateModel = stateModel;
         model.setCanvasWidth(target.getWidth());
         model.setCanvasHeight(target.getHeight());
+        logger.setEnabled(
+                Boolean.parseBoolean(System.getProperty(RENDERING_LOGGING_PROPERTY_NAME, "false"))
+        );
     }
 
     @Override
@@ -165,7 +169,7 @@ class GLRenderer implements GLView {
 
         if (stateModel.isProgressiveRendering()) {
             fractalRenderer.renderQuality(model);
-            logger.logRenderingInfo("\t\trender Quality, with SS \t\t\t" + model.getMaxSuperSampling());
+            logger.logRenderingInfo("\t\trender Quality, with super sampling set to \t\t\t" + model.getMaxSuperSampling());
             return true;
         } else {
             fractalRenderer.renderFast(model);
@@ -231,7 +235,7 @@ class GLRenderer implements GLView {
 
         newSS = Math.min(newSS, MAX_SUPER_SAMPLING);
         model.setMaxSuperSampling(newSS);
-        logger.logRenderingInfo("\t set params to be rendered in\t" + ms + " ms:\t" + newSS + " SS");
+        logger.logRenderingInfo("\t set params to be rendered in\t" + ms + " ms by setting maxSS to\t" + newSS + "");
     }
 
     @Override

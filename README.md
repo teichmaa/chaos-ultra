@@ -11,6 +11,8 @@ Java parameters
  * param colorPalette: use `-DcolorPalette={filePath}` java argument to load a color palette from custom location. Default location is `palette.png`. If you don't specify the parameter, palette is searched in the default location. If no palette is found, a software-default palette is used.
  
  * param cudaKernelsDir: use `-DcudaKernelsDir={dirRelPath}` java argument to specify where your compiled cuda modules (.ptx files) are stored. Default is `cudaKernels`. If you don't specify this argument, the default value is used and a warning is given.
+ 
+ * param renderingLogging: use `-DcudaKernelsDir=true` to enable logging of rendering information, for example frame render time. Default value is `false`. Note: The logs are printed in a blocking manner, after every frame, and thus enabling the logging may introduce performance overhead.
 
 ## Author
 
