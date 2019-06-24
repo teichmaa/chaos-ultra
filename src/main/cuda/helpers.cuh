@@ -108,7 +108,9 @@ struct pixel_info_t{
     float value;
     /// How important the value is. Initially, it equals the number of samples takes, but may decrease over time
     float weight;
+    /// Whether the value has been determined (at least partialy) by sample reuse. This is for visualizing sample count only.
     bool isReused;
+    /// If isReused, the absolute value of weight of the samples that have not been reused but have been computed. This is for visualizing sample count only.
     float weightOfNewSamples;
     __device__ pixel_info_t(unsigned int value, float weight)
       : value(value), weight(weight), isReused(false), weightOfNewSamples(0)

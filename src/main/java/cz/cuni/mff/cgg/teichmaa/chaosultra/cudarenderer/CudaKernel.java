@@ -22,8 +22,8 @@ public abstract class CudaKernel {
 
     /**
      *
-     * @param functionName Exact (mangled, case sensitive) name of the __device__ function as defined in the .ptx file.
-     * @param ownerModule cuda module that contains kernel with functionName
+     * @param functionName Exact (mangled, case sensitive) name of the __global__ function as defined in the .ptx file.
+     * @param ownerModule CUDA module that contains an implementation of the __global__ method named {@code functionName}.
      */
     CudaKernel(String functionName, CUmodule ownerModule) {
         this.functionName = functionName;
@@ -45,7 +45,9 @@ public abstract class CudaKernel {
     protected NativePointerObject[] params = new NativePointerObject[0];
 
     /**
-     * @return index of the added param
+     * Registers a kernel parameter<br>
+     * The order of the calls MUST be the same as the order of parameters in the CUDA source code. <br>
+     * @return index of the added param, for accessing kernel parameters in an array
      */
     protected short registerParam() {
         NativePointerObject[] newParams = new NativePointerObject[params.length + 1];
@@ -59,9 +61,11 @@ public abstract class CudaKernel {
     }
 
     /**
-     * register a kernel param and set its value
+     * Registers a kernel param and sets its value. <br>
+     * The order of the calls MUST be the same as the order of parameters in the CUDA source code. <br>
+     * The caller is responsible for ensuring that the type of the passed argument and type of the parameter in the CUDA source code matches.
      * @param value
-     * @return index of the added param
+     * @return index of the added param, for accessing kernel parameters in an array
      */
     protected short registerParam(double value){
         short i = registerParam();
@@ -70,9 +74,11 @@ public abstract class CudaKernel {
     }
 
     /**
-     * register a kernel param and set its value
+     * Registers a kernel param and sets its value. <br>
+     * The order of the calls MUST be the same as the order of parameters in the CUDA source code. <br>
+     * The caller is responsible for ensuring that the type of the passed argument and type of the parameter in the CUDA source code matches.
      * @param value
-     * @return index of the added param
+     * @return index of the added param, for accessing kernel parameters in an array
      */
     protected short registerParam(float value){
         short i = registerParam();
@@ -81,9 +87,11 @@ public abstract class CudaKernel {
     }
 
     /**
-     * register a kernel param and set its value
+     * Registers a kernel param and sets its value. <br>
+     * The order of the calls MUST be the same as the order of parameters in the CUDA source code. <br>
+     * The caller is responsible for ensuring that the type of the passed argument and type of the parameter in the CUDA source code matches.
      * @param value
-     * @return index of the added param
+     * @return index of the added param, for accessing kernel parameters in an array
      */
     protected short registerParam(int value){
         short i = registerParam();
@@ -92,9 +100,11 @@ public abstract class CudaKernel {
     }
 
     /**
-     * register a kernel param and set its value
+     * Registers a kernel param and sets its value. <br>
+     * The order of the calls MUST be the same as the order of parameters in the CUDA source code. <br>
+     * The caller is responsible for ensuring that the type of the passed argument and type of the parameter in the CUDA source code matches.
      * @param value
-     * @return index of the added param
+     * @return index of the added param, for accessing kernel parameters in an array
      */
     protected short registerParam(long value){
         short i = registerParam();
@@ -120,6 +130,7 @@ public abstract class CudaKernel {
     }
 
     /**
+     * Allows setting kernel's parameters from the model.<br>
      * Should be overridden by descendants.
      * @param model values to use
      */

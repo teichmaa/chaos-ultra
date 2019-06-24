@@ -146,6 +146,11 @@ public abstract class FractalRenderingModule implements Closeable {
         initialized = false;
     }
 
+    /**
+     * A callback from the UI containing a text string with fractal specific parameters set by the user. <br>
+     * Can be overridden by descendants if needed.
+     * @param params a text string with fractal specific parameters set by the user.
+     */
     public void setFractalCustomParameters(String params) {
 
     }

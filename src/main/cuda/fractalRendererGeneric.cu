@@ -86,7 +86,7 @@ uint colorizeSampleCount(uint sampleCount, uint sampleCount100Percent = 64){
 
 /// param pixel: pixel to sample
 /// param gridSize: size of the grid of pixels (usually the output texture).
-/// param image: segment of the complex plane that is to be rendered as an image.gridSize}.
+/// param image: segment of the complex plane that is to be rendered as an image (the region of interest).
 /// param sampleCount: Maximum number of samples to take. Actual number of samples taken will be stored here before returning. The float value will always be round to the nearest int. If adaptiveSS==false, the value will not change (apart from rounding). 
 template <class Real> __device__
 uint sampleTheFractal(Pointi pixel, Pointi gridSize, Rectangle<Real> image, uint maxIterations,float & sampleCountF, bool adaptiveSS){
@@ -286,7 +286,7 @@ fov_result_t getFoveationAdvisedSampleCount(const Pointi pixel, const Pointi foc
 }
 
 template <class Real> __device__ 
-pixel_info_t readFromArrayUsingLinearFiltering(pixel_info_t** textureArr, long textureArrPitch, Point<Real> coordinates){
+pixel_info_t readFromArrayUsingFiltering(pixel_info_t** textureArr, long textureArrPitch, Point<Real> coordinates){
  
     Real xB = coordinates.x; //note that in canonical implementation, here is coordinates.x - 0.5. With our coordinate-system, we omit this.
     Real yB = coordinates.y; //ditto for y
@@ -356,7 +356,7 @@ void fractalRenderAdvanced(pixel_info_t** output, long outputPitch, Pointi outpu
       //if reusing would be out of bounds (i.e. no data to reuse)
       reusingSamples = false;
     }else{
-      reused = readFromArrayUsingLinearFiltering(input, inputPitch, origin);
+      reused = readFromArrayUsingFiltering(input, inputPitch, origin);
       if(reused.weight < 0.1)
         reusingSamples = false;
       else
