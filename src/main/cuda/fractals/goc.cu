@@ -12,7 +12,7 @@ complex<Real> gocihoMetoda(complex<Real> c, complex<Real> z){
 }
 
 template <class Real> __device__
-float iterate(unsigned int maxIterations, Point<Real> x){
+float computeFractal(unsigned int maxIterations, Point<Real> x){
 
   if(x.x == 0 || x.y == 0)
     return 0;

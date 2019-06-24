@@ -42,7 +42,7 @@ unsigned int convergenceRoot(complex<Real> x){
 
 
 template <class Real> __device__
-float iterate(unsigned int maxIterations, Point<Real> z){
+float computeFractal(unsigned int maxIterations, Point<Real> z){
 
     complex<Real> x(z.x,z.y);
 

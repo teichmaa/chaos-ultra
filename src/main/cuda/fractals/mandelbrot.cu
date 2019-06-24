@@ -9,7 +9,7 @@
 //    y ... for imag part (corresponding to geometric y-axis)
 
 template <class Real> __device__ 
-float iterate(unsigned int maxIterations, Point<Real> c){
+float computeFractal(unsigned int maxIterations, Point<Real> c){
   Point<Real> z(0,0);
   Real zx_new;
   unsigned int i = 0;

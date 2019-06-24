@@ -3,7 +3,7 @@
 __constant__ double julia_c[2]; 
 
 template <class Real> __device__ __forceinline__
-float iterate(unsigned int maxIterations, Point<Real> z){
+float computeFractal(unsigned int maxIterations, Point<Real> z){
   Point<Real> c((Real) julia_c[0],(Real) julia_c[1]);
   Real zx_new;
   unsigned int i = 0;

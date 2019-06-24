@@ -6,7 +6,7 @@ using namespace thrust;
 __constant__ int amplifier; 
 
 template <class Real> __device__
-float iterate(unsigned int maxIterations, Point<Real> x){
+float computeFractal(unsigned int maxIterations, Point<Real> x){
 
   
 

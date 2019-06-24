@@ -3,7 +3,7 @@
 /// The core fractal function. Find fractal value for given point,
 /// but use at most maxIterations of finding cycle.
 template <class Real> __device__
-float iterate(unsigned int maxIterations, Point<Real> z);
+float computeFractal(unsigned int maxIterations, Point<Real> z);
 
 /// Should find adequate color in the colorPalette and return it as unsigned int in RGBA (little endian, Red is the least significant).
 /// Use surf2Dread() to retrieve data from the palette and see documentation 

@@ -18,12 +18,6 @@ void init(){
 
 }
 
-/// Get fractional part of a number.
-template <class Real> __device__ __forceinline__
-Real frac(Real x){
-  return x - trunc(x);
-}
-
 /// Dispersion in this context is "Index of dispersion", aka variance-to-mean ratio. See https://en.wikipedia.org/wiki/Index_of_dispersion for more details
 __device__
 float computeDispersion(float* data, uint dataLength, float mean){
@@ -141,7 +135,7 @@ uint sampleTheFractal(Pointi pixel, Pointi gridSize, Rectangle<Real> image, uint
     // c = {LT} {+,-} ((pixel+delta) * pixelSize)
     const Point<Real> c = image_left_top + flipYAxis * (pixel.cast<Real>() + delta) * pixelSize;
 
-    uint escapeTime = iterate(maxIterations, c);
+    uint escapeTime = computeFractal(maxIterations, c);
     escapeTimeSum += escapeTime;
     if(i < adaptiveTreshold){
       samples[i] = escapeTime;
@@ -467,7 +461,7 @@ void fractalRenderUnderSampled(pixel_info_t** output, long outputPitch, uint wid
   float cx = left_bottom_x + (idx_x)  * pixelWidth;
   float cy = right_top_y - (idx_y) * pixelHeight;
 
-  uint escapeTime = iterate(maxIterations, Pointf(cx, cy));
+  uint escapeTime = computeFractal(maxIterations, Pointf(cx, cy));
 
   for(uint x = 0; x < underSamplingLevel; x++){
     for(uint y = 0; y < underSamplingLevel; y++){
