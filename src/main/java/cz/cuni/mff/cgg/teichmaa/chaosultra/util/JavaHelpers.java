@@ -9,6 +9,9 @@ public class JavaHelpers {
         return getCallingMethodName(1);
     }
 
+    public static final String DEBUG_PROPERTY_NAME = "debug";
+
+
     /**
      *
      * @param numberOfUpNesting how many levels to nest up: direct caller's name (0), or caller's caller's (1), or caller's caller's caller's name (2) etc.
@@ -20,6 +23,6 @@ public class JavaHelpers {
     }
 
     public static boolean isDebugMode(){
-        return Boolean.toString(true).equals(System.getProperty("debug"));
+        return Boolean.toString(true).equals(System.getProperty(DEBUG_PROPERTY_NAME));
     }
 }

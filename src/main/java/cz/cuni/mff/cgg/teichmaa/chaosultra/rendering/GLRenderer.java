@@ -89,7 +89,10 @@ class GLRenderer implements GLView {
             controller.showDefaultView();
         } catch (Exception e) {
             model.logError(e.getMessage());
-            if (JavaHelpers.isDebugMode()) throw e;
+            if (JavaHelpers.isDebugMode()) {
+                SimpleLogger.get().error(e.toString());
+                throw e;
+            }
         }
     }
 
@@ -151,7 +154,10 @@ class GLRenderer implements GLView {
 
         } catch (Exception e) {
             model.logError(e.getMessage());
-            if (JavaHelpers.isDebugMode()) throw e;
+            if (JavaHelpers.isDebugMode()) {
+                SimpleLogger.get().error(e.toString());
+                throw e;
+            }
         }
     }
 
@@ -264,7 +270,10 @@ class GLRenderer implements GLView {
             controller.startProgressiveRenderingAsync();
         } catch (Exception e) {
             model.logError(e.getMessage());
-            if (JavaHelpers.isDebugMode()) throw e;
+            if (JavaHelpers.isDebugMode()) {
+                SimpleLogger.get().error(e.toString());
+                throw e;
+            }
         }
     }
 
@@ -296,7 +305,10 @@ class GLRenderer implements GLView {
             model.setSampleReuseCacheDirty(true);
         } catch (Exception e) {
             model.logError(e.getMessage());
-            if (JavaHelpers.isDebugMode()) throw e;
+            if (JavaHelpers.isDebugMode()) {
+                SimpleLogger.get().error(e.toString());
+                throw e;
+            }
         }
     }
 

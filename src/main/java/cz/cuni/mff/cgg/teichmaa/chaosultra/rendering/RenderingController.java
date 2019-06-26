@@ -164,7 +164,9 @@ public class RenderingController extends MouseAdapter {
         guiPresenter.onModelUpdated(model.copy());
         {
             //special handling of the cuda initialization error that we want to show as a blocking popup
-            Optional<String> cudaInitError = model.getNewlyLoggedErrors().stream().filter(e -> e.contains("CUDA installed?")).findFirst();
+            Optional<String> cudaInitError = model.getNewlyLoggedErrors().stream()
+                    .filter(e -> e.contains("CUDA installed?") || e.contains("CUDA_ERROR_NO_DEVICE"))
+                    .findFirst();
             cudaInitError.ifPresent(guiPresenter::showBlockingErrorAlertAsync);
         }
         model.getNewlyLoggedErrors().clear();

@@ -5,8 +5,8 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>cz.cuni.mff.cgg.teichmaa</groupId>
-    <artifactId>j-fractal-renderer</artifactId>
-    <version>0.1</version>
+    <artifactId>chaos-ultra</artifactId>
+    <version>1</version>
 
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>

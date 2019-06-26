@@ -9,7 +9,7 @@ This program arose as the software-part of a bachelor thesis in 2018/2019. The c
 
 ## Technical requirements
 
-To run the program, CUDA-capable GPU by nvidia is needed. Check [this link](https://www.geforce.com/hardware/technology/cuda/supported-gpus) to see if you have a CUDA-capable GPU. A mid-end GPU, for example GeForce GTX 1060, is expected for smooth real-time performance.
+To run the program, CUDA-capable GPU by nvidia is needed. A device with CUDA version 6 or higher is needed (we target compute capability 3.0) Check [this link](https://www.geforce.com/hardware/technology/cuda/supported-gpus) to see if you have a CUDA-capable GPU. A mid-end GPU, for example GeForce GTX 1060, is expected for smooth real-time performance.
 
 ### Software prerequisites
 
@@ -52,9 +52,9 @@ To compile all available fractals, update the fractal list in `compile_all{.bat 
 
 ## Running the program
 
-Start the program with `java -jar chaos-ultra.jar`.
+Start the program with `java DcudaKernelsDir=../src/main/cuda/fractals -jar chaos-ultra-1-jar-with-dependencies.jar`.
 
-With no other parameters specified, the `cuda_kernels` directory must be located in the same folder as the jar, and it must contain .ptx files with compiled fractal implementation for all the fractals registered in `CudaFractalRendererProvider`.
+Without the `cudaKernelsDir` parameter specified, the `cuda_kernels` directory must be located in the same folder as the jar, and it must contain .ptx files with compiled fractal implementation for all the fractals registered in `CudaFractalRendererProvider`.
 
 
 To modify program's behavior, following Java arguments can be used:
@@ -63,7 +63,15 @@ To modify program's behavior, following Java arguments can be used:
  
  * param cudaKernelsDir: use `-DcudaKernelsDir={dirRelPath}` java argument to specify where your compiled cuda modules (.ptx files) are stored. Default is `cudaKernels`. If you don't specify this argument, the default value is used and a warning is given.
  
- * param renderingLogging: use `-DcudaKernelsDir=true` to enable logging of rendering information, for example frame render time. Default value is `false`. Note: The logs are printed in a blocking manner, after every frame, and thus enabling the logging may introduce performance overhead.
+ * param renderingLogging: use `-DrenderingLogging=true` to enable logging of rendering information, for example frame render time. Default value is `false`. Note: The logs are printed in a blocking manner, after every frame, and thus enabling the logging may introduce performance overhead.
+ 
+ * param debug: use `-Ddebug=true` to enable debug output. Default value is `false`.
+ 
+ ### Invalid ptx error
+ 
+ If you get the `CUDA_ERROR_INVALID_PTX` when launching the program with the custom fractals, you are probably using a CUDA device with CUDA-version 5 or lower, with no support for compute capability 3.0.
+ 
+ Such devices are not supported. However, you can try to modify the compilation script, lowering the target compute capability. Then, **maybe**, chaos-ultra could work with an unsupported GPU.
  
 ## Developer, the GUI and fractal lifecycle
 

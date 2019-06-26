@@ -262,7 +262,10 @@ public class CudaFractalRenderer implements FractalRenderer {
                 cuCtxSynchronize();
         } catch (CudaException e) {
             logger.logError("Error just after launching a kernel:" + e.getMessage());
-            if(JavaHelpers.isDebugMode()) throw e;
+            if (JavaHelpers.isDebugMode()) {
+                SimpleLogger.get().error(e.toString());
+                throw e;
+            }
         }
     }
 
@@ -335,7 +338,10 @@ public class CudaFractalRenderer implements FractalRenderer {
                             cuCtxSynchronize();
                     } catch (CudaException e) {
                         logger.logError("Error just after launching a kernel:" + e.getMessage());
-                        if(JavaHelpers.isDebugMode()) throw e;
+                        if (JavaHelpers.isDebugMode()) {
+                            SimpleLogger.get().error(e.toString());
+                            throw e;
+                        }
                     }
                 } finally {
                     JCuda.cudaDestroySurfaceObject(surfaceOutput);
@@ -347,7 +353,10 @@ public class CudaFractalRenderer implements FractalRenderer {
             }
         } catch (CudaException | FractalRendererException e) {
             logger.logError("Error during kernel launch preparation:" + e.getMessage());
-            if(JavaHelpers.isDebugMode()) throw e;
+            if (JavaHelpers.isDebugMode()) {
+                SimpleLogger.get().error(e.toString());
+                throw e;
+            }
         }
 
         long end = System.currentTimeMillis();
