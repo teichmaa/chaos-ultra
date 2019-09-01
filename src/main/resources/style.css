@@ -1,0 +1,32 @@
+/* padding order: top right btm left */
+Label {
+    -fx-padding: 5 5 5 0;
+}
+.slimLabel{
+    -fx-padding: 0 5 2 0;
+}
+
+TextField, Button {
+      -fx-padding: 5;
+}
+
+ChoiceBox {
+    -fx-padding: 0 10;
+}
+
+.mainVBox{
+    -fx-padding: 0 15 0 8;
+}
+
+.addVPadding{
+    -fx-padding: 18 0 0 0;
+}
+.topBox{
+    -fx-padding: 5 0 8 0;
+}
+Separator{
+    -fx-padding: 3 0 3 0;
+}
+#errorsTextArea{
+    -fx-text-fill: #ce000d;
+}
