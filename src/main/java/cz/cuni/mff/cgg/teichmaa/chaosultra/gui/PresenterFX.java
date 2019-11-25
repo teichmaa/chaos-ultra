@@ -24,6 +24,8 @@ public class PresenterFX implements Initializable, GUIPresenter {
 
     private static final char UNICODE_TIMES_CHAR = '\u00D7';
     @FXML
+    private Slider zoomingSpeedSlider;
+    @FXML
     private TitledPane newtonPremadeViews;
     @FXML
     private TitledPane juliaPremadeViews;
@@ -104,6 +106,15 @@ public class PresenterFX implements Initializable, GUIPresenter {
 
         fractalCustomParamsOKBtn.defaultButtonProperty().bind(fractalCustomParams.focusedProperty());
 
+        zoomingSpeedSlider.setMin(0.95);
+        zoomingSpeedSlider.setMax(0.99995);
+        zoomingSpeedSlider.setValue(RenderingController.ZOOM_COEFF);
+        zoomingSpeedSlider.valueProperty().addListener((__, ___, value) ->
+            SwingUtilities.invokeLater(
+                    () -> RenderingController.ZOOM_COEFF = value.doubleValue()
+        ));
+
+
         generalParametersOKBtn.defaultButtonProperty().bind(
                 generalParametersPane.focusedProperty().or(
                         center_x.focusedProperty().or(
@@ -153,7 +164,7 @@ public class PresenterFX implements Initializable, GUIPresenter {
                 renderingController.setMaxIterationsRequested(maxIterations);
                 renderingController.setMaxSuperSamplingRequested(supSamp);
                 renderingController.repaint();
-                renderingController.startProgressiveRenderingAsync();
+//                renderingController.startProgressiveRenderingAsync();
                 renderingController.setFractalCustomParams(params);
             });
         } catch (NumberFormatException e) {

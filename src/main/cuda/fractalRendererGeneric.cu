@@ -259,7 +259,7 @@ fov_result_t getFoveationAdvisedSampleCount(const Pointi pixel, const Pointi foc
   //per-warp normalisation, i.e. set all pixels from a warp to same value
   const Pointi pixelN = pixel - (pixel % Pointi(WARP_SIZE_X, WARP_SIZE_Y));
   
-  const float fovealViewTreshold = maxSuperSampling >= 1 ? 5.5 : 5.5 * maxSuperSampling; //in degrees
+  const float fovealViewTreshold = maxSuperSampling >= 1 ? 45.5 : 45.5 * maxSuperSampling; //in degrees
   const float peripheralViewTreshold = 60;  //in degrees
 
   fov_result_t result;

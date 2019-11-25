@@ -1,7 +1,9 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Text?>
 <HBox fx:controller="cz.cuni.mff.cgg.teichmaa.chaosultra.gui.PresenterFX"
       stylesheets="@style.css"
+      styleClass="root"
       xmlns:fx="http://javafx.com/fxml">
 
     <ScrollPane hbarPolicy="NEVER">
@@ -17,6 +19,20 @@
                             <TextField fx:id="fractalCustomParams" HBox.hgrow="ALWAYS"/>
                             <Button fx:id="fractalCustomParamsOKBtn" text="set"
                                     onAction="#fractalSpecificParamsSetClicked"/>
+                        </HBox>
+                    </VBox>
+                    <VBox>
+                        <Label>Zooming speed:</Label>
+                        <Slider fx:id="zoomingSpeedSlider"></Slider>
+                        <HBox alignment="BASELINE_LEFT">
+                            <Text>
+                                fast
+                            </Text>
+                            </HBox>
+                        <HBox alignment="BASELINE_RIGHT">
+                            <Text>
+                                slow
+                            </Text>
                         </HBox>
                     </VBox>
                 </VBox>

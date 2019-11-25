@@ -121,7 +121,8 @@ class RenderingModeFSM implements RenderingStateModel {
 
     public void startProgressiveRendering() {
         last = current;
-        current = ProgressiveRendering;
+//        current = ProgressiveRendering;
+        current = Waiting;
         PRLvl = 0;
         zoomingAndMoving = false;
     }

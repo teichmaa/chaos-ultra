@@ -16,7 +16,8 @@ import static cz.cuni.mff.cgg.teichmaa.chaosultra.rendering.FractalRenderer.MAX_
 
 public class RenderingController extends MouseAdapter {
 
-    public static final double ZOOM_COEFF = 0.977f;
+    public static double ZOOM_COEFF = 0.9995f;
+    public static double DEEPSETVALUE = 0.9995f;
 
     private static RenderingController singleton = null;
 
@@ -59,9 +60,17 @@ public class RenderingController extends MouseAdapter {
     }
 
     @Override
+    public void mouseMoved(MouseEvent e) {
+        super.mouseMoved(e);
+        model.getMouseFocus().setXYFrom(e);
+        model.getLastMousePosition().setXYFrom(e);
+    }
+
+    @Override
     public void mouseDragged(MouseEvent e) {
         assert SwingUtilities.isEventDispatchThread();
         super.mouseDragged(e);
+
 
         if (SwingUtilities.isLeftMouseButton(e)) {
             double canvasToZoomCoeff = model.getPlaneSegment().getSegmentHeight() / model.getCanvasHeight();
@@ -85,18 +94,28 @@ public class RenderingController extends MouseAdapter {
 
         model.getLastMousePosition().setXYFrom(e);
         model.getMouseFocus().setXYFrom(e);
-        if (SwingUtilities.isRightMouseButton(e) && SwingUtilities.isLeftMouseButton(e)) {
-            currentMode.startZoomingAndMoving(true);
-            animator.start();
-        } else if (SwingUtilities.isRightMouseButton(e)) {
-            currentMode.startZooming(true);
-            animator.start();
-        } else if (SwingUtilities.isLeftMouseButton(e)) {
-            //currentMode.startMoving();
-            //animator.start();
-        } else if (SwingUtilities.isMiddleMouseButton(e)) {
-            currentMode.startZooming(false);
-            animator.start();
+        if(animator.isAnimating()){
+            animator.stop();
+            if (currentMode.isMoving()) {
+                currentMode.stopMoving();
+            }
+            if (currentMode.isZooming()) {
+                currentMode.stopZooming();
+            }
+        }else {
+            if (SwingUtilities.isRightMouseButton(e) && SwingUtilities.isLeftMouseButton(e)) {
+                currentMode.startZoomingAndMoving(true);
+                animator.start();
+            } else if (SwingUtilities.isRightMouseButton(e)) {
+                currentMode.startZooming(true);
+                animator.start();
+            } else if (SwingUtilities.isLeftMouseButton(e)) {
+                //currentMode.startMoving();
+                //animator.start();
+            } else if (SwingUtilities.isMiddleMouseButton(e)) {
+                currentMode.startZooming(false);
+                animator.start();
+            }
         }
     }
 
@@ -105,21 +124,21 @@ public class RenderingController extends MouseAdapter {
         repaint();
     });
 
-    @Override
-    public void mouseReleased(MouseEvent e) {
-        assert SwingUtilities.isEventDispatchThread();
-        super.mouseReleased(e);
-
-        animator.stop();
-        if (SwingUtilities.isLeftMouseButton(e) && currentMode.isMoving()) {
-            currentMode.stopMoving();
-            startProgressiveRenderingLater.start();
-        }
-        if ((SwingUtilities.isRightMouseButton(e) || SwingUtilities.isMiddleMouseButton(e)) && currentMode.isZooming()) {
-            currentMode.stopZooming();
-            startProgressiveRenderingLater.start();
-        }
-    }
+//    @Override
+//    public void mouseReleased(MouseEvent e) {
+//        assert SwingUtilities.isEventDispatchThread();
+//        super.mouseReleased(e);
+//
+//        animator.stop();
+//        if (SwingUtilities.isLeftMouseButton(e) && currentMode.isMoving()) {
+//            currentMode.stopMoving();
+//            startProgressiveRenderingLater.start();
+//        }
+//        if ((SwingUtilities.isRightMouseButton(e) || SwingUtilities.isMiddleMouseButton(e)) && currentMode.isZooming()) {
+//            currentMode.stopZooming();
+//            startProgressiveRenderingLater.start();
+//        }
+//    }
 
     /**
      * Apply zooming to model values, especially the plane segment

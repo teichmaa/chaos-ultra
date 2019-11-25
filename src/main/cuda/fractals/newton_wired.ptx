@@ -95,7 +95,7 @@
 	cvta.global.u64 	%rd4, %rd3;
 	mov.u64 	%rd5, $str1;
 	cvta.global.u64 	%rd6, %rd5;
-	mov.u32 	%r40, 59;
+	mov.u32 	%r40, 53;
 	mov.u64 	%rd7, 0;
 	mov.u64 	%rd8, 2;
 	// Callseq Start 0
@@ -159,7 +159,7 @@ BB1_3:
 	cvta.global.u64 	%rd10, %rd9;
 	mov.u64 	%rd11, $str1;
 	cvta.global.u64 	%rd12, %rd11;
-	mov.u32 	%r58, 213;
+	mov.u32 	%r58, 207;
 	mov.u64 	%rd13, 0;
 	mov.u64 	%rd14, 2;
 	// Callseq Start 1
@@ -220,7 +220,7 @@ BB1_8:
 	cvta.global.u64 	%rd16, %rd15;
 	mov.u64 	%rd17, $str1;
 	cvta.global.u64 	%rd18, %rd17;
-	mov.u32 	%r64, 113;
+	mov.u32 	%r64, 107;
 	mov.u64 	%rd19, 0;
 	mov.u64 	%rd20, 2;
 	// Callseq Start 2
@@ -318,7 +318,7 @@ BB1_15:
 	cvta.global.u64 	%rd24, %rd23;
 	mov.u64 	%rd25, $str1;
 	cvta.global.u64 	%rd26, %rd25;
-	mov.u32 	%r76, 132;
+	mov.u32 	%r76, 126;
 	mov.u64 	%rd27, 0;
 	mov.u64 	%rd28, 2;
 	// Callseq Start 3
@@ -356,7 +356,7 @@ BB1_17:
 	cvta.global.u64 	%rd30, %rd29;
 	mov.u64 	%rd31, $str1;
 	cvta.global.u64 	%rd32, %rd31;
-	mov.u32 	%r77, 133;
+	mov.u32 	%r77, 127;
 	mov.u64 	%rd33, 0;
 	mov.u64 	%rd34, 2;
 	// Callseq Start 4
@@ -694,7 +694,7 @@ BB1_57:
 	cvta.global.u64 	%rd66, %rd65;
 	mov.u64 	%rd67, $str1;
 	cvta.global.u64 	%rd68, %rd67;
-	mov.u32 	%r109, 220;
+	mov.u32 	%r109, 214;
 	mov.u64 	%rd69, 0;
 	mov.u64 	%rd70, 2;
 	// Callseq Start 5
@@ -771,7 +771,7 @@ BB1_59:
 	cvta.global.u64 	%rd4, %rd3;
 	mov.u64 	%rd5, $str1;
 	cvta.global.u64 	%rd6, %rd5;
-	mov.u32 	%r40, 59;
+	mov.u32 	%r40, 53;
 	mov.u64 	%rd7, 0;
 	mov.u64 	%rd8, 2;
 	// Callseq Start 6
@@ -835,7 +835,7 @@ BB2_3:
 	cvta.global.u64 	%rd10, %rd9;
 	mov.u64 	%rd11, $str1;
 	cvta.global.u64 	%rd12, %rd11;
-	mov.u32 	%r58, 213;
+	mov.u32 	%r58, 207;
 	mov.u64 	%rd13, 0;
 	mov.u64 	%rd14, 2;
 	// Callseq Start 7
@@ -896,7 +896,7 @@ BB2_8:
 	cvta.global.u64 	%rd16, %rd15;
 	mov.u64 	%rd17, $str1;
 	cvta.global.u64 	%rd18, %rd17;
-	mov.u32 	%r64, 113;
+	mov.u32 	%r64, 107;
 	mov.u64 	%rd19, 0;
 	mov.u64 	%rd20, 2;
 	// Callseq Start 8
@@ -994,7 +994,7 @@ BB2_15:
 	cvta.global.u64 	%rd24, %rd23;
 	mov.u64 	%rd25, $str1;
 	cvta.global.u64 	%rd26, %rd25;
-	mov.u32 	%r76, 132;
+	mov.u32 	%r76, 126;
 	mov.u64 	%rd27, 0;
 	mov.u64 	%rd28, 2;
 	// Callseq Start 9
@@ -1032,7 +1032,7 @@ BB2_17:
 	cvta.global.u64 	%rd30, %rd29;
 	mov.u64 	%rd31, $str1;
 	cvta.global.u64 	%rd32, %rd31;
-	mov.u32 	%r77, 133;
+	mov.u32 	%r77, 127;
 	mov.u64 	%rd33, 0;
 	mov.u64 	%rd34, 2;
 	// Callseq Start 10
@@ -1374,7 +1374,7 @@ BB2_58:
 	cvta.global.u64 	%rd66, %rd65;
 	mov.u64 	%rd67, $str1;
 	cvta.global.u64 	%rd68, %rd67;
-	mov.u32 	%r109, 220;
+	mov.u32 	%r109, 214;
 	mov.u64 	%rd69, 0;
 	mov.u64 	%rd70, 2;
 	// Callseq Start 11
@@ -1463,7 +1463,7 @@ BB2_60:
 	cvta.global.u64 	%rd6, %rd5;
 	mov.u64 	%rd7, $str1;
 	cvta.global.u64 	%rd8, %rd7;
-	mov.u32 	%r79, 59;
+	mov.u32 	%r79, 53;
 	mov.u64 	%rd9, 0;
 	mov.u64 	%rd10, 2;
 	// Callseq Start 12
@@ -1532,7 +1532,7 @@ BB3_3:
 	cvta.global.u64 	%rd12, %rd11;
 	mov.u64 	%rd13, $str1;
 	cvta.global.u64 	%rd14, %rd13;
-	mov.u32 	%r98, 263;
+	mov.u32 	%r98, 257;
 	mov.u64 	%rd15, 0;
 	mov.u64 	%rd16, 2;
 	// Callseq Start 13
@@ -1621,7 +1621,7 @@ BB3_8:
 	cvta.global.u64 	%rd18, %rd17;
 	mov.u64 	%rd19, $str1;
 	cvta.global.u64 	%rd20, %rd19;
-	mov.u32 	%r105, 276;
+	mov.u32 	%r105, 270;
 	mov.u64 	%rd21, 0;
 	mov.u64 	%rd22, 2;
 	// Callseq Start 14
@@ -1652,9 +1652,9 @@ BB3_8:
 	}// Callseq End 14
 
 BB3_10:
-	mul.f32 	%f155, %f421, 0f40B00000;
+	mul.f32 	%f155, %f421, 0f42360000;
 	setp.ltu.f32	%p21, %f421, 0f3F800000;
-	selp.f32	%f156, %f155, 0f40B00000, %p21;
+	selp.f32	%f156, %f155, 0f42360000, %p21;
 	mov.f32 	%f157, 0f42700000;
 	sub.f32 	%f158, %f157, %f156;
 	mov.f32 	%f159, 0fBF800000;
@@ -1841,7 +1841,7 @@ BB3_77:
 	cvta.global.u64 	%rd76, %rd75;
 	mov.u64 	%rd77, $str1;
 	cvta.global.u64 	%rd78, %rd77;
-	mov.u32 	%r172, 113;
+	mov.u32 	%r172, 107;
 	mov.u64 	%rd79, 0;
 	mov.u64 	%rd80, 2;
 	// Callseq Start 18
@@ -1933,7 +1933,7 @@ BB3_84:
 	cvta.global.u64 	%rd84, %rd83;
 	mov.u64 	%rd85, $str1;
 	cvta.global.u64 	%rd86, %rd85;
-	mov.u32 	%r184, 132;
+	mov.u32 	%r184, 126;
 	mov.u64 	%rd87, 0;
 	mov.u64 	%rd88, 2;
 	// Callseq Start 19
@@ -1971,7 +1971,7 @@ BB3_86:
 	cvta.global.u64 	%rd90, %rd89;
 	mov.u64 	%rd91, $str1;
 	cvta.global.u64 	%rd92, %rd91;
-	mov.u32 	%r185, 133;
+	mov.u32 	%r185, 127;
 	mov.u64 	%rd93, 0;
 	mov.u64 	%rd94, 2;
 	// Callseq Start 20
@@ -2327,7 +2327,7 @@ BB3_25:
 	cvta.global.u64 	%rd36, %rd35;
 	mov.u64 	%rd37, $str1;
 	cvta.global.u64 	%rd38, %rd37;
-	mov.u32 	%r130, 113;
+	mov.u32 	%r130, 107;
 	mov.u64 	%rd39, 0;
 	mov.u64 	%rd40, 2;
 	// Callseq Start 15
@@ -2419,7 +2419,7 @@ BB3_32:
 	cvta.global.u64 	%rd44, %rd43;
 	mov.u64 	%rd45, $str1;
 	cvta.global.u64 	%rd46, %rd45;
-	mov.u32 	%r142, 132;
+	mov.u32 	%r142, 126;
 	mov.u64 	%rd47, 0;
 	mov.u64 	%rd48, 2;
 	// Callseq Start 16
@@ -2457,7 +2457,7 @@ BB3_34:
 	cvta.global.u64 	%rd50, %rd49;
 	mov.u64 	%rd51, $str1;
 	cvta.global.u64 	%rd52, %rd51;
-	mov.u32 	%r143, 133;
+	mov.u32 	%r143, 127;
 	mov.u64 	%rd53, 0;
 	mov.u64 	%rd54, 2;
 	// Callseq Start 17
@@ -2788,7 +2788,7 @@ BB3_126:
 	cvta.global.u64 	%rd121, %rd120;
 	mov.u64 	%rd122, $str1;
 	cvta.global.u64 	%rd123, %rd122;
-	mov.u32 	%r210, 399;
+	mov.u32 	%r210, 393;
 	mov.u64 	%rd124, 0;
 	mov.u64 	%rd125, 2;
 	// Callseq Start 21
@@ -2876,7 +2876,7 @@ BB3_128:
 	cvta.global.u64 	%rd6, %rd5;
 	mov.u64 	%rd7, $str1;
 	cvta.global.u64 	%rd8, %rd7;
-	mov.u32 	%r79, 59;
+	mov.u32 	%r79, 53;
 	mov.u64 	%rd9, 0;
 	mov.u64 	%rd10, 2;
 	// Callseq Start 22
@@ -2945,7 +2945,7 @@ BB4_3:
 	cvta.global.u64 	%rd12, %rd11;
 	mov.u64 	%rd13, $str1;
 	cvta.global.u64 	%rd14, %rd13;
-	mov.u32 	%r98, 263;
+	mov.u32 	%r98, 257;
 	mov.u64 	%rd15, 0;
 	mov.u64 	%rd16, 2;
 	// Callseq Start 23
@@ -3034,7 +3034,7 @@ BB4_8:
 	cvta.global.u64 	%rd18, %rd17;
 	mov.u64 	%rd19, $str1;
 	cvta.global.u64 	%rd20, %rd19;
-	mov.u32 	%r105, 276;
+	mov.u32 	%r105, 270;
 	mov.u64 	%rd21, 0;
 	mov.u64 	%rd22, 2;
 	// Callseq Start 24
@@ -3065,9 +3065,9 @@ BB4_8:
 	}// Callseq End 24
 
 BB4_10:
-	mul.f32 	%f109, %f253, 0f40B00000;
+	mul.f32 	%f109, %f253, 0f42360000;
 	setp.ltu.f32	%p21, %f253, 0f3F800000;
-	selp.f32	%f110, %f109, 0f40B00000, %p21;
+	selp.f32	%f110, %f109, 0f42360000, %p21;
 	mov.f32 	%f111, 0f42700000;
 	sub.f32 	%f112, %f111, %f110;
 	mov.f32 	%f113, 0fBF800000;
@@ -3258,7 +3258,7 @@ BB4_78:
 	cvta.global.u64 	%rd76, %rd75;
 	mov.u64 	%rd77, $str1;
 	cvta.global.u64 	%rd78, %rd77;
-	mov.u32 	%r172, 113;
+	mov.u32 	%r172, 107;
 	mov.u64 	%rd79, 0;
 	mov.u64 	%rd80, 2;
 	// Callseq Start 28
@@ -3350,7 +3350,7 @@ BB4_85:
 	cvta.global.u64 	%rd84, %rd83;
 	mov.u64 	%rd85, $str1;
 	cvta.global.u64 	%rd86, %rd85;
-	mov.u32 	%r184, 132;
+	mov.u32 	%r184, 126;
 	mov.u64 	%rd87, 0;
 	mov.u64 	%rd88, 2;
 	// Callseq Start 29
@@ -3388,7 +3388,7 @@ BB4_87:
 	cvta.global.u64 	%rd90, %rd89;
 	mov.u64 	%rd91, $str1;
 	cvta.global.u64 	%rd92, %rd91;
-	mov.u32 	%r185, 133;
+	mov.u32 	%r185, 127;
 	mov.u64 	%rd93, 0;
 	mov.u64 	%rd94, 2;
 	// Callseq Start 30
@@ -3748,7 +3748,7 @@ BB4_25:
 	cvta.global.u64 	%rd36, %rd35;
 	mov.u64 	%rd37, $str1;
 	cvta.global.u64 	%rd38, %rd37;
-	mov.u32 	%r130, 113;
+	mov.u32 	%r130, 107;
 	mov.u64 	%rd39, 0;
 	mov.u64 	%rd40, 2;
 	// Callseq Start 25
@@ -3840,7 +3840,7 @@ BB4_32:
 	cvta.global.u64 	%rd44, %rd43;
 	mov.u64 	%rd45, $str1;
 	cvta.global.u64 	%rd46, %rd45;
-	mov.u32 	%r142, 132;
+	mov.u32 	%r142, 126;
 	mov.u64 	%rd47, 0;
 	mov.u64 	%rd48, 2;
 	// Callseq Start 26
@@ -3878,7 +3878,7 @@ BB4_34:
 	cvta.global.u64 	%rd50, %rd49;
 	mov.u64 	%rd51, $str1;
 	cvta.global.u64 	%rd52, %rd51;
-	mov.u32 	%r143, 133;
+	mov.u32 	%r143, 127;
 	mov.u64 	%rd53, 0;
 	mov.u64 	%rd54, 2;
 	// Callseq Start 27
@@ -4217,7 +4217,7 @@ BB4_128:
 	cvta.global.u64 	%rd121, %rd120;
 	mov.u64 	%rd122, $str1;
 	cvta.global.u64 	%rd123, %rd122;
-	mov.u32 	%r210, 399;
+	mov.u32 	%r210, 393;
 	mov.u64 	%rd124, 0;
 	mov.u64 	%rd125, 2;
 	// Callseq Start 31

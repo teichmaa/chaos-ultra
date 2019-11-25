@@ -173,21 +173,25 @@ class GLRenderer implements GLView {
         if (stateModel.isZooming())
             model.setZoomingIn(stateModel.getZoomingDirection());
 
-        if (stateModel.isProgressiveRendering()) {
-            fractalRenderer.renderQuality(model);
-            logger.logRenderingInfo("\t\trender Quality, with super sampling set to \t\t\t" + model.getMaxSuperSampling());
-            return true;
-        } else {
-            fractalRenderer.renderFast(model);
-            logger.logRenderingInfo("\t\trender Fast, with SS \t\t\t\t" + model.getMaxSuperSampling());
-            return true;
-        }
+        fractalRenderer.renderQuality(model);
+        return true;
+//        if (stateModel.isProgressiveRendering()) {
+//            fractalRenderer.renderQuality(model);
+//            logger.logRenderingInfo("\t\trender Quality, with super sampling set to \t\t\t" + model.getMaxSuperSampling());
+//            return true;
+//        } else {
+//            fractalRenderer.renderFast(model);
+//            logger.logRenderingInfo("\t\trender Fast, with SS \t\t\t\t" + model.getMaxSuperSampling());
+//            return true;
+//        }
     }
 
     /**
      * time in ms
+     * FPS
+     * az budes hledat FPS, tak tahle debilni aplikace to nema. Ma jen toto:
      */
-    private static final int shortestFrameRenderTime = 15;
+    private static final int shortestFrameRenderTime = 30;
     /**
      * time in ms
      */

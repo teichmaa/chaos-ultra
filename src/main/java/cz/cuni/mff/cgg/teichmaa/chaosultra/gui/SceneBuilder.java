@@ -1,4 +1,7 @@
 package cz.cuni.mff.cgg.teichmaa.chaosultra.gui;
+import javax.swing.plaf.ColorUIResource;
+import javax.swing.plaf.metal.DefaultMetalTheme;
+import javax.swing.plaf.metal.MetalLookAndFeel;
 
 import com.jogamp.opengl.GLCapabilities;
 import com.jogamp.opengl.GLProfile;
