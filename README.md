@@ -54,7 +54,7 @@ If you do not want to compile the program yourself, you can download latest exec
 
 ## Running the program
 
-Start the program with `java DcudaKernelsDir=../src/main/cuda/fractals -jar chaos-ultra-1.0-jar-with-dependencies.jar`.
+Start the program with `java -DcudaKernelsDir=../src/main/cuda/fractals -jar chaos-ultra-1.0-jar-with-dependencies.jar`.
 
 Without the `cudaKernelsDir` parameter specified, the `cuda_kernels` directory must be located in the same folder as the jar, and it must contain .ptx files with compiled fractal implementation for all the fractals registered in `CudaFractalRendererProvider`.
 
@@ -103,6 +103,8 @@ If you find a bug, I will be more than happy if you contact me, so that I can fi
 ## Versioning
 
 Version number is in format `major.minor`, `major` being number of major version, `minor` number of minor version. 
+
+Update 4/2020: No further releases of the project are planned.
 
 ## License
 
