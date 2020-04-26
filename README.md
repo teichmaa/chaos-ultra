@@ -5,7 +5,7 @@ The program has been inspired by [Xaos](http://matek.hu/xaos/doku.php), a real-t
 
 ## About
 
-This program arose as the software-part of a bachelor thesis in 2018/2019. The corresponging thesis is *Real-time visualization of chaotic functions* by Antonín Teichmann at Charles University, Prague. Read the thesis to learn more details about source code structure, the logic of the program, and about rendering of chaotic functions in general.
+This program arose as the software-part of a bachelor thesis in 2018/2019. The corresponging thesis is *Real-time visualization of chaotic functions* by Antonín Teichmann at Charles University, Prague, available at https://dspace.cuni.cz/handle/20.500.11956/109067. Read the thesis to learn more details about source code structure, the logic of the program, and about rendering of chaotic functions in general.
 
 ## Technical requirements
 
